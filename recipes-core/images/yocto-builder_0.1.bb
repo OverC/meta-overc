@@ -10,9 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL = "packagegroup-core-boot packagegroup-core-ssh-openssh packagegroup-core-full-cmdline packagegroup-builder"
 
-# doc-pkgs would be nice but it blows up in a nasty way.
-#IMAGE_FEATURES += "package-management doc-pkgs"
-IMAGE_FEATURES += "package-management"
+IMAGE_FEATURES += "package-management doc-pkgs"
 
 #DEPENDS = "zip-native"
 IMAGE_FSTYPES = "tar.bz2"
