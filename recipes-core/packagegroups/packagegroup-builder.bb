@@ -106,6 +106,7 @@ RDEPENDS_packagegroup-builder-debug = " \
 
 
 RDEPENDS_packagegroup-builder-extended = "\
+    bash-completion \
     bzip2 \
     chkconfig \
     chrpath \
