@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 # fixme: core-boot has a hard dep on boogerbox
-IMAGE_INSTALL = "packagegroup-core-boot packagegroup-core-ssh-openssh packagegroup-core-full-cmdline packagegroup-builder"
+IMAGE_INSTALL += "packagegroup-core-boot packagegroup-core-ssh-openssh packagegroup-core-full-cmdline packagegroup-builder"
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 
