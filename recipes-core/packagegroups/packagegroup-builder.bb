@@ -153,6 +153,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     patch \
     perl \
     perl-dev \
+    perl-misc \
     perl-modules \
     perl-pod \
     pth \
