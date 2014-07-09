@@ -12,11 +12,6 @@ IMAGE_INSTALL += "packagegroup-core-boot packagegroup-core-ssh-openssh packagegr
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 
-#DEPENDS = "zip-native"
 IMAGE_FSTYPES = "tar.bz2"
 
 inherit core-image
-
-#SRCREV ?= "68ef727cdcef439e9bfc57996f3cebfc0e07789e"
-#SRC_URI = "git://git.yoctoproject.org/poky \
-#          "

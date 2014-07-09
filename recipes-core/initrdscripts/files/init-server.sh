@@ -40,8 +40,6 @@ early_setup() {
     $_UDEV_DAEMON --daemon
     udevadm trigger --action=add
 
-    echo Running RAID setup
-
     if [ -x /sbin/mdadm ]; then
 	/sbin/mdadm -v --assemble --scan --auto=md
     fi
@@ -54,12 +52,6 @@ read_args() {
         case $arg in
             root=*)
                 ROOT_DEVICE=$optarg ;;
-            console=*)
-                if [ -z "${console_params}" ]; then
-                    console_params=$arg
-                else
-                    console_params="$console_params $arg"
-                fi ;;
         esac
     done
 }
@@ -91,9 +83,7 @@ fi
 
 # Move the mount points of some filesystems over to
 # the corresponding directories under the real root filesystem.
-echo Moving dirs to ${ROOT_MOUNT}
 for dir in `cat /proc/mounts | grep -v rootfs | awk '{print $2}'` ; do
-    echo Moving \"$dir\". to ${ROOT_MOUNT}
     mkdir -p  ${ROOT_MOUNT}/${dir##*/}
     mount -n --move $dir ${ROOT_MOUNT}/${dir##*/}
 done
