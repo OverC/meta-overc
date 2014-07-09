@@ -52,6 +52,8 @@ read_args() {
         case $arg in
             root=*)
                 ROOT_DEVICE=$optarg ;;
+            init=*)
+                INIT=$optarg ;;
         esac
     done
 }
@@ -68,9 +70,11 @@ fatal() {
 
 early_setup
 
-[ -z "$CONSOLE" ] && CONSOLE="/dev/console"
-
 read_args
+
+[ -z "$CONSOLE" ] && CONSOLE="/dev/console"
+[ -z "$INIT" ] && INIT="/sbin/init"
+
 
 udevadm settle --timeout=3 --quiet
 killall "${_UDEV_DAEMON##*/}" 2>/dev/null
@@ -91,5 +95,5 @@ done
 cd $ROOT_MOUNT
 
 # busybox switch_root supports -c option
-exec switch_root -c /dev/console $ROOT_MOUNT /sbin/init $CMDLINE ||
+exec switch_root -c /dev/console $ROOT_MOUNT $INIT $CMDLINE ||
     fatal "Couldn't switch_root, dropping to shell"
