@@ -123,7 +123,7 @@ Edit /etc/mdadm/mdadm.conf to reflect the raid settings:
 	ARRAY /dev/md0 devices=/dev/sda3,/dev/sdb2
 
 Unpack the initramfs and copy the updated mdadm.conf into it and rebundle:
-   mv /boot/initramfs-3.14.4-yocto-standard.img  /boot/initramfs-3.14.4-yocto-st
+   mv /boot/initramfs-3.14.4-yocto-standard.img  /boot/initramfs-3.14.4-yocto-standard.img~
    cd /tmp
    rm -rf x ; mkdir x ; cd x
    zcat /boot/initramfs-3.14.4-yocto-standard.img~ | cpio -id -H newc
