@@ -135,14 +135,15 @@ If additional kernel modules are desired to be loaded early, then edit the file
 
 Configure/install grub:
 	mkdir -p /boot/grub
-	grub-mkconfig > /boot/grub/grub.cfg
-	grub-install /dev/sda1
+	GRUB_DISABLE_LINUX_UUID=true grub-mkconfig > /boot/grub/grub.cfg
+	grub-install /dev/sda
 
-Unmount /dev
-	umount -v /dev
-
-Leave the chroot:
+Leave the chroot and the z dir:
 	exit
+	cd /
+
+Unmount /z/dev
+	umount -v /z/dev
 
 Unmount boot
 	umount -v /z/boot
