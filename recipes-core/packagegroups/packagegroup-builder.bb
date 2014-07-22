@@ -195,7 +195,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     rpm \
     setserial \
     socat \
-    subversion \
     sudo \
     sysstat \
     tar \
