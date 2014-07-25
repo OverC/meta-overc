@@ -29,8 +29,6 @@ RDEPENDS_packagegroup-builder = "\
     "
 
 RDEPENDS_packagegroup-builder-host-tools = "\
-    connman \
-    connman-plugin-ethernet \
     dhcp-client \
     e2fsprogs \
     e2fsprogs-e2fsck \
