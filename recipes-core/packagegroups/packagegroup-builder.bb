@@ -128,6 +128,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     gzip \
     settings-daemon \
     hicolor-icon-theme \
+    inetutils \
     sato-icon-theme \
     libaio \
     libusb1 \
@@ -143,6 +144,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     ncurses \
     ncurses-terminfo-base \
     neon \
+    netcat \
     nfs-utils \
     nfs-utils-client \
     openssl \
@@ -199,6 +201,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     tcl \
     texi2html \
     texinfo \
+    traceroute \
     unzip \
     usbutils \
     watchdog \
