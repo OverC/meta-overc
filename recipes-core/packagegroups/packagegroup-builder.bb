@@ -215,7 +215,6 @@ RDEPENDS_packagegroup-builder-extended = "\
 
 
 RDEPENDS_packagegroup-builder-graphics = "\
-    builder \
     libgl \
     libgl-dev \
     libglu \
