@@ -1,0 +1,30 @@
+#!/bin/sh
+
+LAYERS="meta-intel \
+	meta-openembedded \
+	meta-builder \
+	"
+	 
+if [ ! -d meta-builder ]; then
+	echo I do not see a meta-builder subdir.  Are you in poky dir\?
+	exit 1
+fi
+
+echo Updating main repo
+git pull || exit 1
+
+for i in $LAYERS
+do
+	if [ ! -d "$i" ]; then
+		echo Layer $i does not appear to exist.  Giving up.
+		exit 1
+	fi
+	cd $i || exit 1
+	echo Updating layer $i
+	git pull
+	if [ $? != 0 ]; then
+		echo git pull in layer $i failed.  Giving up.
+		exit 1
+	fi
+	cd - > /dev/null
+done
