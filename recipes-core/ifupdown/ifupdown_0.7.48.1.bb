@@ -24,7 +24,8 @@ do_compile () {
 do_install () {
 	install -d ${D}${mandir}/man8 \
 		   ${D}${mandir}/man5 \
-		   ${D}${base_sbindir}
+		   ${D}${base_sbindir} \
+		   ${localstatedir}/run/network
 	install -m 0755 ifup ${D}${base_sbindir}/
 	ln ${D}${base_sbindir}/ifup ${D}${base_sbindir}/ifdown
 	install -m 0644 ifup.8 ${D}${mandir}/man8
