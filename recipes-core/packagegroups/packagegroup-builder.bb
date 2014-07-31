@@ -130,6 +130,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     gzip \
     settings-daemon \
     hicolor-icon-theme \
+    ifupdown \
     inetutils \
     sato-icon-theme \
     libaio \
