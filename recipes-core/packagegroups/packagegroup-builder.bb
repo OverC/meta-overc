@@ -113,6 +113,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     curl \
     diffstat \
     diffutils \
+    dpkg \
     elfutils \
     expat \
     gamin \
