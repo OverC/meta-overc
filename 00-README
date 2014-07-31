@@ -113,7 +113,8 @@ Make device nodes appear so that programs will function normally:
 Set root password:
 	passwd
 
-Edit /etc/fstab and add entries for /boot on sda1 and / on md0 and swap:
+Edit /etc/fstab to delete the /dev/root setting, and then add entries for /boot
+on sda1 and / on md0 and swap:
    /dev/md0		/               ext4    noatime,errors=remount-ro 0       1
    /dev/sda1		/boot           ext4    noatime,errors=remount-ro 0       0
    /dev/sda2		none            swap    sw              0       0
