@@ -20,3 +20,4 @@ IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES = "tar.bz2"
 
 inherit core-image
+inherit builder-base
