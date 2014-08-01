@@ -10,6 +10,8 @@ SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48
 
 EXTRA_OEMAKE = ""
 
+FILES_${PN} += "/run/network"
+
 # needed so we don't get default S="${WORKDIR}/ifupdown-${PV}"
 S = "${WORKDIR}/ifupdown-${PV}ubuntu4"
 
@@ -25,7 +27,7 @@ do_install () {
 	install -d ${D}${mandir}/man8 \
 		   ${D}${mandir}/man5 \
 		   ${D}${base_sbindir} \
-		   ${localstatedir}/run/network
+		   ${D}${localstatedir}/run/network
 	install -m 0755 ifup ${D}${base_sbindir}/
 	ln ${D}${base_sbindir}/ifup ${D}${base_sbindir}/ifdown
 	install -m 0644 ifup.8 ${D}${mandir}/man8
