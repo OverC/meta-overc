@@ -6,7 +6,11 @@ the file /etc/network/interfaces."
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=94d55d512a9ba36caa9b7df079bae19f"
 
-SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48.1ubuntu4.tar.xz"
+SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48.1ubuntu4.tar.xz \
+	   file://defn2-c-man-don-t-rely-on-dpkg-architecture-to-set-a.patch \
+	   file://inet-6-.defn-fix-inverted-checks-for-loopback.patch \
+	   file://99_network \
+	  "
 
 EXTRA_OEMAKE = ""
 
@@ -28,6 +32,11 @@ do_install () {
 		   ${D}${mandir}/man5 \
 		   ${D}${base_sbindir} \
 		   ${D}${localstatedir}/run/network
+
+	# If volatiles are used, then we'll also need /run/network there too.
+	install -d ${D}/etc/default/volatiles
+	install -m 0644 ${WORKDIR}/99_network ${D}/etc/default/volatiles
+
 	install -m 0755 ifup ${D}${base_sbindir}/
 	ln ${D}${base_sbindir}/ifup ${D}${base_sbindir}/ifdown
 	install -m 0644 ifup.8 ${D}${mandir}/man8
