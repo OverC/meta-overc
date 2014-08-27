@@ -13,6 +13,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-core-full-cmdline \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
+		  ${YOCTO_BUILDER_EXTRA_INSTALL} \
 		 "
 
 IMAGE_FEATURES += "package-management doc-pkgs"
