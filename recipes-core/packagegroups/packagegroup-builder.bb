@@ -71,7 +71,6 @@ RDEPENDS_packagegroup-builder-sdk = "\
     cpp \
     cpp-symlinks \
     eglibc-utils \
-    eglibc-gconv-ibm850 \
     file \
     findutils \
     g++ \
