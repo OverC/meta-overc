@@ -209,6 +209,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     watchdog \
     wget \
     which \
+    wiggle \
     xinetd \
     zip \
     zlib \
