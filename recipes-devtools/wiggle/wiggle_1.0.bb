@@ -7,6 +7,7 @@ SRC_URI = "http://neil.brown.name/wiggle/wiggle-${PV}.tar.gz"
 
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
+DEPENDS = "ncurses"
 RDEPENDS_${PN} = "ncurses ncurses-terminfo"
 
 # pkg makefile has -I. for CFLAGS to get local config.h header
