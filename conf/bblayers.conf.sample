@@ -13,6 +13,7 @@ BBLAYERS ?= " \
   /home/paul/poky/meta-builder \
   /home/paul/poky/meta-openembedded/meta-oe \
   /home/paul/poky/meta-openembedded/meta-networking \
+  /home/paul/poky/meta-openembedded/meta-python \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   /home/paul/poky/meta \
