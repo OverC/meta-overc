@@ -6,7 +6,7 @@ the file /etc/network/interfaces."
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=94d55d512a9ba36caa9b7df079bae19f"
 
-SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48.1ubuntu4.tar.xz \
+SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48.1ubuntu5.tar.gz \
 	   file://defn2-c-man-don-t-rely-on-dpkg-architecture-to-set-a.patch \
 	   file://inet-6-.defn-fix-inverted-checks-for-loopback.patch \
 	   file://99_network \
@@ -17,7 +17,7 @@ EXTRA_OEMAKE = ""
 FILES_${PN} += "/run/network"
 
 # needed so we don't get default S="${WORKDIR}/ifupdown-${PV}"
-S = "${WORKDIR}/ifupdown-${PV}ubuntu4"
+S = "${WORKDIR}/ifupdown-${PV}ubuntu5"
 
 
 inherit update-rc.d
@@ -53,5 +53,5 @@ ALTERNATIVE_LINK_NAME[ifdown] = "${base_sbindir}/ifdown"
 INITSCRIPT_NAME = "ifup"
 INITSCRIPT_PARAMS = "start 39 S . stop 39 0 6 1 ."
 
-SRC_URI[md5sum] = "1ea319fc4f76400faf3e2a6d5c640f2e"
-SRC_URI[sha256sum] = "46de0052a31b8cecd237e6400f07d0c451ef1c052397afa5d35fa22113d104c6"
+SRC_URI[md5sum] = "85ba375f3c6f26d34efb2a8575e77fc8"
+SRC_URI[sha256sum] = "08dce14692c07b72b583b86c4d3ace0d9dac1928925144cc3ddde15b694ebbdf"
