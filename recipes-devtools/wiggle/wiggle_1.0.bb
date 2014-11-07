@@ -13,6 +13,11 @@ RDEPENDS_${PN} = "ncurses ncurses-terminfo"
 # pkg makefile has -I. for CFLAGS to get local config.h header
 TARGET_CFLAGS =+ "-I${B}"
 
+# custom compile rule to avoid test target which may fail when x-compiling
+do_compile () {
+	make wiggle wiggle.man
+}
+
 do_install () {
 	install -D -m 755 wiggle ${D}/${bindir}/wiggle
 	install -D -m 644 wiggle.1 ${D}/${mandir}/man1/wiggle.1
