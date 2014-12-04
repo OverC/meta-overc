@@ -97,7 +97,7 @@ Mount the boot partition:
 	mount -v /dev/sda1 boot
 
 Copy the initramfs into boot:
-	cp ~/yocto-builder-initramfs-intel-corei7-64.cpio.gz boot/initramfs-3.16.0-yocto-standard.img
+	cp ~/yocto-builder-initramfs-intel-corei7-64.cpio.gz boot/initramfs-3.17.2-yocto-standard.img
 
 Unbundle the rootfs image:
 	cd /z
@@ -124,12 +124,12 @@ Edit /etc/mdadm/mdadm.conf to reflect the raid settings:
 	ARRAY /dev/md0 devices=/dev/sda3,/dev/sdb2
 
 Unpack the initramfs and copy the updated mdadm.conf into it and rebundle:
-   mv /boot/initramfs-3.16.0-yocto-standard.img  /boot/initramfs-3.16.0-yocto-standard.img~
+   mv /boot/initramfs-3.17.2-yocto-standard.img  /boot/initramfs-3.17.2-yocto-standard.img~
    cd /tmp
    rm -rf x ; mkdir x ; cd x
-   zcat /boot/initramfs-3.16.0-yocto-standard.img~ | cpio -id -H newc
+   zcat /boot/initramfs-3.17.2-yocto-standard.img~ | cpio -id -H newc
    cp -a /etc/mdadm/mdadm.conf ./etc/mdadm/mdadm.conf
-   find . | cpio -o -H newc |gzip -9 > /boot/initramfs-3.16.0-yocto-standard.img
+   find . | cpio -o -H newc |gzip -9 > /boot/initramfs-3.17.2-yocto-standard.img
 
 If additional kernel modules are desired to be loaded early, then edit the file
 /sbin/init in the initramfs content above before rebundling with cpio.
