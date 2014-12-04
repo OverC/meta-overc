@@ -147,34 +147,6 @@ IMAGE_FEATURES += "dev-pkgs"
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
 IMAGE_FEATURES += "ssh-server-openssh package-management"
 
-# Support for alternate 32 bit toolchains will need this
-require conf/multilib.conf
-MULTILIBS = "multilib:lib32"
-DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
-# Note duplication of pkgs from build-essential, in both 32 and 64 bit
-# variants.  IMAGE_INSTALL is handled differently than packagegroups,
-# and if we don't list the lib32- variants here, they won't get installed.
-# Yet if we list them here, they will get installed, and satisfy the deps
-# so the 64 bit ones _dont_ get installed.  A vicious circle.  Also we
-# want the 64bit binaries to be the defaults, so use their symlinks.
-IMAGE_INSTALL_append = " \
-    lib32-binutils \
-    lib32-cpp \
-    lib32-gcc \
-    lib32-g++ \
-    lib32-libstdc++ \
-    lib32-libstdc++-dev \
-    binutils \
-    cpp \
-    cpp-symlinks \
-    gcc \
-    gcc-symlinks \
-    g++ \
-    g++-symlinks \
-    libstdc++ \
-    libstdc++-dev \
-    "
-
 #
 # Extra image configuration defaults
 #
