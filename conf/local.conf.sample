@@ -51,6 +51,8 @@ PARALLEL_MAKE ?= "-j 16"
 #MACHINE ?= "beaglebone"
 #MACHINE ?= "genericx86"
 #MACHINE ?= "genericx86-64"
+# linux-yocto-dev won't get a sensible .config w/o the below
+KMACHINE_genericx86-64 ?= "common-pc-64"
 #MACHINE ?= "mpc8315e-rdb"
 #MACHINE ?= "edgerouter"
 MACHINE="intel-corei7-64"
