@@ -93,7 +93,8 @@ RDEPENDS_packagegroup-builder-sdk = "\
     pkgconfig \
     quilt \
     sed \
-    vim"
+    vim \
+    zile"
 
 RDEPENDS_packagegroup-builder-debug = " \
     gdb \
@@ -187,6 +188,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     xinetd \
     zip \
     zlib \
+    xterm \
     xz \
     "
 
