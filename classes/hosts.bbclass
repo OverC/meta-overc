@@ -1,2 +1,2 @@
 # can be overridden
-HOSTNAME ?= "yocto-builder"
+HOSTNAME ?= "op3"

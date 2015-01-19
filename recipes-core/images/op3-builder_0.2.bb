@@ -1,6 +1,6 @@
 SUMMARY = "An image creating a file system for a build server itself"
 DESCRIPTION = "An image capable of building the system that you can deploy on a server."
-HOMEPAGE = "http://www.yoctoproject.org/documentation/meta-builder"
+HOMEPAGE = "http://www.windriver.com"
 
 # fixme ; point at layer copy someday.
 LICENSE = "MIT"

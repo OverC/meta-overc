@@ -3,12 +3,12 @@ DESCRIPTION = "Small image capable of booting a device. The kernel includes \
 the Minimal RAM-based Initial Root Filesystem (initramfs), which finds the \
 first 'init' program more efficiently."
 
-PACKAGE_INSTALL = "initramfs-yocto-builder busybox udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL}"
+PACKAGE_INSTALL = "initramfs-op3-builder busybox udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL}"
 
 # Do not pollute the initrd image with rootfs features
 IMAGE_FEATURES = ""
 
-export IMAGE_BASENAME = "yocto-builder-initramfs"
+export IMAGE_BASENAME = "op3-builder-initramfs"
 IMAGE_LINGUAS = ""
 
 LICENSE = "MIT"
