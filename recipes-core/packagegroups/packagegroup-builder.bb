@@ -170,6 +170,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     quota \
     readline \
     rpm \
+    rpm-build \
     setserial \
     socat \
     sudo \
