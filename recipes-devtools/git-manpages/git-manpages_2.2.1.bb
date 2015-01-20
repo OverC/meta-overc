@@ -8,8 +8,8 @@ SRC_URI = "https://www.kernel.org/pub/software/scm/git/git-manpages-${PV}.tar.gz
 
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
-SRC_URI[md5sum] = "b36a03d806207ebd38913fcc4e8053a6"
-SRC_URI[sha256sum] = "a8b2af48319a197c2359db9b4f01448827dd9a796e68510e162faee66ae11052"
+SRC_URI[md5sum] = "b5ddd262b608804ba4403f0f82d881d7"
+SRC_URI[sha256sum] = "69dcb3decdb33dd35491935e80f71c40c576b536df4223eb98d5f7ccd9643293"
 
 FILES_${PN}-doc = "${mandir}"
 
