@@ -16,6 +16,10 @@ SRC_URI += "file://xt-checksum.scc \
             file://vswitch.scc \
             file://lxc.scc \
             "
+
+# was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
+LINUX_VERSION_EXTENSION = "-op3"
+
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 
 KERNEL_MODULE_AUTOLOAD += "openvswitch"
