@@ -3,6 +3,8 @@
 LAYERS="meta-intel \
 	meta-openembedded \
 	meta-builder \
+	meta-networking \
+	meta-virtualization \
 	"
 	 
 if [ ! -d meta-builder ]; then
