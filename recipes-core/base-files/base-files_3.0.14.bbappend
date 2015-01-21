@@ -13,6 +13,8 @@ do_install_append () {
 	if [ "${SBIN_FOR_NON_ROOT}" = "1" ]; then
 		sed -i 's/SBIN_FOR_NON_ROOT=0/SBIN_FOR_NON_ROOT=1/' ${D}${sysconfdir}/profile
 	fi
+	echo "cgroup               /sys/fs/cgroup       cgroup     defaults              0  0" >> \
+		${D}${sysconfdir}/fstab
 }
 
 
