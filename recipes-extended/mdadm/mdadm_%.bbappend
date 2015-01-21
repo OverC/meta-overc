@@ -14,12 +14,12 @@ do_install_append() {
 # here is only 1/2 the job.  You will also need to update the initrd
 # version; either with initrd-tools "update-initramfs" or manually via:
 #
-# mv /boot/initramfs-3.16.0-yocto-standard.img  /boot/initramfs-3.16.0-yocto-standard.img~
+# mv /boot/initramfs-3.17.6-op3-standard.img  /boot/initramfs-3.17.6-op3-standard.img~
 # cd /tmp
 # rm -rf x ; mkdir x ; cd x
-# zcat /boot/initramfs-3.16.0-yocto-standard.img~ | cpio -id -H newc
+# zcat /boot/initramfs-3.17.6-op3-standard.img~ | cpio -id -H newc
 # cp -a /etc/mdadm/mdadm.conf ./etc/mdadm/mdadm.conf
-# find . | cpio -o -H newc |gzip -9 > /boot/initramfs-3.16.0-yocto-standard.img
+# find . | cpio -o -H newc |gzip -9 > /boot/initramfs-3.17.6-op3-standard.img
 
 # by default, scan all partitions (/proc/partitions) for MD superblocks.
 # alternatively, specify devices to scan, using wildcards if desired.
