@@ -15,6 +15,8 @@ do_install_append () {
 	fi
 	echo "cgroup               /sys/fs/cgroup       cgroup     defaults              0  0" >> \
 		${D}${sysconfdir}/fstab
+
+	sed -i 's,EDITOR="/bin/vi",EDITOR="vi",' ${D}${sysconfdir}/profile
 }
 
 
