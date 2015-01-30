@@ -172,6 +172,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     rpm \
     rpm-build \
     setserial \
+    smartmontools \
     socat \
     sudo \
     sysstat \
