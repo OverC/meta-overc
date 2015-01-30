@@ -10,5 +10,6 @@ RDEPENDS_${PN} = " \
     libvirt \
     libvirt-python \
     lxc \
+    lxc-setup \
     qemu \
 "
