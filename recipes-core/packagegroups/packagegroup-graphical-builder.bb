@@ -10,6 +10,7 @@ inherit packagegroup
 # mandatory
 RDEPENDS_${PN} = " \
     packagegroup-xfce-base \
+    lxdm \
 "
 
 # nice to have
