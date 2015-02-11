@@ -94,6 +94,12 @@ done
 
 cd $ROOT_MOUNT
 
+# If we pass args to bash, it will assume they are text files
+# to source and run.
+if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
+    CMDLINE=""
+fi
+
 # busybox switch_root supports -c option
 exec switch_root -c /dev/console $ROOT_MOUNT $INIT $CMDLINE ||
     fatal "Couldn't switch_root, dropping to shell"
