@@ -128,11 +128,9 @@ RDEPENDS_packagegroup-builder-extended = "\
     groff \
     grub \
     gzip \
-    settings-daemon \
     hicolor-icon-theme \
     ifupdown \
     inetutils \
-    sato-icon-theme \
     libaio \
     libusb1 \
     libxml2 \
@@ -171,7 +169,9 @@ RDEPENDS_packagegroup-builder-extended = "\
     readline \
     rpm \
     rpm-build \
+    sato-icon-theme \
     setserial \
+    settings-daemon \
     smartmontools \
     socat \
     sudo \
