@@ -139,6 +139,10 @@ Configure/install grub:
 	GRUB_DISABLE_LINUX_UUID=true grub-mkconfig > /boot/grub/grub.cfg
 	grub-install /dev/sda
 
+Ensure you see the "Found initrd image" message from grub.  If the version
+number of your kernel image name doesn't match the initrd version number
+in the name, it won't find it, but grub won't give an error either.
+
 Leave the chroot and the z dir:
 	exit
 	cd /
