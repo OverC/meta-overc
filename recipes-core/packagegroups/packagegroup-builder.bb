@@ -131,6 +131,8 @@ RDEPENDS_packagegroup-builder-extended = "\
     hicolor-icon-theme \
     ifupdown \
     inetutils \
+    kernel-image \
+    kernel-modules \
     libaio \
     libusb1 \
     libxml2 \
