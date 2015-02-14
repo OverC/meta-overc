@@ -122,7 +122,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     gettext \
     gettext-runtime \
     git \
-    git-manpages-doc \
     git-perltools \
     grep \
     groff \
