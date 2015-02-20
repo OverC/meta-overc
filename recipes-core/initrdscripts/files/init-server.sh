@@ -100,6 +100,5 @@ if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
     CMDLINE=""
 fi
 
-# busybox switch_root supports -c option
-exec switch_root -c /dev/console $ROOT_MOUNT $INIT $CMDLINE ||
+exec switch_root $ROOT_MOUNT $INIT $CMDLINE ||
     fatal "Couldn't switch_root, dropping to shell"
