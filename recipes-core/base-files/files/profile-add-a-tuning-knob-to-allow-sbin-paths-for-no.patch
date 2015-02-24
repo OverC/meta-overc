@@ -24,7 +24,7 @@ index 88ab8d877b0d..e3fb04df1dcd 100644
 +SBIN_FOR_NON_ROOT=0
 +
  PATH="/usr/local/bin:/usr/bin:/bin"
- EDITOR="/bin/vi"			# needed for packages like cron
+ EDITOR="vi"			# needed for packages like cron, git-commit
  test -z "$TERM" && TERM="vt100"	# Basic terminal capab. For screen etc.
 @@ -11,7 +15,7 @@ if [ ! -e /etc/localtime -a ! -e /etc/TZ ]; then
  	export TZ
