@@ -4,4 +4,8 @@ do_install_append() {
     # The default of keeping backup and undo files clutters "git status"
     # output, so use the VMS settings of nobackup for unix
     sed -i 's/has("vms")/has("unix")/' ${D}/${datadir}/${PN}/vimrc
+    # The default of incremental searching causes the screen to jump
+    # all over the place and makes you forget to hit enter to finalize
+    # the search, so disable it
+    sed -i 's/^set incsearch/# set incsearch/' ${D}/${datadir}/${PN}/vimrc
 }
