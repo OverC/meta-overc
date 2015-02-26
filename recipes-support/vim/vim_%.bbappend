@@ -7,7 +7,7 @@ do_install_append() {
     # The default of incremental searching causes the screen to jump
     # all over the place and makes you forget to hit enter to finalize
     # the search, so disable it
-    sed -i 's/^set incsearch/# set incsearch/' ${D}/${datadir}/${PN}/vimrc
+    sed -i 's/^set incsearch/" set incsearch/' ${D}/${datadir}/${PN}/vimrc
     # Jumping to the last known position in a file is annoying when a
     # temporary git commit log buffer always has the same file name, but
     # never the same content.
