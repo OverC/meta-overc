@@ -38,9 +38,6 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     hdparm \
     iptables \
     lsb \
-    xdg-utils \
-    leafpad \
-    pcmanfm \
     parted \
     pseudo \
     screen \
