@@ -41,6 +41,8 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     parted \
     pseudo \
     screen \
+    sed \
+    vim \
     vte \
     "
 
@@ -90,10 +92,8 @@ RDEPENDS_packagegroup-builder-sdk = "\
     pkgconfig \
     quilt \
     rpm-build \
-    sed \
     texi2html \
     texinfo \
-    vim \
     zile"
 
 RDEPENDS_packagegroup-builder-debug = " \
