@@ -39,11 +39,6 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     iptables \
     lsb \
     xdg-utils \
-    mc \
-    mc-fish \
-    mc-helpers \
-    mc-helpers-perl \
-    mc-helpers-python \
     leafpad \
     pcmanfm \
     parted \
