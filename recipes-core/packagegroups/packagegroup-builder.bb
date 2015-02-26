@@ -62,6 +62,8 @@ RDEPENDS_packagegroup-builder-sdk = "\
     coreutils \
     cpp \
     cpp-symlinks \
+    diffstat \
+    diffutils \
     eglibc-utils \
     file \
     findutils \
@@ -87,7 +89,10 @@ RDEPENDS_packagegroup-builder-sdk = "\
     perl-module-text-wrap \
     pkgconfig \
     quilt \
+    rpm-build \
     sed \
+    texi2html \
+    texinfo \
     vim \
     zile"
 
@@ -106,8 +111,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     chrpath \
     cpio \
     curl \
-    diffstat \
-    diffutils \
     dpkg \
     elfutils \
     expat \
@@ -162,7 +165,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     quota \
     readline \
     rpm \
-    rpm-build \
     sato-icon-theme \
     setserial \
     settings-daemon \
@@ -172,8 +174,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     sysstat \
     tar \
     tcl \
-    texi2html \
-    texinfo \
     traceroute \
     unzip \
     usbutils \
