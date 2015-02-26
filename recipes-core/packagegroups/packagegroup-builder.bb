@@ -43,7 +43,6 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     screen \
     sed \
     vim \
-    vte \
     "
 
 RRECOMMENDS_packagegroup-builder-host-tools = "\
