@@ -69,6 +69,9 @@ RDEPENDS_packagegroup-builder-sdk = "\
     g++-symlinks \
     gcc \
     gcc-symlinks \
+    git \
+    git-bash-completion \
+    git-perltools \
     intltool \
     ldd \
     less \
@@ -113,9 +116,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     gdbm \
     gettext \
     gettext-runtime \
-    git \
-    git-bash-completion \
-    git-perltools \
     grep \
     groff \
     grub \
