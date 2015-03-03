@@ -61,6 +61,11 @@ KMACHINE_genericx86-64 ?= "common-pc-64"
 # MACHINE ??= "qemux86"
 
 #
+# Hostname to be used on the deployed target image
+#
+# TARGETNAME = "mystylinkit"
+
+#
 # Where to place downloads
 #
 # During a first build the system will download many different source code tarballs
