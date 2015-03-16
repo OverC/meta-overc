@@ -29,6 +29,7 @@ RDEPENDS_packagegroup-builder = "\
     "
 
 RDEPENDS_packagegroup-builder-host-tools = "\
+    btrfs-tools \
     debianutils \
     dhcp-client \
     e2fsprogs \
@@ -173,6 +174,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     sysstat \
     tar \
     tcl \
+    tcpdump \
     traceroute \
     unzip \
     usbutils \
