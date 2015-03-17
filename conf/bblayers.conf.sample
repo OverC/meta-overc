@@ -9,7 +9,6 @@ BBLAYERS ?= " \
   /home/paul/poky/meta \
   /home/paul/poky/meta-yocto \
   /home/paul/poky/meta-yocto-bsp \
-  /home/paul/poky/meta-intel \
   /home/paul/poky/meta-builder \
   /home/paul/poky/meta-openembedded/meta-oe \
   /home/paul/poky/meta-openembedded/meta-gnome \
