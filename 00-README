@@ -14,9 +14,6 @@ that gap.
 Requirements:
 =============
 
-To provide an actual BSP, for i7 we need:
-	git://git.pokylinux.org/meta-intel
-
 To provide critical system components, such as vim, we need:
 	git://git.openembedded.org/meta-openembedded
 
@@ -37,8 +34,8 @@ Deployment:
 Once the build is complete, you will have two files of interest in
 the normal tmp/deploy/images dir:
 
-	intel-corei7-64/op3-builder-intel-corei7-64.tar.bz2
-	intel-corei7-64/op3-builder-initramfs-intel-corei7-64.cpio.gz
+	genericx86-64/op3-graphical-builder-genericx86-64.tar.bz2
+	genericx86-64/op3-builder-initramfs-genericx86-64.cpio.gz
 
 For a simple, single disk deployment, the initramfs is optional.  However
 on a multi-disk deployment, where RAID0 is desired to get twice the I/O
@@ -97,11 +94,11 @@ Mount the boot partition:
 	mount -v /dev/sda1 boot
 
 Copy the initramfs into boot:
-	cp ~/op3-builder-initramfs-intel-corei7-64.cpio.gz boot/initramfs-3.19.0-op3.img
+	cp ~/op3-builder-initramfs-genericx86-64.cpio.gz boot/initramfs-3.19.0-op3.img
 
 Unbundle the rootfs image:
 	cd /z
-	tar --numeric-owner -xpf ~/op3-builder-intel-corei7-64.tar.bz2
+	tar --numeric-owner -xpf ~/op3-builder-genericx86-64.tar.bz2
 
 Chroot into the rootfs to do some remaining post installation configuration
 	cd /z
