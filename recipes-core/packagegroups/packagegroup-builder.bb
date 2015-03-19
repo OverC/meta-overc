@@ -111,6 +111,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     chrpath \
     cpio \
     curl \
+    dmidecode \
     dpkg \
     elfutils \
     expat \
