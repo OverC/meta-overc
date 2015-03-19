@@ -104,8 +104,9 @@ Chroot into the rootfs to do some remaining post installation configuration
 	cd /z
 	chroot . /bin/bash
 
-Make device nodes appear so that programs will function normally:
-	mount -t devtmpfs /dev /dev
+Make device nodes and proc appear so that programs will function normally:
+	mount -vt devtmpfs /dev /dev
+	mount -v /proc
 
 Set root password:
 	passwd
