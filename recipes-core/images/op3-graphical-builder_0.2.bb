@@ -15,7 +15,8 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-core-full-cmdline \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
-                  packagegroup-graphical-builder \
+		  packagegroup-container \
+		  packagegroup-graphical-builder \
 		  ${OP3_BUILDER_EXTRA_INSTALL} \
 		 "
 
