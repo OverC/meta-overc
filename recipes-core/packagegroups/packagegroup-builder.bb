@@ -17,6 +17,7 @@ PACKAGES = "\
     packagegroup-builder-sdk \
     packagegroup-builder-extended \
     packagegroup-builder-graphics \
+    packagegroup-builder-networking \
     packagegroup-builder-host-tools \
     "
 
@@ -25,6 +26,7 @@ RDEPENDS_packagegroup-builder = "\
     packagegroup-builder-sdk \
     packagegroup-builder-extended \
     packagegroup-builder-graphics \
+    packagegroup-builder-networking \
     packagegroup-builder-host-tools \
     "
 
@@ -190,6 +192,10 @@ RDEPENDS_packagegroup-builder-extended = "\
     xz \
     "
 
+RDEPENDS_packagegroup-builder-networking = "\
+    bind \
+    bind-utils \
+    "
 
 RDEPENDS_packagegroup-builder-graphics = "\
     libgl \
