@@ -1,0 +1,5 @@
+define KFEATURE_DESCRIPTION "Enable Extra Features needed by criu"
+define KFEATURE_COMPATIBILITY board
+
+kconf non-hardware criu.cfg
+

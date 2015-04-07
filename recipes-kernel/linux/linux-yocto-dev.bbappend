@@ -15,6 +15,8 @@ SRC_URI += "file://xt-checksum.scc \
             file://ebtables.scc \
             file://vswitch.scc \
             file://lxc.scc \
+            file://docker.scc \
+            file://criu.scc \
             "
 
 # was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
