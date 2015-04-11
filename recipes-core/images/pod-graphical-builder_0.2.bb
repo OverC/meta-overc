@@ -1,5 +1,5 @@
-SUMMARY = "An image creating a file system for domain 0 container"
-DESCRIPTION = "An image to be used as the file system for domain 0 container."
+SUMMARY = "An image creating a file system for a build server itself"
+DESCRIPTION = "An image capable of building the system that you can deploy on a server."
 HOMEPAGE = "http://www.windriver.com"
 
 # fixme ; point at layer copy someday.
@@ -7,7 +7,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-OP3_BUILDER_EXTRA_INSTALL ?= ""
+POD_BUILDER_EXTRA_INSTALL ?= ""
 
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \
@@ -15,8 +15,9 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-core-full-cmdline \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
-                  packagegroup-dom0 \
-		  ${OP3_BUILDER_EXTRA_INSTALL} \
+		  packagegroup-container \
+		  packagegroup-graphical-builder \
+		  ${POD_BUILDER_EXTRA_INSTALL} \
 		 "
 
 XSERVER_append = " xserver-xorg \

@@ -11,6 +11,6 @@ python builder_set_hostname() {
     if status:
         bb.warn("Can't get the date string for target hostname")
 
-    targetname = "op3-%s" %  date
+    targetname = "pod-%s" %  date
     d.setVar("TARGETNAME", targetname)
 }

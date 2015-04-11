@@ -7,7 +7,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
 		    file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-OP3_BUILDER_EXTRA_INSTALL ?= ""
+POD_BUILDER_EXTRA_INSTALL ?= ""
 
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \
@@ -16,7 +16,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
 		  packagegroup-container \
-		  ${OP3_BUILDER_EXTRA_INSTALL} \
+		  ${POD_BUILDER_EXTRA_INSTALL} \
 		 "
 
 IMAGE_FEATURES += "package-management doc-pkgs"

@@ -20,7 +20,7 @@ SRC_URI += "file://xt-checksum.scc \
             "
 
 # was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
-LINUX_VERSION_EXTENSION = "-op3"
+LINUX_VERSION_EXTENSION = "-pod"
 
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 
@@ -30,3 +30,4 @@ KERNEL_MODULE_AUTOLOAD += "kvm-amd"
 KERNEL_MODULE_AUTOLOAD += "kvm-intel"
 
 KERNEL_FEATURES_append += "${@base_contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
+KERNEL_FEATURES_append = " cfg/systemd.scc"
