@@ -195,6 +195,8 @@ RDEPENDS_packagegroup-builder-extended = "\
 RDEPENDS_packagegroup-builder-networking = "\
     bind \
     bind-utils \
+    mutt \
+    msmtp \
     "
 
 RDEPENDS_packagegroup-builder-graphics = "\
