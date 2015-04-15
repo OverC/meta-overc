@@ -4,6 +4,7 @@ the Minimal RAM-based Initial Root Filesystem (initramfs), which finds the \
 first 'init' program more efficiently."
 
 PACKAGE_INSTALL = "initramfs-pod-builder bash kmod bzip2 vim which sed tar kbd coreutils util-linux grep gawk udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL}"
+PACKAGE_EXCLUDE = "busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog"
 
 # Do not pollute the initrd image with rootfs features
 IMAGE_FEATURES = ""

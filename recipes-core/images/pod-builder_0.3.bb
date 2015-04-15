@@ -9,6 +9,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 
 POD_BUILDER_EXTRA_INSTALL ?= ""
 
+PACKAGE_EXCLUDE = "busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog"
+
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-core-ssh-openssh \
