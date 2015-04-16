@@ -9,7 +9,7 @@ builder_configure_host() {
 
 }
 
-ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit_network; ', 'systemd_network; ', d)}"
+ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit_network; ', 'systemd_bridged_network; ', d)}"
 
 systemd_network () {
         install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
@@ -27,6 +27,41 @@ Name=eth*
 
 [Network]
 DHCP=yes
+EOF
+}
+
+systemd_bridged_network () {
+
+        install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
+
+        cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/bridge.netdev
+[NetDev]
+Name=br0
+Kind=bridge
+EOF
+
+        cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/bridge.network
+[Match]
+Name=br0
+
+[Network]
+DHCP=v4
+EOF
+
+        cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/wired.network
+[Match]
+Name=en*
+
+[Network]
+Bridge=br0
+EOF
+
+        cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/wired-network-ifnames.network
+[Match]
+Name=eth*
+
+[Network]
+Bridge=br0
 EOF
 }
 
