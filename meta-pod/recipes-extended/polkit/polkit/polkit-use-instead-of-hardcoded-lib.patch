@@ -10,10 +10,10 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
  src/polkitbackend/Makefile.am | 3 ++-
  3 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/data/Makefile.am b/data/Makefile.am
-index 426dc33f025c..d69e08503cb9 100644
---- a/data/Makefile.am
-+++ b/data/Makefile.am
+Index: polkit-0.112/data/Makefile.am
+===================================================================
+--- polkit-0.112.orig/data/Makefile.am
++++ polkit-0.112/data/Makefile.am
 @@ -2,7 +2,7 @@
  
  NULL =
@@ -23,34 +23,27 @@ index 426dc33f025c..d69e08503cb9 100644
  
  # ----------------------------------------------------------------------------------------------------
  
-diff --git a/src/polkitagent/Makefile.am b/src/polkitagent/Makefile.am
-index 3bc364e5b02a..9d4d7545431e 100644
---- a/src/polkitagent/Makefile.am
-+++ b/src/polkitagent/Makefile.am
-@@ -78,7 +78,8 @@ libpolkit_agent_1_la_LIBADD =                               		\
+Index: polkit-0.112/src/polkitagent/Makefile.am
+===================================================================
+--- polkit-0.112.orig/src/polkitagent/Makefile.am
++++ polkit-0.112/src/polkitagent/Makefile.am
+@@ -78,6 +78,7 @@ libpolkit_agent_1_la_LIBADD =
  
  libpolkit_agent_1_la_LDFLAGS = -export-symbols-regex '(^polkit_.*)'
  
--libprivdir = $(prefix)/lib/polkit-1
-+#libprivdir = $(prefix)/lib/polkit-1
-+libprivdir = $(libdir)/polkit-1
++#libprivdir = $(libdir)/polkit-1
+ libprivdir = $(libdir)/polkit-1
  libpriv_PROGRAMS = polkit-agent-helper-1
  
- polkit_agent_helper_1_SOURCES = 					\
-diff --git a/src/polkitbackend/Makefile.am b/src/polkitbackend/Makefile.am
-index 9f430d0d7e53..2e9fb0ad88b6 100644
---- a/src/polkitbackend/Makefile.am
-+++ b/src/polkitbackend/Makefile.am
-@@ -67,7 +67,8 @@ rules_DATA = 50-default.rules
+Index: polkit-0.112/src/polkitbackend/Makefile.am
+===================================================================
+--- polkit-0.112.orig/src/polkitbackend/Makefile.am
++++ polkit-0.112/src/polkitbackend/Makefile.am
+@@ -67,6 +67,7 @@ rules_DATA = 50-default.rules
  
  # ----------------------------------------------------------------------------------------------------
  
--libprivdir = $(prefix)/lib/polkit-1
-+#libprivdir = $(prefix)/lib/polkit-1
-+libprivdir = $(libdir)/polkit-1
++#libprivdir = $(libdir)/polkit-1
+ libprivdir = $(libdir)/polkit-1
  libpriv_PROGRAMS = polkitd
  
- polkitd_SOURCES = 							\
--- 
-2.1.0
-
