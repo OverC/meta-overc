@@ -18,6 +18,12 @@ branch: master
 revision: HEAD
 prio: default
 
+URI: git://git.pokylinux.org/poky
+branch: master
+revision: HEAD
+layers: meta-yocto-bsp
+prio: default
+
 URI: git://github.com/openembedded/meta-oe.git
 branch: master
 revision: HEAD
