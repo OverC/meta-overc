@@ -1,0 +1,50 @@
+meta-overc/meta-pod
+===================
+
+The goal of this layer is to create a yocto build which can be deployed on a
+modern server to provide a useable environment which in turn can build yocto
+(and indeed the variant from this layer itself).  A lot of the heavy lifting
+to achieve this has been done by the build-appliance image type of yocto, but
+that is limited to virtual deployment, and does not have all the development
+tools and/or man pages and things like tab completion that make a system
+"useable".  This layer attempts to close that gap.
+
+Dependencies
+------------
+This layer depends on:
+
+URI: git://github.com/openembedded/oe-core.git
+branch: master
+revision: HEAD
+prio: default
+
+URI: git://github.com/openembedded/meta-oe.git
+branch: master
+revision: HEAD
+layers: meta-oe
+        meta-networking
+        meta-filesystems
+        meta-python
+        meta-gnome
+        meta-xfce
+        meta-multimedia
+        meta-virtualization
+
+URI: git://github.com/OSSystems/meta-browser.git
+branch: master
+revision: HEAD
+prio: default
+
+Maintenance
+-----------
+
+Send pull requests, patches, comments or questions to bruce.ashfield@windriver.com
+
+Maintainers: Bruce Ashfield <bruce.ashfield@gmail.com>
+
+License
+-------
+
+All metadata is MIT licensed unless otherwise stated. Source code included
+in tree for individual recipes is under the LICENSE stated in each recipe
+(.bb file) unless otherwise stated.
