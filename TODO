@@ -1,0 +1,11 @@
+Pending Items (In priority Order):
+-----------------------------------
+
+  - simple overc installer release
+
+  - drop yocto dependency and use oe-core exclusively
+   
+  - container updates and definitions
+      - lxd, docker and domains
+  
+  - documentation and architectural overview
