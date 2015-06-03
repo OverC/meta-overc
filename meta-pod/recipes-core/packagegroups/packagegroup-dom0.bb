@@ -1,26 +1,60 @@
-SUMMARY = "All packages for domain 0 container"
-SECTION = "x11/wm"
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690"
+#
+# Original packagegroup Copyright (C) 2010 Intel Corporation
+#
+# dom0 variant Copyright (C) 2015 Wind River
+#
 
-PR = "r1"
+SUMMARY = "Domain 0 facilities for OverC"
+DESCRIPTION = "Packages required to define domain 0 pod for OverC"
+LICENSE = "MIT"
+
 
 inherit packagegroup
 
-PACKAGES = "\
-    packagegroup-dom0 \
-    packagegroup-dom0-extended \
-"
+require overc-common-pkgdefs.inc
 
-# mandatory
-RDEPENDS_${PN} = " \
-    packagegroup-xfce \
-    packagegroup-dom0-extended \
-"
+PACKAGES = "\
+     packagegroup-dom0 \
+     packagegroup-dom0-doc \
+     packagegroup-dom0-fs \
+     packagegroup-dom0-extended \
+     packagegroup-dom0-networking \
+     packagegroup-dom0-perl \
+     packagegroup-dom0-tools \
+    "
+
+RDEPENDS_packagegroup-dom0 = "\
+     packagegroup-dom0-doc \
+     packagegroup-dom0-fs \
+     packagegroup-dom0-extended \
+     packagegroup-dom0-networking \
+     packagegroup-dom0-perl \
+     packagegroup-dom0-tools \
+    "
+
+RDEPENDS_packagegroup-dom0-fs = " \
+     ${OVERC_COMMON_DISK} \
+     ${OVERC_COMMON_FS} \
+    "
+
+RDEPENDS_packagegroup-dom0-doc = " \
+     ${OVERC_COMMON_DOC} \
+    "
+
+RDEPENDS_packagegroup-dom0-perl = " \
+     ${OVERC_COMMON_PERL} \
+    "
 
 RDEPENDS_packagegroup-dom0-extended = "\
-    ntp \
-    ntpdate \
-    ntp-tickadj \
-    ntp-utils \
-"
+     ${OVERC_COMMON_EXTENDED} \
+     ${OVERC_EXTRA_EXTENDED} \
+    "
+
+RDEPENDS_packagegroup-dom0-networking = "\
+     ${OVERC_COMMON_NETWORKING} \
+     ${OVERC_EXTRA_NETWORKING} \
+    "
+
+RDEPENDS_packagegroup-dom0-tools = "\
+     ${OVERC_COMMON_TOOLS} \
+    "
