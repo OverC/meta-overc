@@ -14,8 +14,6 @@ SRC_URI = "http://archive.ubuntu.com/ubuntu/pool/main/i/ifupdown/ifupdown_0.7.48
 
 EXTRA_OEMAKE = ""
 
-FILES_${PN} += "/run/network"
-
 # needed so we don't get default S="${WORKDIR}/ifupdown-${PV}"
 S = "${WORKDIR}/ifupdown-${PV}ubuntu5"
 
@@ -29,9 +27,8 @@ do_compile () {
 
 do_install () {
 	install -d ${D}${mandir}/man8 \
-		   ${D}${mandir}/man5 \
-		   ${D}${base_sbindir} \
-		   ${D}${localstatedir}/run/network
+		  ${D}${mandir}/man5 \
+		  ${D}${base_sbindir}
 
 	# If volatiles are used, then we'll also need /run/network there too.
 	install -d ${D}/etc/default/volatiles
