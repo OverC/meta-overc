@@ -32,6 +32,15 @@ OVERC_COMMON_EXTENDED = " \
      vim \
      which \
      zile \
+     zip \
+     gawk \
+     bzip2 \
+     procps \
+     util-linux \
+     kmod \
+     sed \
+     coreutils \
+     e2fsprogs \
     "
 
 OVERC_EXTRA_EXTENDED = "\
@@ -97,5 +106,4 @@ OVERC_COMMON_TOOLS = "\
      sudo \
      tcl \
      time \
-     zip \
     "
