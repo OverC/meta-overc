@@ -5,14 +5,16 @@
 # to just be a container control mechanism, with the extra facilities
 # residing in other domain containers.
 
-IMAGE_INSTALL = "${DOM0_MAIN_PKGS} \
-                 packagegroup-core-full-cmdline \
-                 packagegroup-builder \
-                 packagegroup-xfce \
-                 ntp \
-                 ntpdate \
-                 ntp-utils \
-                "
+include pod-dom0.bb
+
+IMAGE_INSTALL_append = "${DOM0_MAIN_PKGS} \
+                        packagegroup-core-full-cmdline \
+                        packagegroup-builder \
+                        packagegroup-xfce \
+                        ntp \
+                        ntpdate \
+                        ntp-utils \
+                       "
 
 XSERVER_append = "xserver-xorg \
                   xserver-xorg-extension-dri \
