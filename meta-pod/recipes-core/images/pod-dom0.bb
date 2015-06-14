@@ -12,6 +12,8 @@ POD_DOM0_EXTRA_INSTALL ?= " "
 
 PACKAGE_EXCLUDE = "busybox* "
 
+PV = "0.4"
+
 DOM0_MAIN_PKGS = "packagegroup-core-boot \
                   packagegroup-dom0 \
                   packagegroup-util-linux \
