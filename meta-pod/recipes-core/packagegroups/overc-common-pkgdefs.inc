@@ -23,6 +23,7 @@ OVERC_COMMON_EXTENDED = " \
      grub \
      gzip \
      iso-codes \
+     kernel-modules \
      less \
      ncurses-terminfo \
      pciutils \
@@ -61,6 +62,7 @@ OVERC_COMMON_NETWORKING = "\
      inetutils \
      iproute2 \
      iputils \
+     iptables \
      net-tools \
      netcat \
     "
