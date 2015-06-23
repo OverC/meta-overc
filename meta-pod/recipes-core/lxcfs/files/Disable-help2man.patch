@@ -1,0 +1,29 @@
+From 99257a3a94e08c8274e5c4139354b695aafaeab9 Mon Sep 17 00:00:00 2001
+Message-Id: <99257a3a94e08c8274e5c4139354b695aafaeab9.1434491876.git.Jim.Somerville@windriver.com>
+From: Jim Somerville <Jim.Somerville@windriver.com>
+Date: Tue, 16 Jun 2015 17:57:22 -0400
+Subject: [PATCH 1/1] Disable help2man
+
+It isn't compatible with a cross compiled
+environment anyway.
+
+Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
+---
+ configure.ac | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configure.ac b/configure.ac
+index 05a1c02..24e41ad 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -30,6 +30,7 @@ AC_CHECK_LIB(cgmanager, cgmanager_list_controllers_sync, [], AC_MSG_ERROR(["cgma
+ AC_CHECK_LIB(cgmanager, cgmanager_list_keys_sync, [], AC_MSG_ERROR(["cgmanager 0.35 or higher is required"]))
+ 
+ AC_PATH_PROG(HELP2MAN, help2man, false // No help2man //)
++HELP2MAN="false // No help2man //"
+ AM_CONDITIONAL([HAVE_HELP2MAN], [test "x$HELP2MAN" != "xfalse // No help2man //" ])
+ 
+ AS_AC_EXPAND(LXCFSSHAREDIR, "$datarootdir/lxcfs")
+-- 
+1.8.3.2
+
