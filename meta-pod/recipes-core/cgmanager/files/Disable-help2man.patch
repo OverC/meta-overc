@@ -1,0 +1,29 @@
+From 2b05fb24bceceb28643e3e03e448f826dab4a79a Mon Sep 17 00:00:00 2001
+Message-Id: <2b05fb24bceceb28643e3e03e448f826dab4a79a.1433795261.git.Jim.Somerville@windriver.com>
+From: Jim Somerville <Jim.Somerville@windriver.com>
+Date: Mon, 8 Jun 2015 16:26:50 -0400
+Subject: [PATCH 1/1] Disable help2man
+
+It isn't compatible with a cross compiled
+environment anyway.
+
+Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
+---
+ configure.ac | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configure.ac b/configure.ac
+index 2df14ae..a6e16e2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -123,6 +123,7 @@ AM_CONDITIONAL([INIT_SCRIPT_UPSTART], [echo "$init_script" |grep -q "upstart"])
+ AC_MSG_RESULT($init_script)
+ 
+ AC_PATH_PROG(HELP2MAN, help2man, false // No help2man //)
++HELP2MAN="false // No help2man //"
+ AM_CONDITIONAL([HAVE_HELP2MAN], [test "x$HELP2MAN" != "xfalse // No help2man //" ])
+ 
+ AS_AC_EXPAND(SBINDIR, "$sbindir")
+-- 
+1.8.3.2
+
