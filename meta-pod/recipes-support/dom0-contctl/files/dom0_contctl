@@ -1,0 +1,124 @@
+#! /bin/bash
+
+
+function usage {
+    cat << EOF
+
+Usage: ${0##*/} <cmd> [option]...
+
+Common options for all <cmd>:
+
+   -t <container type>       : type of container including: lxc, lxd, docker.
+                               Default is lxc.
+
+${0##*/} launch-peer [option]...
+
+    start a peer container
+
+   -n <container name>: Name of container to be launched
+   -a <host proc path>: absolute path to bind mount to host proc
+
+${0##*/} launch-nested [option]...
+
+    start a nested container
+
+   -n <container name>       : Name of container to be launched
+   -p <parent container name>: Name of parent container
+
+${0##*/} enter-ns [option]...
+
+    enter-ns: enter namespaces of container
+
+   -n <container name>       : Name of container to be launched
+
+${0##*/} stop [option]...
+
+    stop an active container
+
+   -n <container name>       : Name of container to be launched
+
+${0##*/} list [option]...
+
+    list all containers and their state
+
+${0##*/} exec-cmd [option]... -- <shell command with options>
+
+    invoke a shell cmd against a container
+
+   -n <container name>       : Name of container to be launched
+EOF
+}
+
+
+cmd=${1}
+# What container type we support
+container_type="lxc"
+host_proc_path="/host/proc"
+container_name=""
+parent_container_name=""
+
+
+OPTIND=2
+while getopts "h?n:t:p:a:" opt; do
+    case "$opt" in
+    n)
+        container_name=$OPTARG
+        ;;
+    t)
+        container_type=$OPTARG
+        ;;
+    a)
+        host_proc_path=$OPTARG
+        ;;
+    p)
+        parent_container_name=$OPTARG
+        ;;
+    *)
+        usage
+        exit 0
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Now load correct backend driver
+case "${container_type}" in
+    lxc)
+        source `dirname $0`/lxc_driver.sh
+        ;;
+    *)
+        echo "Error, backend driver ${container_type} is not supported."
+        exit 1
+        ;;
+esac
+
+case "${cmd}" in
+    launch-peer)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        launch_peer_container ${container_name} ${host_proc_path}
+        ;;
+    launch-nested)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        [ -z "${parent_container_name}" ] && \
+                echo "Error, please provide parent container name" && exit 1
+        launch_nested_container ${container_name} ${parent_container_name}
+        ;;
+    enter-ns)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        enter_container_ns ${container_name}
+        ;;
+    stop)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        stop_container ${container_name}
+        ;;
+    list)
+        list_containers
+        ;;
+    exec-cmd)
+		[ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        exec_cmd_container ${container_name} $@
+        ;;
+    *)
+        usage
+        ;;
+esac

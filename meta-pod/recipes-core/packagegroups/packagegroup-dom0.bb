@@ -57,4 +57,5 @@ RDEPENDS_packagegroup-dom0-networking = "\
 
 RDEPENDS_packagegroup-dom0-tools = "\
      ${OVERC_COMMON_TOOLS} \
+     dom0-contctl \
     "
