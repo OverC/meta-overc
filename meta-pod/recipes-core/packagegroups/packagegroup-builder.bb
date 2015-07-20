@@ -117,7 +117,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     dpkg \
     elfutils \
     expat \
-    gamin \
     gawk \
     gdbm \
     gettext \

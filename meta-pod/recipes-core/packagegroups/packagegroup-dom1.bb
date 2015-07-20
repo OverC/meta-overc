@@ -34,7 +34,6 @@ RDEPENDS_packagegroup-dom1-fs = " \
      dosfstools \
      fuse \
      fuse-utils \
-     gamin \
      nfs-utils \
      nfs-utils-client \
     "
