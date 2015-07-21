@@ -89,7 +89,7 @@ fi
 # the corresponding directories under the real root filesystem.
 for dir in `cat /proc/mounts | grep -v rootfs | awk '{print $2}'` ; do
     mkdir -p  ${ROOT_MOUNT}/${dir##*/}
-    mount -n --move $dir ${ROOT_MOUNT}/${dir##*/}
+    mount -nv --move $dir ${ROOT_MOUNT}/${dir##*/}
 done
 
 cd $ROOT_MOUNT
