@@ -1,12 +1,12 @@
 #!/bin/sh
 
 LAYERS="meta-openembedded \
-	meta-builder \
 	meta-virtualization \
+	meta-overc \
 	"
 	 
-if [ ! -d meta-builder ]; then
-	echo I do not see a meta-builder subdir.  Are you in poky dir\?
+if [ ! -d meta-overc ]; then
+	echo I do not see a meta-overc subdir.  Are you in poky dir\?
 	exit 1
 fi
 
