@@ -9,13 +9,14 @@ BBLAYERS ?= " \
   /home/paul/poky/meta \
   /home/paul/poky/meta-yocto \
   /home/paul/poky/meta-yocto-bsp \
-  /home/paul/poky/meta-builder \
+  /home/paul/poky/meta-overc/meta-pod \
   /home/paul/poky/meta-openembedded/meta-oe \
   /home/paul/poky/meta-openembedded/meta-gnome \
   /home/paul/poky/meta-openembedded/meta-xfce \
   /home/paul/poky/meta-virtualization \
   /home/paul/poky/meta-openembedded/meta-python \
   /home/paul/poky/meta-openembedded/meta-networking \
+  /home/paul/poky/meta-openembedded/meta-multimedia \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   /home/paul/poky/meta \
