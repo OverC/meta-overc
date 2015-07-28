@@ -1,0 +1,133 @@
+OverC Overview
+------------------
+
+OverC is composed of building blocks (pods) that implement a set of related
+functionality. The current pods are:
+
+ - dom0: provides control services to the platform and is responsible for
+         launching other containers in the system. Dom0 is not manipulated
+         by non admin users.
+ - dom1: provides system services (such as ntpd, etc) to the platform. This
+         is not used by a typical user.
+ - domE: provides full 'enterprise' functionality. This includes man pages,
+         development tools, graphical desktop, etc. This domain is the primary
+         environment for most users.
+
+OverC also has two essential image types, that provide a foundation for the
+container runtimes. These are:
+
+ - pod-builder: This is the image which lists all the packages required to
+                boot the platform. pod-builder is also capable of self
+                hosting and building the platform itself.
+ - pod-essential: This is a minimal runtime which is used for both the
+                  installer
+
+
+OverC build
+-----------
+
+Clone the layers described in the meta-overc/README, and build the images
+mentioned in the overview:
+
+  % bitbake pod-dom0 pod-dom1 pod-domE pod-essential pod-builder
+
+This will take some time, since multiple images and configurations are
+being build and assembled.
+
+  Note: you can also find images at: http://openlinux.windriver.com/overc/images
+
+Once the build (or download) completes, the build artifacts must be assembled
+into an installer image (see the following sections).
+
+OverC installer
+---------------
+
+The OverC installer must be assembled from build artifacts, and provides a 
+bootable USB stick that is capable of installing to a hard disk on the 
+target system. It also completes required installation and configuration of
+the components that make up the core system (dom0, dom1, domE, essential).
+
+The OverC installer is available from the following repository:
+
+  https://github.com/WindRiver-OpenSourceLabs/overc-installer.git
+
+Once cloned, the installer must be configured for your target device (Sample
+configurations are provided).
+
+The following sample shows how to create an installer on a network block 
+device, with the outputs of a typical OverC build. Changing the target device
+to a USB stick results in an installer that boots and runs on most x86 targets.
+
+ % cd usbhdinstaller
+ % mkdir ~/.overc
+ % cp config/config-usb-pod.sh.sample ~/.overc/config-usb-pod.sh
+ % cp config/config-usb.sh.sample ~/.overc/config-usb.sh
+
+Edit the variables in config-usb.sh to suit the build and desired installation.
+In particular:
+
+ ARTIFACTS_DIR: set this to the directory containing the built images and kernel
+
+And confirm that the following outputs exist in the artifacts directory:
+
+ INSTALL_KERNEL="${ARTIFACTS_DIR}/bzImage"
+ INSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
+ INSTALL_INITRAMFS="${ARTIFACTS_DIR}/pod-builder-initramfs-genericx86-64.cpio.gz"
+
+Finally, edit config-usb-pod.sh.sample to list the containers and essential rootfs
+that is to be installed. This is typically:
+
+ HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
+
+ HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/pod-dom0-genericx86-64.tar.bz2 \
+                       ${ARTIFACTS_DIR}/pod-dom1-genericx86-64.tar.bz2 \
+                       ${ARTIFACTS_DIR}/pod-domE-genericx86-64.tar.bz2"
+
+At this point we have the payload to create a bootable USB disk prepared. The
+scripts (or applications) that perform the final install to the target device
+are found in the installers/ subdirectory. The installers can be simple, or
+complex, and should be edited to suit the desired target runtime.
+
+pod-install.sh is capable of partitioning a device, installing the essential 
+rootfs, configuring grub, extracting container payloads and rebooting the
+device. It serves as a good example for other custom installers.
+
+Once the installer(s) have been modified to suit the target device, the
+following example command produces a bootable nbd USB device (assuming that a
+nbd has been created properly started):
+
+ % sudo ./sbin/usb-creator.sh --config ~/.overc/config-usb-pod.sh `pwd` /dev/nbd0
+
+We now have a bootable device, with an embedded installer + installation payload.
+
+OverC installation
+------------------
+
+Once a bootable installer has been created, insert it into the target and
+boot. The default USB bootable image runs pod-essential, with the login of
+root and no password.
+
+After logging into the bootable device, the installer should be run to move
+artifacts to their final destination device.
+
+In our pod-install.sh example from above, the following commands should be
+run (assuming an installation to a second virtual disk):
+
+ % cd /opt/installer/
+ % ./sbin/pod-install.sh images/pod-essential-* vdb
+
+Once this completes, the device is powered off, and is ready with the OverC
+runtime.
+
+OverC runtime
+-------------
+
+Assuming that domE has been installed, once booted, a graphical XFCE desktop is
+provided. Normal operations such as:
+
+  - package additions
+  - local development
+  - upgrades
+
+Other containers in the system can be accessed via their avahi address. i.e.
+ssh dom0.local to access dom0 once running inside domE.
