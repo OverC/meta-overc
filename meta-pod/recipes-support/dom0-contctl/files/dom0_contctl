@@ -59,7 +59,7 @@ parent_container_name=""
 
 
 OPTIND=2
-while getopts "h?n:t:p:a:" opt; do
+while getopts "h?n:t:p:a:g:" opt; do
     case "$opt" in
     n)
         container_name=$OPTARG
@@ -73,6 +73,9 @@ while getopts "h?n:t:p:a:" opt; do
     p)
         parent_container_name=$OPTARG
         ;;
+    g)
+	start_group=$OPTARG
+	;;
     *)
         usage
         exit 0
@@ -92,10 +95,23 @@ case "${container_type}" in
         ;;
 esac
 
+if [ -n "${start_group}" ]; then
+    echo "Start group (${start_group}) passed, building container start list"
+    start_containers=`get_matching_container_group ${start_group}`
+fi
+
 case "${cmd}" in
     launch-peer)
-        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
-        launch_peer_container ${container_name} ${host_proc_path}
+	if [ -z "${start_containers}" ]; then
+	    start_containers=${container_name}
+	fi
+	    
+        [ -z "${start_containers}" ] && echo "Error, please provide container name" && exit 1
+
+	for c in ${start_containers}; do
+	    echo "Launching ${c} as peer"
+            launch_peer_container ${c} ${host_proc_path}
+	done
         ;;
     launch-nested)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1

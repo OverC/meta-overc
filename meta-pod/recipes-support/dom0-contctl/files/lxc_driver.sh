@@ -1,5 +1,27 @@
 #! /bin/bash
 
+function get_matching_container_group {
+    local start_group=${1}
+
+    # look in /var/lib/lxc/<container>/config for groups that match
+    local lxcbase=${LXCBASE}
+    if [ -z "${lxcbase}" ]; then
+	lxcbase=/var/lib/lxc
+    fi
+
+    matches=""
+    for c in `ls ${lxcbase}/`; do
+	if [ -f "${lxcbase}/${c}/config" ]; then
+	    group=`grep lxc.group "${lxcbase}/${c}/config" | cut -f2 -d'=' | sed 's/ *//'`
+	    if [ "${group}" == "${start_group}" ]; then
+		matches="${matches} ${c}"
+	    fi
+	fi
+    done
+
+    echo ${matches}
+}
+
 function match_cn_name {
 
     # If a conainter is not through lxc-stop
@@ -18,7 +40,7 @@ function match_cn_name {
 function get_cn_name_from_init_pid {
     local init_pid=${1}
 
-    cn_name=`cat /proc/${init_pid}/cgroup | grep ":vm:" |\
+    cn_name=`cat /proc/${init_pid}/cgroup | grep ":cpuset:" |\
             cut -d ":" -f 3 | xargs basename`
     echo "${cn_name}"
 }
@@ -67,7 +89,7 @@ function get_parent_cn_name_from_cn_name {
     parent_cn_name=""
     lxc_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
     if [ -n "${lxc_init_pid}" ]; then
-        parent_cn_name=`cat /proc/${lxc_init_pid}/cgroup | grep ":vm:" | \
+        parent_cn_name=`cat /proc/${lxc_init_pid}/cgroup | grep ":cpuset:" | \
                 cut -d ":" -f 3 | sed 's:/lxc/:/:g' | xargs dirname | xargs basename`
     fi
 

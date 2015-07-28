@@ -8,7 +8,14 @@ RDEPENDS_${PN} = "util-linux lxc"
 
 SRC_URI = "file://dom0_contctl \
            file://lxc_driver.sh \
+           file://dom0-containers \
+           file://dom0-contctl.service \
 "
+
+inherit systemd
+SYSTEMD_PACKAGES = "${PN}"
+SYSTEMD_SERVICE_${PN} = "dom0-contctl.service"
+SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 do_install() {
     dom0_contctl_dir=${D}/opt/dom0-contctl
@@ -17,6 +24,12 @@ do_install() {
     install -d ${dom0_contctl_dir}
     install -m 0755 ${WORKDIR}/dom0_contctl ${dom0_contctl_dir}
     install -m 0644 ${WORKDIR}/lxc_driver.sh ${dom0_contctl_dir}
+
+    install -m 0755 ${WORKDIR}/dom0-containers ${dom0_contctl_dir}
+
+    install -d ${D}/lib/systemd/system/
+    install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}/lib/systemd/system/
 }
 
-FILES_${PN} += "/opt"
+FILES_${PN} += "/opt \
+                /lib/systemd/system"

@@ -1,0 +1,19 @@
+[Unit]
+Description=Dom0 Autoboot Code
+After=syslog.target network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# ExecStartPre=
+# ExecStartPre=
+ExecStart=/opt/dom0-contctl/dom0-containers start
+ExecStop=/opt/dom0-contctl/dom0-containers stop
+# Environment=BOOTUP=serial
+# Environment=CONSOLETYPE=serial
+Delegate=yes
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target

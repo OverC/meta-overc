@@ -1,0 +1,92 @@
+#!/bin/sh
+
+sysconfdir="/etc"
+distrosysconfdir="/etc/default"
+bindir="/opt/dom0-contctl"
+localstatedir="/var"
+
+# These can be overridden in /etc/default/dom0
+
+# Autostart containers?
+DOM0_AUTO="true"
+
+# BOOTGROUPS - What groups should start on bootup?
+#	Comma separated list of groups.
+#	Leading comma, trailing comma or embedded double
+#	comma indicates when the NULL group should be run.
+# Example (default): boot the onboot group first then the NULL group
+BOOTGROUPS="peer"
+
+# SHUTDOWNDELAY - Wait time for a container to shut down.
+#	Container shutdown can result in lengthy system
+#	shutdown times.  Even 5 seconds per container can be
+#	too long.
+SHUTDOWNDELAY=5
+
+# OPTIONS can be used for anything else.
+#	If you want to boot everything then
+#	options can be "-a" or "-a -A".
+OPTIONS=
+
+# STOPOPTS are stop options.  The can be used for anything else to stop.
+#	If you want to kill containers fast, use -k
+STOPOPTS="-a -A -s"
+
+if [ -d "$localstatedir"/lock/subsys ]
+then
+	lockdir="$localstatedir"/lock/subsys
+else
+	lockdir="$localstatedir"/lock
+fi
+
+# Source any configurable options
+[ ! -f "$distrosysconfdir"/dom0 ] || . "$distrosysconfdir"/dom0
+
+# Check for needed utility program
+[ -x "$bindir"/dom0_contctl ] || exit 1
+
+# See how we were called.
+case "$1" in
+    start)
+        [ "x$DOM0_AUTO" = "xtrue" ] || { exit 0; }
+
+        if [ -f "$lockdir"/dom0 ]; then
+	    echo "ERROR: dom0 start is locked, exiting"
+	    exit 0;
+	fi
+
+        if [ -n "$BOOTGROUPS" ]; then
+            BOOTGROUPS="-g $BOOTGROUPS"
+        fi
+
+        # Start autoboot containers first then the NULL group "peer".
+        "$bindir"/dom0_contctl launch-peer $OPTIONS $BOOTGROUPS
+        touch "$lockdir"/dom0
+    ;;
+
+    stop)
+        if [ -n "$SHUTDOWNDELAY" ]; then
+            SHUTDOWNDELAY="-t $SHUTDOWNDELAY"
+        fi
+
+        # The stop is serialized and can take excessive time.  We need to avoid
+        # delaying the system shutdown / reboot as much as we can since it's not
+        # parallelized...  Even 5 second timout may be too long.
+
+	## TODO: implement stop for a group
+        #"$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
+        rm -f "$lockdir"/dom0
+    ;;
+
+    restart|reload|force-reload)
+        $0 stop
+        $0 start
+    ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart|reload|force-reload}"
+        exit 2
+    ;;
+esac
+
+exit $?
