@@ -74,6 +74,24 @@ And confirm that the following outputs exist in the artifacts directory:
  INSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
  INSTALL_INITRAMFS="${ARTIFACTS_DIR}/pod-builder-initramfs-genericx86-64.cpio.gz"
 
+One other important file to modify is the grub configuration for the bootable
+USB device. It is controlled by the following variable:
+
+  INSTALL_GRUBUSBCFG="grub-usb.cfg"
+
+That file, located in files/grub-usb.cfg in the installer tree is used by
+grub when booting, and must be tailored to the target device AND version
+of grub.
+
+** NOTE: the grub installed on the machine writing the USB stick is used to
+         populate the bootable device. 
+
+         The sample grub configuration files are for grub2, so if the machine
+         creating the stick is not grub2, they will not work.
+
+         The only current solution is to install grub2, or modify the files
+         to suit your version of grub.
+
 Finally, edit config-usb-pod.sh.sample to list the containers and essential rootfs
 that is to be installed. This is typically:
 
