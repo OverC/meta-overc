@@ -20,7 +20,7 @@ container runtimes. These are:
                 boot the platform. pod-builder is also capable of self
                 hosting and building the platform itself.
  - pod-essential: This is a minimal runtime which is used for both the
-                  installer
+                  installer and pod-essential in the fully assembled system.
 
 
 OverC build
