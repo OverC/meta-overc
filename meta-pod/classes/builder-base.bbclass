@@ -1,5 +1,9 @@
 inherit hosts
 
+# Set the root password for all images to be root/root
+inherit extrausers
+EXTRA_USERS_PARAMS = "usermod -p '\$6\$itWJK/a95NGi5AVs\$0zlkWdhpXg5CWtEC0YxIH8P.BwaKTOmaSiUPOC8YdqQPZz66UiRt2oZa5UWpXXq8AfdiSSCpMz6b.zYNxCK1o/' root;"
+
 ROOTFS_POSTPROCESS_COMMAND += "builder_configure_host ; "
 
 builder_configure_host() {
