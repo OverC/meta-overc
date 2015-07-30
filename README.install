@@ -123,7 +123,7 @@ OverC installation
 
 Once a bootable installer has been created, insert it into the target and
 boot. The default USB bootable image runs pod-essential, with the login of
-root and no password.
+root/root.
 
 After logging into the bootable device, the installer should be run to move
 artifacts to their final destination device.
