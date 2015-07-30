@@ -14,10 +14,10 @@ PACKAGE_EXCLUDE = "busybox* "
 
 PV = "0.4"
 
-DOM0_MAIN_PKGS = "packagegroup-core-boot \
-                  packagegroup-dom0 \
-                  packagegroup-util-linux \
-                  packagegroup-core-ssh-openssh \
+DOM0_MAIN_PKGS = " packagegroup-core-boot \
+                   packagegroup-dom0 \
+                   packagegroup-util-linux \
+                   packagegroup-core-ssh-openssh \
                  "
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
