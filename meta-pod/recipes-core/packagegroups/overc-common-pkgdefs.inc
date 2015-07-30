@@ -65,6 +65,7 @@ OVERC_COMMON_NETWORKING = "\
      iptables \
      net-tools \
      netcat \
+     openssh-ssh \
     "
 
 OVERC_EXTRA_NETWORKING = "\
