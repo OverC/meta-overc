@@ -5,6 +5,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 ROOT_MOUNT="/rootfs"
 MOUNT="/bin/mount"
 UMOUNT="/bin/umount"
+ROOT_DELAY="0"
 
 # Copied from initramfs-framework. The core of this script probably should be
 # turned into initramfs-framework modules to reduce duplication.
@@ -52,6 +53,8 @@ read_args() {
         case $arg in
             root=*)
                 ROOT_DEVICE=$optarg ;;
+            rootdelay=*)
+                ROOT_DELAY=$optarg ;;
             init=*)
                 INIT=$optarg ;;
         esac
@@ -80,6 +83,8 @@ udevadm settle --timeout=3 --quiet
 killall "${_UDEV_DAEMON##*/}" 2>/dev/null
 
 mkdir -p $ROOT_MOUNT/
+
+sleep ${ROOT_DELAY}
 
 if ! mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT ; then
     fatal "Could not mount rootfs device \"$ROOT_DEVICE\"."
