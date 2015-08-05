@@ -11,6 +11,12 @@ DEPENDS += "golang-cross"
 S = "${WORKDIR}/git"
 TARGET_CC_ARCH += "${LDFLAGS}"
 
+#During packaging etcd gets the warning "no GNU hash in elf binary"
+#This issue occurs due to compiling without ldflags, but a
+#solution has yet to be found. For now we ignore this error with
+#the line below.
+INSANE_SKIP_${PN} = "ldflags"
+
 do_compile() {
         #Setting up GOPATH to find deps (including those already in etcd)
         cd ${S}
