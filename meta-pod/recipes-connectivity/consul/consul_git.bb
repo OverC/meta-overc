@@ -15,7 +15,7 @@ DEPENDS += "golang-cross \
     raft \
     raft-boltdb \
     scada-client \
-    serf \
+    serf-go \
     yamux \
     muxado \
     dns \

@@ -33,9 +33,9 @@ do_install() {
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
-SYSROOT_PREPROCESS_FUNCS += "serf_sysroot_preprocess"
+SYSROOT_PREPROCESS_FUNCS += "serf_go_sysroot_preprocess"
 
-serf_sysroot_preprocess () {
+serf_go_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }
