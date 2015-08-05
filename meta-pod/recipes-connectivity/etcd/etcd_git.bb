@@ -7,7 +7,7 @@ PKG_NAME = "github.com/coreos/etcd"
 SRC_URI = "git://${PKG_NAME}.git"
 SRCREV = "d0f6432b51e37c402450182ce01203dca8a40108"
 
-DEPENDS += "golang-cross"
+DEPENDS += "go-cross"
 S = "${WORKDIR}/git"
 TARGET_CC_ARCH += "${LDFLAGS}"
 

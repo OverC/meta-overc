@@ -3,7 +3,7 @@ HOMEPAGE = "https://github.com/boltdb/bolt"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=13b2a308eefa10d841e3bf2467dbe07a"
 
-DEPENDS += "golang-cross"
+DEPENDS += "go-cross"
 
 PKG_NAME = "github.com/boltdb/bolt"
 SRC_URI = "git://${PKG_NAME}.git"

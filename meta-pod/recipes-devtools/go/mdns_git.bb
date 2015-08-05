@@ -3,7 +3,7 @@ HOMEPAGE = "https://github.com/hashicorp/mdns"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=cb04212e101fbbd028f325e04ad45778"
 
-DEPENDS += "golang-cross dns go-net"
+DEPENDS += "go-cross dns go-net"
 
 PKG_NAME = "github.com/hashicorp/mdns"
 SRC_URI = "git://${PKG_NAME}.git"
