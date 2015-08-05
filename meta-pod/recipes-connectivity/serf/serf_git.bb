@@ -22,21 +22,10 @@ SRCREV = "5e07170d82d73e20b832e238d71caa531b6d8a2c"
 
 S = "${WORKDIR}/git"
 
+#Due to an import conflict between serf and newer versions of go.net, the
+#compilation of the serf binary has been removed from this recipe.
+
 do_compile() {
-    #Setting up a symlink to have bolt in a directory go can work with
-    cd ${S}
-    rm -rf .gopath
-    mkdir -p .gopath/src/$(dirname ${PKG_NAME})
-    ln -sf ../../../../ .gopath/src/${PKG_NAME}
-    #Setting up go variables
-    export GOPATH=${S}/.gopath:${STAGING_DIR_TARGET}/${prefix}/local/go
-    export GOBIN=${S}/.gopath/bin
-    export GOARCH="${TARGET_ARCH}"
-    # supported amd64, 386, arm
-    if [ "${TARGET_ARCH}" = "x86_64" ]; then
-        export GOARCH="amd64"
-    fi
-    go install ${PKG_NAME}
 }
 
 do_install() {
