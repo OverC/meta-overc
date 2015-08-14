@@ -190,6 +190,7 @@ function get_lxc_default_config_file {
 
 MOD_CONFIG_FILE_NAME=".config-modified-do-not-touch"
 ORIG_CONFIG_FILE_NAME=".config-original-do-not-touch"
+DB_FILE_NAME=".lxc-keys-db-do-not-touch"
 
 function get_lxc_mod_config_file {
     local cn_name=${1}
@@ -209,6 +210,27 @@ function save_mod_config_file {
 
     cp ${mod_cfg_file} "$(dirname ${mod_cfg_file})/${MOD_CONFIG_FILE_NAME}"
     [ $? -ne 0 ] && log_lxc "Warning, cannot save mod config file ${mod_cfg_file}"
+}
+
+function write_key_db {
+    local cn_name=${1}
+    local key=${2}
+    local value=${3}
+    local db_file="$(get_lxc_config_path)/${cn_name}/${DB_FILE_NAME}"
+
+    [ ! -e "${db_file}" ] && touch ${db_file}
+    sed -i "/${key}/d" ${db_file}
+    echo "${key}=${value}" >> ${db_file}
+}
+
+function get_key_db {
+    local cn_name=${1}
+    local key=${2}
+    local db_file="$(get_lxc_config_path)/${cn_name}/${DB_FILE_NAME}"
+
+    if [ -e "${db_file}" ]; then
+        cat ${db_file} | grep "^${key}" | cut -d '=' -f 2
+    fi
 }
 
 function restore_all_config_files {

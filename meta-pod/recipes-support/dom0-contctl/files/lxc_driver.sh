@@ -25,6 +25,8 @@ function get_matching_container_group {
     echo ${matches}
 }
 
+LAUNCH_CMD_DB_KEY="wr.launch_cmd"
+
 function lxc_launch_if_fail_then_clean_up {
     local cfg_file=${1}
     local cn_name=${2}
@@ -81,6 +83,8 @@ function save_bind_mount_proc_1 {
 function launch_peer_container {
     local cn_name=${1}
 
+    write_key_db "${cn_name}" "${LAUNCH_CMD_DB_KEY}" "launch_peer_container ${cn_name}"
+
     lxc_launch_prepare ${cn_name}
     [ $? -ne 0 ] && return 1
 
@@ -101,6 +105,8 @@ function launch_peer_container {
 function launch_nested_container {
     local cn_name=${1}
     local parent_cn_name=${2}
+
+    write_key_db "${cn_name}" "${LAUNCH_CMD_DB_KEY}" "launch_nested_container ${cn_name} ${parent_cn_name}"
 
     lxc_launch_prepare ${cn_name}
     [ $? -ne 0 ] && return 1
@@ -130,6 +136,8 @@ function launch_nested_container {
 function launch_container {
     local cn_name=${1}
 
+    write_key_db "${cn_name}" "${LAUNCH_CMD_DB_KEY}" "launch_container ${cn_name}"
+
     cfg_file=$(get_lxc_default_config_file ${cn_name})
     parent_container_name=$(get_lxc_config_option "wr.parent" ${cfg_file})
     if [ -n "${parent_container_name}" ]; then
@@ -137,6 +145,17 @@ function launch_container {
     else
         launch_peer_container ${cn_name}
     fi
+}
+
+function relaunch_container {
+    local cn_name=${1}
+
+    launch_cmd=$(get_key_db ${cn_name} "${LAUNCH_CMD_DB_KEY}")
+    [ -z "${launch_cmd}" ] && lxc_log "Error, relaunch, can not get saved launch cmd for container ${cn_name}" && return 1
+    stop_container ${cn_name}
+    [ $? -ne 0 ] && lxc_log "Error, relaunch, cannot stop container ${cn_name}" && return 1
+    ${launch_cmd}
+    return 0
 }
 
 function enter_container_ns {
@@ -158,9 +177,10 @@ function enter_container_ns {
 function stop_container {
     local cn_name=${1}
     local child_name=""
+    local ret=0
 
-    is_cn_running ${cn_name}
-    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist or not run." && return 1
+    is_cn_stopped ${cn_name}
+    [ $? -ne 0 ] && return 1
 
     # When stopping container, we will use the mod config file to
     # do clean up especially for network.
@@ -193,11 +213,13 @@ function stop_container {
         exec_lxc_cmd_cn ${cn_name} lxc-stop -n ${cn_name} -k
     else
         lxc_log "Error, child ${child_name} container is running"
+        ret=1
     fi
 
     # Now clean up all the "remote end"
     lxc_remove_net ${mod_cfg_file} ${cn_name}
     restore_all_config_files $(get_lxc_default_config_file ${cn_name})
+    return ${ret}
 }
 
 function list_containers {
