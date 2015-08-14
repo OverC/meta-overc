@@ -100,10 +100,10 @@ function lxc_set_net_cn_end_options {
 
             dpdk_hugefs_mount=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.mount" ${cfg_file})
             # Default is using host hugepage
-            [ -z "${dpdk_hugefs_mount}" ] && dpdk_hugefs_mount="host"
+            [ -z "${dpdk_hugefs_mount}" ] && dpdk_hugefs_mount="${HOST_CN_NAME}"
             dpdk_hugefs_path=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.path" ${cfg_file})
             [ -z "${dpdk_hugefs_path}" ] && dpdk_hugefs_path=${DPDK_HUGEFS_PATH_DEFAULT}
-            if [ "${dpdk_hugefs_mount}" == "host" ]; then
+            if [ "${dpdk_hugefs_mount}" == "${HOST_CN_NAME}" ]; then
                 # Can only share with host hugepage fs when this function is invoked from
                 # container's hook functions.
                 if [ -z "${cn_init_pid}" ]; then
@@ -205,7 +205,7 @@ function lxc_setup_net_remote_end {
             # will configure "cn end".  Configure for "host" is a bit special, so
             # we need to handle it separately.
 
-            if [ "${remote_cn}" == "host" ]; then
+            if [ "${remote_cn}" == "${HOST_CN_NAME}" ]; then
                 # Need to create veth from host net namespace
                 if [ -d "${host_proc_path}/1" ]; then
                     cn_pid="${host_proc_path}/1"
@@ -437,7 +437,7 @@ function lxc_remove_net {
             remote_eth_name="veth-${cn_name}-${conn}-1"
 
             # Get pid path of correct net namespace
-            if [ "${remote_cn}" == "host" ]; then
+            if [ "${remote_cn}" == "${HOST_CN_NAME}" ]; then
                 if [ -d "${host_proc_path}/1" ]; then
                     cn_pid="${host_proc_path}/1"
                 else

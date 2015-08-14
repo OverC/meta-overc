@@ -71,6 +71,8 @@ main_config_file="/etc/dom0-contctl.conf"
 container_type="lxc"
 host_proc_path="/host/proc"
 
+HOST_CN_NAME="host"
+
 cmd=${1}
 container_name=""
 parent_container_name=""
