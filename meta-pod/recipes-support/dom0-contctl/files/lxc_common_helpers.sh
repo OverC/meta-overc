@@ -2,6 +2,12 @@
 
 CGROUP_NAME="cpuset"
 
+# Sometime dom0_contctl is invoked without user env passed in (invoked under
+# systemd).  The script relies on PATH env for invoking various utilities.
+# So if PATH env is not provided then export one.
+res=$(/usr/bin/env | grep "^PATH=")
+[ -z "${res}" ] && export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+
 function lxc_log {
     local msg=${1}
 
