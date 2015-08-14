@@ -50,10 +50,12 @@ EOF
 }
 
 
-cmd=${1}
+# Global variables
 # What container type we support
 container_type="lxc"
 host_proc_path="/host/proc"
+
+cmd=${1}
 container_name=""
 parent_container_name=""
 
@@ -110,7 +112,7 @@ case "${cmd}" in
 
         for c in ${start_containers}; do
             echo "Launching ${c} as peer"
-            launch_peer_container ${c} ${host_proc_path}
+            launch_peer_container ${c}
         done
         ;;
     launch-nested)

@@ -26,17 +26,18 @@ function get_matching_container_group {
 
 function launch_peer_container {
     local cn_name=${1}
-    local host_proc=${2}
 
     is_cn_exist ${cn_name}
-    [ "$?" == "0" ] && echo "Error, container ${cn_name} does not exist." && return 1
+    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
+    is_cn_running ${cn_name}
+    [ $? -eq 1 ] && lxc_log "Error, container ${cn_name} is already running." && return 1
 
     if [ -d "${host_proc_path}/1" ]; then
         nsenter -b ${host_proc_path}/1:/proc/1 --net --target ${host_proc_path}/1 \
                 -- lxc-start -n ${cn_name} -d
         return 0
     else
-        echo "ERROR: host proc path ${host_proc_path} does not exist."
+        lxc_log "ERROR: host proc path ${host_proc_path} does not exist."
         return 1
     fi
 }
@@ -46,7 +47,9 @@ function launch_nested_container {
     local parent_cn_name=${2}
 
     is_cn_exist ${cn_name}
-    [ "$?" == "0" ] && echo "Error, container ${cn_name} does not exist." && return 1
+    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
+    is_cn_running ${cn_name}
+    [ $? -eq 1 ] && lxc_log "Error, container ${cn_name} is already running." && return 1
 
     is_current_cn ${parent_cn_name}
     if [ "$?" == "1" ] ; then
@@ -58,8 +61,7 @@ function launch_nested_container {
                     lxc-start -n ${cn_name} -d
             return 0
         else
-            echo "Cannot launch container ${cn_name}."
-            echo "Parent container ${parent_cn_name} is not active."
+            lxc_log "Error, cannot launch container ${cn_name}. Parent container ${parent_cn_name} is not active."
             return 1
         fi
     fi
@@ -68,15 +70,15 @@ function launch_nested_container {
 function enter_container_ns {
     local cn_name=${1}
 
-    is_cn_exist ${cn_name}
-    [ "$?" == "0" ] && echo "Error, container ${cn_name} does not exist." && return 1
+    is_cn_running ${cn_name}
+    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} is not active." && return 1
 
     lxc_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
     if [ -n "${lxc_init_pid}" ]; then
         nsenter --mount --uts --ipc --net --pid --target ${lxc_init_pid}
         return 0
     else
-        echo "Cannot enter container ${cn_name}. Is it running?"
+        lxc_log "Error, cannot enter container ${cn_name}. Please make sure its active?"
         return 1
     fi
 }
@@ -85,8 +87,8 @@ function stop_container {
     local cn_name=${1}
     local child_name=""
 
-    is_cn_exist ${cn_name}
-    [ "$?" == "0" ] && echo "Error, container ${cn_name} does not exist." && return 1
+    is_cn_running ${cn_name}
+    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist or not run." && return 1
 
     current_cn_name=`get_cn_name_from_init_pid 1`
 
@@ -110,7 +112,7 @@ function stop_container {
     if [ -z ${child_name} ]; then
         exec_cmd_container ${cn_name} lxc-stop -n ${cn_name}
     else
-        echo "Error, child ${child_name} container is running"
+        lxc_log "Error, child ${child_name} container is running"
     fi
 }
 

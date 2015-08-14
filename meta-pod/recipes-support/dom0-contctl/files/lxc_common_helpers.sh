@@ -1,5 +1,11 @@
 #! /bin/bash
 
+function lxc_log {
+    local msg=${1}
+
+    echo ${msg}
+}
+
 function match_cn_name {
 
     # If a container is not through lxc-stop
@@ -36,7 +42,7 @@ function get_lxc_mgr_pid_from_cn_name {
         this_cn_name=`get_cn_name_from_init_pid ${lxc_cn_init_pid}`
 
         match_cn_name ${this_cn_name} ${cn_name}
-        if [ "$?" == "1" ]; then
+        if [ $? -eq 1 ]; then
             echo "${i}"
             return 0
         fi
@@ -97,17 +103,17 @@ function exec_cmd_container {
     shift
 
     is_cn_exist ${cn_name}
-    [ "$?" == "0" ] && echo "Error, container ${cn_name} does not exist." && return 1
+    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
 
     is_current_cn ${cn_name}
-    if [ "$?" == "1" ] ; then
+    if [ $? -eq 1 ] ; then
         $@
     else
         lxc_mgr_pid=`get_lxc_mgr_pid_from_cn_name ${cn_name}`
         if [ -n "${lxc_mgr_pid}" ]; then
             nsenter --net --target ${lxc_mgr_pid} -- $@
         else
-            echo "Error, container ${cn_name} is not running or started from host."
+            lxc_log "Error, container ${cn_name} is not running or started from host."
             return 1
         fi
     fi
@@ -119,4 +125,15 @@ function get_lxc_cn_state_from_cn_name {
     state=`exec_cmd_container ${cn_name} lxc-info -n ${cn_name} \
             | grep "State:" | awk '{print $2}'`
     echo "${state}"
+}
+
+function is_cn_running {
+    local cn_name=${1}
+
+    state=`get_lxc_cn_state_from_cn_name ${cn_name}`
+    if [ "${state}" == "RUNNING" ]; then
+        return 1
+    else
+        return 0
+   fi
 }
