@@ -10,6 +10,13 @@ SRC_URI = "file://dom0_contctl \
            file://lxc_driver.sh \
            file://dom0-containers \
            file://dom0-contctl.service \
+           file://lxc_common_helpers.sh \
+"
+
+SRC_FILES_LIST="dom0_contctl \
+lxc_driver.sh \
+dom0-containers \
+lxc_common_helpers.sh \
 "
 
 inherit systemd
@@ -22,10 +29,9 @@ do_install() {
 
     install -d ${D}/opt/
     install -d ${dom0_contctl_dir}
-    install -m 0755 ${WORKDIR}/dom0_contctl ${dom0_contctl_dir}
-    install -m 0644 ${WORKDIR}/lxc_driver.sh ${dom0_contctl_dir}
-
-    install -m 0755 ${WORKDIR}/dom0-containers ${dom0_contctl_dir}
+    for i in ${SRC_FILES_LIST}; do
+        install -m 0755 ${WORKDIR}/${i} ${dom0_contctl_dir}
+    done
 
     install -d ${D}/lib/systemd/system/
     install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}/lib/systemd/system/
