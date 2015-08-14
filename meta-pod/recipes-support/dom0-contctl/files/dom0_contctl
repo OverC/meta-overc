@@ -74,8 +74,8 @@ while getopts "h?n:t:p:a:g:" opt; do
         parent_container_name=$OPTARG
         ;;
     g)
-	start_group=$OPTARG
-	;;
+        start_group=$OPTARG
+        ;;
     *)
         usage
         exit 0
@@ -102,16 +102,16 @@ fi
 
 case "${cmd}" in
     launch-peer)
-	if [ -z "${start_containers}" ]; then
-	    start_containers=${container_name}
-	fi
-	    
+        if [ -z "${start_containers}" ]; then
+            start_containers=${container_name}
+        fi
+
         [ -z "${start_containers}" ] && echo "Error, please provide container name" && exit 1
 
-	for c in ${start_containers}; do
-	    echo "Launching ${c} as peer"
+        for c in ${start_containers}; do
+            echo "Launching ${c} as peer"
             launch_peer_container ${c} ${host_proc_path}
-	done
+        done
         ;;
     launch-nested)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
@@ -131,7 +131,7 @@ case "${cmd}" in
         list_containers
         ;;
     exec-cmd)
-		[ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
         exec_cmd_container ${container_name} $@
         ;;
     *)
