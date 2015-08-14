@@ -35,12 +35,7 @@ function lxc_launch_if_fail_then_clean_up {
         # If cn is not started then do some cleanup
         lxc_remove_net ${cfg_file} ${cn_name}
         lxc_log "Error, cannot launch container ${cn_name}."
-    else
-        # Its might be the case that the network options in cfg file
-        # modified during container is up.  This will mess up the
-        # networking clean up process later.  So save it.
-        cp ${cfg_file} "$(dirname ${cfg_file})/.config-do-not-modify"
-        [ $? -ne 0 ] && log_lxc "Warning, cannot save ${cfg_file}"
+        restore_all_config_files ${cfg_file}
     fi
 }
 
@@ -53,13 +48,20 @@ function lxc_launch_prepare {
     is_cn_running ${cn_name}
     [ $? -eq 1 ] && lxc_log "Error, container ${cn_name} is already running." && return 1
 
-    # Setup networking
+    # Save the original config files for restoring later
     cfg_file=$(get_lxc_default_config_file ${cn_name})
+    save_orig_config_file ${cfg_file}
+    # Setup networking
     lxc_add_net_hook_info_cfg ${cfg_file}
+    # It might be the case that the network options in cfg file
+    # were modified during container is up.  This will mess up the
+    # networking clean up process later.  So save it.
+    save_mod_config_file ${cfg_file}
     lxc_setup_net_remote_end ${cfg_file} ${cn_name}
     if [ $? -ne 0 ]; then
         lxc_log "Error, cannot start ${cn_name} container."
         lxc_log "       Some network connections cannot be prepared."
+        restore_all_config_files ${cfg_file}
         return 1
     fi
 }
@@ -148,12 +150,11 @@ function stop_container {
     is_cn_running ${cn_name}
     [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist or not run." && return 1
 
-    # When stopping container, we will use the saved config file to
+    # When stopping container, we will use the mod config file to
     # do clean up especially for network.
-    cfg_path="$(get_lxc_config_path)/${cn_name}"
-    cfg_file="${cfg_path}/.config-do-not-modify"
-    if [ ! -f "${cfg_file}" ]; then
-        lxc_log "Fatal Error, saved file ${cfg_path}/.config-do-not-modify does not exist?"
+    mod_cfg_file=$(get_lxc_mod_config_file ${cn_name})
+    if [ ! -f "${mod_cfg_file}" ]; then
+        lxc_log "Fatal Error, saved file ${mod_cfg_file} does not exist?"
         return 1;
     fi
 
@@ -183,8 +184,8 @@ function stop_container {
     fi
 
     # Now clean up all the "remote end"
-    lxc_remove_net ${cfg_file} ${cn_name}
-    rm ${cfg_file} > /dev/null 2>&1
+    lxc_remove_net ${mod_cfg_file} ${cn_name}
+    restore_all_config_files $(get_lxc_default_config_file ${cn_name})
 }
 
 function list_containers {

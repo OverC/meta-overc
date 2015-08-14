@@ -169,6 +169,36 @@ function get_lxc_default_config_file {
     echo "$(get_lxc_config_path)/${cn_name}/config"
 }
 
+MOD_CONFIG_FILE_NAME=".config-modified-do-not-touch"
+ORIG_CONFIG_FILE_NAME=".config-original-do-not-touch"
+
+function get_lxc_mod_config_file {
+    local cn_name=${1}
+
+    echo "$(get_lxc_config_path)/${cn_name}/${MOD_CONFIG_FILE_NAME}"
+}
+
+function save_orig_config_file {
+    local orig_cfg_file=${1}
+
+    cp ${orig_cfg_file} "$(dirname ${orig_cfg_file})/${ORIG_CONFIG_FILE_NAME}"
+    [ $? -ne 0 ] && log_lxc "Warning, cannot save mod config file ${orig_cfg_file}"
+}
+
+function save_mod_config_file {
+    local mod_cfg_file=${1}
+
+    cp ${mod_cfg_file} "$(dirname ${mod_cfg_file})/${MOD_CONFIG_FILE_NAME}"
+    [ $? -ne 0 ] && log_lxc "Warning, cannot save mod config file ${mod_cfg_file}"
+}
+
+function restore_all_config_files {
+    local orig_cfg_file=${1}
+
+    mv "$(dirname ${orig_cfg_file})/${ORIG_CONFIG_FILE_NAME}" ${orig_cfg_file} > /dev/null 2>&1
+    rm "$(dirname ${orig_cfg_file})/${MOD_CONFIG_FILE_NAME}" > /dev/null 2>&1
+}
+
 function get_lxc_ctl_dom_proc_1_bind_mount_path {
     local cn_name=${1}
 
