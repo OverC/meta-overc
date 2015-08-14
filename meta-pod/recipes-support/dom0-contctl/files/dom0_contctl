@@ -10,13 +10,14 @@ Common options for all <cmd>:
 
    -t <container type>       : type of container including: lxc, lxd, docker.
                                Default is lxc.
+   -a <host proc path>       : absolute path to bind mount to host proc, default
+                               /host/proc.
 
 ${0##*/} launch-peer [option]...
 
     start a peer container
 
    -n <container name>: Name of container to be launched
-   -a <host proc path>: absolute path to bind mount to host proc
 
 ${0##*/} launch-nested [option]...
 
@@ -46,6 +47,20 @@ ${0##*/} exec-cmd [option]... -- <shell command with options>
     invoke a shell cmd against a container
 
    -n <container name>       : Name of container to be launched
+
+${0##*/} setup-net [option]...
+
+    setup networks defined by <config file>
+
+   -n <container name>       : Name of container to be launched
+   -c <config file>          : Absolute path to a config file
+
+${0##*/} remote-net [option]...
+
+    remove networks defined by <config file>
+
+   -n <container name>       : Name of container to be launched
+   -c <config file>          : Absolute path to a config file
 EOF
 }
 
@@ -58,10 +73,11 @@ host_proc_path="/host/proc"
 cmd=${1}
 container_name=""
 parent_container_name=""
+cfg_file=""
 
 
 OPTIND=2
-while getopts "h?n:t:p:a:g:" opt; do
+while getopts "h?n:t:p:a:c:g:" opt; do
     case "$opt" in
     n)
         container_name=$OPTARG
@@ -77,6 +93,9 @@ while getopts "h?n:t:p:a:g:" opt; do
         ;;
     g)
         start_group=$OPTARG
+        ;;
+    c)
+        cfg_file=$OPTARG
         ;;
     *)
         usage
@@ -131,6 +150,16 @@ case "${cmd}" in
         ;;
     list)
         list_containers
+        ;;
+    setup-net)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        [ -z "${cfg_file}" ] && echo "Error, please provide net config file" && exit 1
+        setup_net ${container_name} ${cfg_file}
+        ;;
+    remove-net)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        [ -z "${cfg_file}" ] && echo "Error, please provide net config file" && exit 1
+        remove_net ${container_name} ${cfg_file}
         ;;
     exec-cmd)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1

@@ -11,12 +11,16 @@ SRC_URI = "file://dom0_contctl \
            file://dom0-containers \
            file://dom0-contctl.service \
            file://lxc_common_helpers.sh \
+           file://lxc_driver_net.sh \
+           file://lxc_hook_net_pre-mount.sh \
 "
 
 SRC_FILES_LIST="dom0_contctl \
 lxc_driver.sh \
 dom0-containers \
 lxc_common_helpers.sh \
+lxc_driver_net.sh \
+lxc_hook_net_pre-mount.sh \
 "
 
 inherit systemd

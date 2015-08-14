@@ -158,3 +158,26 @@ function is_cn_running {
         return 0
    fi
 }
+
+function get_lxc_config_path {
+    echo `lxc-config lxc.lxcpath`
+}
+
+function get_lxc_default_config_file {
+    local cn_name=${1}
+
+    echo "`get_lxc_config_path`/${cn_name}/config"
+}
+
+function get_lxc_ctl_dom_proc_1_bind_mount_path {
+    local cn_name=${1}
+
+    echo "`get_lxc_config_path`/${cn_name}/.ctl-dom-proc-1"
+}
+
+function get_lxc_config_option {
+    local cfg_option=${1}
+    local cfg_file=${2}
+
+    cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^${cfg_option}" | cut -d '=' -f 2
+}
