@@ -1,5 +1,7 @@
 #! /bin/bash
 
+CGROUP_NAME="cpuset"
+
 function lxc_log {
     local msg=${1}
 
@@ -24,7 +26,7 @@ function match_cn_name {
 function get_cn_name_from_init_pid {
     local init_pid=${1}
 
-    cn_name=$(cat /proc/${init_pid}/cgroup | grep ":cpuset:" |\
+    cn_name=$(cat /proc/${init_pid}/cgroup | grep ":${CGROUP_NAME}:" |\
             cut -d ":" -f 3 | xargs basename)
     echo "${cn_name}"
 }
@@ -73,7 +75,7 @@ function get_parent_cn_name_from_cn_name {
     parent_cn_name=""
     lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
     if [ -n "${lxc_init_pid}" ]; then
-        parent_cn_name=$(cat /proc/${lxc_init_pid}/cgroup | grep ":cpuset:" | \
+        parent_cn_name=$(cat /proc/${lxc_init_pid}/cgroup | grep ":${CGROUP_NAME}:" | \
                 cut -d ":" -f 3 | sed 's:/lxc/:/:g' | xargs dirname | xargs basename)
     fi
 
