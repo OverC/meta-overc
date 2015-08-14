@@ -36,7 +36,7 @@ ${0##*/} stop [option]...
 
     stop an active container
 
-   -n <container name>       : Name of container to be launched
+   -n <container name>       : Name of container to be stopped
 
 ${0##*/} list [option]...
 
@@ -46,20 +46,26 @@ ${0##*/} exec-cmd [option]... -- <shell command with options>
 
     invoke a shell cmd against a container
 
-   -n <container name>       : Name of container to be launched
+   -n <container name>       : Name of container to be acted upon
+
+${0##*/} exec-lxc-cmd [option]... -- <lxc-xxxxx command with options>
+
+    invoke lxc-xxxxx against a container
+
+   -n <container name>       : Name of container to be acted upon
 
 ${0##*/} setup-net [option]...
 
     setup networks defined by <config file>
 
-   -n <container name>       : Name of container to be launched
+   -n <container name>       : Name of container to be acted upon
    -c <config file>          : Absolute path to a config file
 
 ${0##*/} remote-net [option]...
 
     remove networks defined by <config file>
 
-   -n <container name>       : Name of container to be launched
+   -n <container name>       : Name of container to be acted upon
    -c <config file>          : Absolute path to a config file
 EOF
 }
@@ -167,6 +173,10 @@ case "${cmd}" in
     exec-cmd)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
         exec_cmd_container ${container_name} $@
+        ;;
+    exec-lxc-cmd)
+        [ "${container_type}" != "lxc" ] && echo "Error, can only be invoked with lxc container" && exit 1
+        exec_lxc_cmd_cn "${container_name}" $@
         ;;
     *)
         usage

@@ -125,12 +125,18 @@ function exec_lxc_cmd_cn {
     local cn_name=${1}
     shift
 
+    if [ -z "${cn_name}" ]; then
+        cn_name=$(echo $@ | awk -F '-n' '{print $2}' | awk -F ' ' '{print $1}')
+    fi
+
     is_cn_exist ${cn_name}
-    [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
+    [ $? -eq 0 -a "${cn_name}" != "${HOST_CN_NAME}" ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
 
     is_current_cn ${cn_name}
     if [ $? -eq 1 ] ; then
         $@
+    elif [ "${cn_name}" == "${HOST_CN_NAME}" ]; then
+        nsenter -n -t ${host_proc_path}/1 -- $@
     else
         lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
         if [ -n "${lxc_mgr_pid}" ]; then
