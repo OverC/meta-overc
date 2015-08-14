@@ -127,6 +127,18 @@ function launch_nested_container {
     lxc_launch_if_fail_then_clean_up ${cfg_file} ${cn_name}
 }
 
+function launch_container {
+    local cn_name=${1}
+
+    cfg_file=$(get_lxc_default_config_file ${cn_name})
+    parent_container_name=$(get_lxc_config_option "wr.parent" ${cfg_file})
+    if [ -n "${parent_container_name}" ]; then
+        launch_nested_container ${cn_name} ${parent_container_name}
+    else
+        launch_peer_container ${cn_name}
+    fi
+}
+
 function enter_container_ns {
     local cn_name=${1}
 

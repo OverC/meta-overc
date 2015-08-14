@@ -26,6 +26,14 @@ ${0##*/} launch-nested [option]...
    -n <container name>       : Name of container to be launched
    -p <parent container name>: Name of parent container
 
+${0##*/} launch [option]...
+
+    start a container.  wr.parent option in config file will indicate
+    the parent container of this container.  If wr.parent is not specified
+    then launch it as peer container.
+
+   -n <container name>: Name of container to be launched
+
 ${0##*/} enter-ns [option]...
 
     enter-ns: enter namespaces of container
@@ -148,6 +156,10 @@ case "${cmd}" in
         [ -z "${parent_container_name}" ] && \
                 echo "Error, please provide parent container name" && exit 1
         launch_nested_container ${container_name} ${parent_container_name}
+        ;;
+    launch)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        launch_container "${container_name}"
         ;;
     enter-ns)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
