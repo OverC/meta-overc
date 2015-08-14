@@ -70,6 +70,13 @@ ${0##*/} info [option]...
 
    -n <container name>       : Name of container to be displayed
 
+${0##*/} monitor [option]...
+
+    monitor state of containers.  If "-n" option is not provided
+    then all containers will be monitored
+
+   -n <container name>       : Name of container to be monitored
+
 ${0##*/} exec-cmd [option]... -- <shell command with options>
 
     invoke a shell cmd against a container
@@ -190,6 +197,9 @@ case "${cmd}" in
     info)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
         display_info_container "${container_name}"
+        ;;
+    monitor)
+        monitor_container "${container_name}"
         ;;
     setup-net)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1

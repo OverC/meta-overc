@@ -262,3 +262,10 @@ function remove_net {
 
     lxc_remove_net ${cfg_file} ${cn_name}
 }
+
+function monitor_container {
+    local cn_name=${1}
+
+    [ -n "${cn_name}" ] && opts="-n ${cn_name}"
+    exec_lxc_cmd_cn "${HOST_CN_NAME}" "lxc-monitor ${opts}"
+}
