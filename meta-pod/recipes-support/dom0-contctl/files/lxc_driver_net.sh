@@ -189,15 +189,13 @@ function lxc_setup_net_remote_end {
             fi
 
             if [ -n "${cn_pid}" ]; then
+                nsenter_netns_ext="nsenter -n -t ${cn_pid} --"
+                remote_flags=$(get_lxc_config_option "wr.network.${conn}.remote.flags" ${cfg_file})
+
                 hwaddr=$(get_lxc_config_option "wr.network.${conn}.remote.hwaddr" ${cfg_file})
                 if [ -n "${hwaddr}" ]; then
-                    nsenter -n -t ${cn_pid} -- ip link set ${remote_eth_name} address ${hwaddr}
+                    ${nsenter_netns_ext} ip link set ${remote_eth_name} address ${hwaddr}
                     [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set hwaddrs ${hwaddr} to ${remote_eth_name}"
-                fi
-                ipv4=$(get_lxc_config_option "wr.network.${conn}.remote.ipv4" ${cfg_file})
-                if [ -n "${ipv4}" ]; then
-                    nsenter -n -t ${cn_pid} -- ip addr add ${ipv4} dev ${remote_eth_name}
-                    [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set ipv4 ${ipv4} to ${remote_eth_name}"
                 fi
 
                 case "${remote_type}" in
@@ -206,20 +204,48 @@ function lxc_setup_net_remote_end {
                         # so its neccessary to jump into mount namespace with option -m.  Also there are rare cases
                         # ovs get into bad state and this causes ovs-vsctl not to return, so use timeout here.  30s
                         # seems to be reasonable.
+                        res=$(nsenter -m -n -t ${cn_pid} -- find /sys/class/net -name ${remote_link})
+                        if [ -z "${res}" ];then
+                            timeout 30 nsenter -m -n -t ${cn_pid} -- ovs-vsctl add-br ${remote_link}
+                            [ $? -ne 0 ] && lxc_log "Warning, ${conn}, ovs-vsctl cannot create bridge ${remote_link}, res=$?"
+                        fi
                         timeout 30 nsenter -m -n -t ${cn_pid} -- ovs-vsctl add-port ${remote_link} ${remote_eth_name}
                         [ $? -ne 0 ] && lxc_log "Warning, ${conn}, ovs-vsctl cannot add ${remote_link} to ${remote_eth_name}, res=$?"
                         ;;
                     bridge)
-                        nsenter -n -t ${cn_pid} -- brctl addif ${remote_link} ${remote_eth_name}
+                        res=$(nsenter -m -n -t ${cn_pid} -- find /sys/class/net -name ${remote_link})
+                        if [ -z "${res}" ]; then
+                            ${nsenter_netns_ext} brctl addbr ${remote_link}
+                            [ $? -ne 0 ] && lxc_log "Warning, ${conn}, brctl cannot create bridge ${remote_link}, res=$?"
+                        fi
+                        ${nsenter_netns_ext} brctl addif ${remote_link} ${remote_eth_name}
                         [ $? -ne 0 ] && lxc_log "Warning, ${conn}, brctl cannot add ${remote_link} to ${remote_eth_name}"
                         ;;
                     *)
+                        # Here remote_link might be set inside config file.  At this point remote_link must be emtpy.
+                        # Reset here as remote_link will be used later.
+                        remote_link=""
                         ;;
                 esac
-                flags=$(get_lxc_config_option "wr.network.${conn}.remote.flags" ${cfg_file} | grep 'up')
-                if [ -n "${flags}" ]; then
-                    nsenter -n -t ${cn_pid} -- ip link set ${remote_eth_name} up
+
+                ipv4=$(get_lxc_config_option "wr.network.${conn}.remote.ipv4" ${cfg_file})
+                if [ -n "${ipv4}" ]; then
+                    if [ -n "${remote_link}" ]; then
+                        ${nsenter_netns_ext} ip addr add ${ipv4} dev ${remote_link}
+                        [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set ipv4 ${ipv4} to ${remote_eth_name}"
+                    else
+                        ${nsenter_netns_ext} ip addr add ${ipv4} dev ${remote_eth_name}
+                        [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set ipv4 ${ipv4} to ${remote_eth_name}"
+                    fi
+                fi
+
+                if [ "${remote_flags}" == "up" ]; then
+                    ${nsenter_netns_ext} ip link set ${remote_eth_name} up
                     [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot activate ${remote_eth_name}"
+                    if [ -n "${remote_link}" ]; then
+                        ${nsenter_netns_ext} ip link set ${remote_link} up
+                        [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot activate ${remote_link}"
+                    fi
                 fi
 
                 # Up script will be executed in Domain0 all namespaces.  Its up to the script
