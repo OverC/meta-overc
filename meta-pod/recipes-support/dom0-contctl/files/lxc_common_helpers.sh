@@ -211,5 +211,5 @@ function get_lxc_config_option {
     local cfg_option=${1}
     local cfg_file=${2}
 
-    cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^${cfg_option}" | cut -d '=' -f 2
+    cat ${cfg_file} | sed 's/[ \t]//g' | grep "^${cfg_option}" | cut -d '=' -f 2
 }

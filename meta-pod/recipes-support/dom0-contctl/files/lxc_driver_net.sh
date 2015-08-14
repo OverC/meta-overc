@@ -3,6 +3,12 @@
 source $(dirname ${0})/lxc_common_helpers.sh
 
 NET_TYPE_VETH="veth"
+NET_TYPE_DPDK="dpdk"
+
+DPDK_HUGEFS_HOST_PATH_DEFAULT=$(get_lxc_config_option "lxc.dpdk.hugefs.host_path_default" ${main_config_file})
+DPDK_HUGEFS_PATH_DEFAULT=$(get_lxc_config_option "lxc.dpdk.hugefs.path_default" ${main_config_file})
+DPDK_HUGEFS_NR_HUGEPAGES=$(get_lxc_config_option "lxc.dpdk.hugefs.nr_hugepages" ${main_config_file})
+DPDK_DEFAULT_PCI_DRIVER="igb_uio"
 
 function lxc_get_veth_cn_end_name {
     local conn_name=${1}
@@ -22,17 +28,18 @@ function lxc_set_net_cn_end_options {
     local cfg_file=${1}
     local cn_name=${2}
     local cn_init_pid=${3}
+    local root_fs_mount=${4}
 
     conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
-
-    nsenter_ext=""
-    [ -n "${cn_init_pid}" ] && nsenter_ext="nsenter -n -t ${cn_init_pid} --"
 
     # Going through each connection
     for conn in ${conn_list}; do
         type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
         if [ "${type}" == "${NET_TYPE_VETH}" ]; then
+            nsenter_ext=""
+            [ -n "${cn_init_pid}" ] && nsenter_ext="nsenter -n -t ${cn_init_pid} --"
+
             # At this point connection has been setup for "remote end" veth
             cn_eth_name=$(lxc_get_veth_cn_end_name ${conn} ${cn_name})
 
@@ -60,8 +67,65 @@ function lxc_set_net_cn_end_options {
                 ${nsenter_ext} ip link set ${cn_eth_name} up
                 [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot activate ${cn_eth_name}"
             fi
+        elif [ "${type}" == "${NET_TYPE_DPDK}" ]; then
+            nsenter_ext=""
+            [ -n "${cn_init_pid}" ] && nsenter_ext="nsenter -n -m -p -t ${cn_init_pid} --"
+
+            dpdk_pci_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.pci" ${cfg_file} | sed 's/;/ /g')
+            for pci_info in ${dpdk_pci_list}; do
+                # pci_info has the following format:  <pci address>,<dpdk uio driver>
+                pci=$(${nsenter_ext} echo ${pci_info} | awk -F ',' '{print $1}')
+
+                # Create uio dev
+                sys_pci_uio_path=$(${nsenter_ext} find ${root_fs_mount}/sys/ -name "*uio*" | grep -F "${pci}" | grep "uio\/uio")
+                pci_dev_major_minor=$(${nsenter_ext} cat ${sys_pci_uio_path}/dev | sed 's/:/ /g')
+                ${nsenter_ext} rm ${root_fs_mount}/dev/$(basename ${sys_pci_uio_path}) > /dev/null 2>&1
+                ${nsenter_ext} /bin/mknod ${root_fs_mount}/dev/$(basename ${sys_pci_uio_path}) c ${pci_dev_major_minor}
+            done
+
+            # Check any of additional dpdk kernel modules might need to have a
+            # dev node created.
+            dpdk_kernmod_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.kernmod" ${cfg_file} | sed 's/;/ /g')
+            # Right now only dpk rte_kni requires /dev/kni to be created
+            res=$(echo ${dpdk_kernmod_list} | grep -F 'rte_kni')
+            if [ -n "${res}" ]; then
+                sys_kni_path=$(${nsenter_ext} find ${root_fs_mount}/sys/ -name "kni" | grep -F "devices")
+                kni_dev_major_minor=$(${nsenter_ext} cat ${sys_kni_path}/dev | sed 's/:/ /g')
+                ${nsenter_ext} /bin/mknod ${root_fs_mount}/dev/kni c ${kni_dev_major_minor}
+            fi
+
+            # Now we mount hugepage fs into container.  We support 2 modes:
+            # "host" makes the host hugepage fs available into container; "private"
+            # means the container will have its own hugepage mount.
+
+            dpdk_hugefs_mount=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.mount" ${cfg_file})
+            # Default is using host hugepage
+            [ -z "${dpdk_hugefs_mount}" ] && dpdk_hugefs_mount="host"
+            dpdk_hugefs_path=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.path" ${cfg_file})
+            [ -z "${dpdk_hugefs_path}" ] && dpdk_hugefs_path=${DPDK_HUGEFS_PATH_DEFAULT}
+            if [ "${dpdk_hugefs_mount}" == "host" ]; then
+                # Can only share with host hugepage fs when this function is invoked from
+                # container's hook functions.
+                if [ -z "${cn_init_pid}" ]; then
+                    /bin/mount -o bind ${DPDK_HUGEFS_HOST_PATH_DEFAULT} ${root_fs_mount}/${dpdk_hugefs_path}
+                    res=$?
+                    [ $? -ne 0 ] && { lxc_log "Error, cannot bind mount, ${res}"; return ${res}; }
+                else
+                    lxc_log "Warning, do not support host shared hugepage filesystem"
+                fi
+            elif [ "${dpdk_hugefs_mount}" == "private" ]; then
+                # Currently kernel does not support hugetlbfs min_size option yet.  So for now just
+                # use "size" option
+                dpdk_hugefs_max_size=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.maxsize" ${cfg_file})
+                [ -n "${dpdk_hugefs_max_size}" ] && dpdk_hugefs_options="${dpdk_hugefs_options} -o size=${dpdk_hugefs_max_size}"
+
+                ${nsenter_ext} /bin/mount -t hugetlbfs ${dpdk_hugefs_options} none ${root_fs_mount}/${dpdk_hugefs_path}
+                res=$?
+                [ ${res} -ne 0 ] && { lxc_log "Error, cannot mount hugetlbfs, ${res}"; return ${res}; }
+            fi
         fi
     done
+    return 0
 }
 
 function lxc_setup_net_cn_end {
@@ -91,6 +155,10 @@ function lxc_setup_net_cn_end {
         fi
     done
     lxc_set_net_cn_end_options ${cfg_file} ${cn_name} ${cn_init_pid}
+    if [ $? -ne 0 ]; then
+        lxc_remove_net ${cfg_file} ${cn_name}
+        return 1
+    fi
 
     return 0
 }
@@ -118,15 +186,15 @@ function lxc_setup_net_remote_end {
 
         # Extract this connection specific info
         type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
-        remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
-        remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
-        remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
-        cn_eth_name="veth-${cn_name}-${conn}-0"
-        remote_eth_name="veth-${cn_name}-${conn}-1"
         cn_pid=""
 
         # Going through each connection
         if [ "${type}" == "${NET_TYPE_VETH}" ]; then
+            remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
+            remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
+            remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
+            cn_eth_name=$(lxc_get_veth_cn_end_name ${conn} ${cn_name})
+            remote_eth_name=$(lxc_get_veth_remote_end_name ${conn} ${cn_name})
 
             # veth pip has 2 ends: "cn end" and "remote end".  "cn end"
             # will be in being launching container net namespace, which we do not
@@ -252,16 +320,89 @@ function lxc_setup_net_remote_end {
                 # to decide different namespace to jump into.
                 script_up=$(get_lxc_config_option "wr.network.${conn}.remote.script.up" ${cfg_file})
                 if [ -x "${script_up}" ]; then
-                    ${script_up} "${remote_cn}" "${cn_pid}" "${type}" "${remote_type}" "${remote_link}"
-                else
+                    ${script_up} "${type}" "${cn_name}" "${remote_cn}" "${cn_pid}" "${remote_type}" "${remote_link}" "${remote_eth_name}"
+                elif [ -n "${script_up}" ]; then
                     lxc_log "Warning, up script ${script_up} is not executed.  Make sure it is executable"
                 fi
             fi
         fi
+        if [ "${type}" == "${NET_TYPE_DPDK}" ]; then
+            # Set the number of hugepages.
+            if [ -n "${DPDK_HUGEFS_NR_HUGEPAGES}" ]; then
+                echo ${DPDK_HUGEFS_NR_HUGEPAGES} > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+            fi
+
+            # Prepare hugepage filesystem used for sharing between containers.
+            if [ -n "${DPDK_HUGEFS_HOST_PATH_DEFAULT}" ]; then
+                res=$(cat /proc/mounts | grep -F "${DPDK_HUGEFS_HOST_PATH_DEFAULT}" | awk '{print $3}')
+                if [ "${res}" != "hugetlbfs" ]; then
+                    mount -t hugetlbfs none ${DPDK_HUGEFS_HOST_PATH_DEFAULT}
+                fi
+            fi
+
+            # Get list of kernel modules required to be loaded
+            dpdk_kernmod_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.kernmod" ${cfg_file} | sed 's/;/ /g')
+            for kermod in ${dpdk_kernmod_list}; do
+                # Security, only load module that contains "uio" substring
+                # except for rte_kni.
+                if [ "${kermod}" != "rte_kni" ]; then
+                    res=$(echo ${kermod} | grep -F "uio")
+                    [ -z "${res}" ] && break
+                fi
+
+                res=$(cat /proc/modules | awk '{print $1}' | grep "^${kermod}")
+                if [ -z "${res}" ]; then
+                    /sbin/modprobe ${kermod} || { ret=1; break; }
+                fi
+            done
+
+            dpdk_pci_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.pci" ${cfg_file} | sed 's/;/ /g')
+            for pci_info in ${dpdk_pci_list}; do
+
+                # pci_info has the following format:  <pci address>,<dpdk uio driver>
+                # If driver is not provided then use ${DPDK_DEFAULT_PCI_DRIVER} as default.
+
+                pci=$(echo ${pci_info} | awk -F ',' '{print $1}')
+                [ -z "${pci}" ] && continue
+                driver=$(echo ${pci_info} | awk -F ',' '{print $2}')
+                # If driver is not provided then use ${DPDK_DEFAULT_PCI_DRIVER} as default
+                [ -z "${driver}" ] && driver=${DPDK_DEFAULT_PCI_DRIVER}
+
+                # If well known ${DPDK_DEFAULT_PCI_DRIVER} driver is required then make sure
+                # ${DPDK_DEFAULT_PCI_DRIVER} module is load. This module might already explicitly
+                # specified in dpdk_kernmod_list above.  But load it here any way
+                if [ "${driver}" == "${DPDK_DEFAULT_PCI_DRIVER}" ]; then
+                    res=$(cat /proc/modules | awk '{print $1}' | grep "^${DPDK_DEFAULT_PCI_DRIVER}")
+                    if [ -z "${res}" ]; then
+                        /sbin/modprobe ${DPDK_DEFAULT_PCI_DRIVER} || { ret=1; break; }
+                    fi
+                fi
+                # Make sure that this pci device is not used by any other driver
+                if [ -e "/sys/bus/pci/devices/${pci}/driver/" -a ! -e "/sys/bus/pci/devices/${pci}/net/" ]; then
+                    lxc_log "Error, pci devide ${pci} is currently being used"
+                    ret=1
+                    break
+                fi
+
+            res=$($(dirname ${0})/dpdk_nic_bind_wrapper.py ${driver} -b ${driver} ${pci} 2>&1)
+            [ -n "${res}" ] && { ret=1; break; }
+            done
+
+            # Up script will be executed in Domain0 all namespaces.  Its up to the script
+            # to decide different namespace to jump into.
+            script_up=$(get_lxc_config_option "wr.network.${conn}.remote.script.up" ${cfg_file})
+            if [ -x "${script_up}" ]; then
+                ${script_up} "${type}" "${cn_name}" "${dpdk_pci_list}" "${dpdk_kernmod_list}"
+            elif [ -n "${script_up}" ]; then
+                lxc_log "Warning, up script ${script_up} is not executed.  Make sure it is executable"
+            fi
+        fi
     done
 
-    # Some connections are failed to created, so cleanup
+    # Some connections failed creation, so cleanup
     if [ ${ret} -ne 0 ]; then
+        lxc_log "Error, cannot setup network ${conn}"
+        lxc_conn_setup_failed=${conn}
         lxc_remove_net ${cfg_file} ${cn_name}
         return 1
     fi
@@ -287,13 +428,14 @@ function lxc_remove_net {
 
         # Extract this connection specific info
         type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
-        remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
-        remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
-        remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
-        remote_eth_name="veth-${cn_name}-${conn}-1"
         cn_pid=""
 
         if [ "${type}" == "${NET_TYPE_VETH}" ]; then
+            remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
+            remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
+            remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
+            remote_eth_name="veth-${cn_name}-${conn}-1"
+
             # Get pid path of correct net namespace
             if [ "${remote_cn}" == "host" ]; then
                 if [ -d "${host_proc_path}/1" ]; then
@@ -311,8 +453,8 @@ function lxc_remove_net {
                 # to decide what namespace to jump into
                 script_down=$(get_lxc_config_option "wr.network.${conn}.remote.script.down" ${cfg_file})
                 if [ -x "${script_down}" ]; then
-                    ${script_down} "${remote_cn}" "${cn_pid}" "${type}" "${remote_type}" "${remote_link}"
-                else
+                    ${script_down} "${type}" "${cn_name}" "${remote_cn}" "${cn_pid}" "${remote_type}" "${remote_link}" "${remote_eth_name}"
+                elif [ -n "${script_down}" ]; then
                     lxc_log "Warning, down script ${script_down} is not executed.  Make sure it is executable"
                 fi
 
@@ -342,6 +484,56 @@ function lxc_remove_net {
                 return 1
             fi
         fi
+        if [ "${type}" == "${NET_TYPE_DPDK}" ]; then
+            dpdk_pci_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.pci" ${cfg_file} | sed 's/;/ /g')
+            dpdk_kernmod_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.kernmod" ${cfg_file} | sed 's/;/ /g')
+            cn_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
+            nsenter_ext=""
+            [ -n "${cn_pid}" ] && nsenter_ext="nsenter -n -m -p -t ${cn_pid} --"
+
+            # Down script will be executed in Domain 0 all namespaces.  Its up to the script
+            # to decide what namespace to jump into
+            script_down=$(get_lxc_config_option "wr.network.${conn}.remote.script.down" ${cfg_file})
+            if [ -x "${script_down}" ]; then
+                ${script_down} "${type}" "${cn_name}" "${dpdk_pci_list}" "${dpdk_kernmod_list}"
+            elif [ -n "${script_down}" ]; then
+                lxc_log "Warning, down script ${script_down} is not executed.  Make sure it is executable"
+            fi
+
+            if [ -n "${cn_pid}" ]; then
+                dpdk_hugefs_path=$(get_lxc_config_option "wr.network.${conn}.dpdk.hugefs.path" ${cfg_file})
+                [ -z "${dpdk_hugefs_path}" ] && dpdk_hugefs_path=${DPDK_HUGEFS_PATH_DEFAULT}
+                ${nsenter_ext} umount ${dpdk_hugefs_path}
+            fi
+
+            for pci_info in ${dpdk_pci_list}; do
+                # pci_info has the following format:  <pci address>,<dpdk uio driver>
+                pci=$(echo ${pci_info} | awk -F ',' '{print $1}')
+                [ -z "${pci}" ] && continue
+                driver=$(echo ${pci_info} | awk -F ',' '{print $2}')
+                # If driver is not provided then use ${DPDK_DEFAULT_PCI_DRIVER} as default
+                [ -z "${driver}" ] && driver=${DPDK_DEFAULT_PCI_DRIVER}
+
+                if [ -n "${cn_pid}" ]; then
+                    # pci_info has the following format:  <pci address>,<dpdk uio driver>
+                    pci=$(${nsenter_ext} echo ${pci_info} | awk -F ',' '{print $1}')
+                    sys_pci_uio_path=$(${nsenter_ext} find ${root_fs_mount}/sys/ -name "*uio*" | grep -F "${pci}" | grep "uio\/uio")
+                    ${nsenter_ext} rm /dev/$(basename ${sys_pci_uio_path}) > /dev/null 2>&1
+                fi
+
+                echo ${pci} >> /sys/bus/pci/drivers/${driver}/unbind
+                [ $? -ne 0 ] && lxc_log "Warning, dpdk cannot unbind ${pci} from driver ${driver}"
+            done
+
+            # Some dpdk kernel modules caused dev nodes to be created.  Remove them here.
+            # Right now only dpk rte_kni requires /dev/kni to be removed
+            res=$(echo ${dpdk_kernmod_list} | grep -F 'rte_kni')
+            [ -n "${res}" ] && ${nsenter_ext} rm /dev/kni > /dev/null 2>&1
+
+            # If this dpdk connection failed to setup then there is no need to cleanup
+            # the rest of connections.
+            [ "${lxc_conn_setup_failed}" == "${conn}" ] && break
+        fi
    done
    return 0
 }
@@ -353,14 +545,27 @@ function lxc_remove_net {
 function lxc_add_net_hook_info_cfg {
     local cfg_file=${1}
 
-    hook_script_loc="$(dirname ${0})/lxc_hook_net_pre-mount.sh"
+    hook_script_path=$(dirname ${0})
 
-    res=$(cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^lxc.hook.pre-mount=${hook_script_loc}")
+    res=$(cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^lxc.hook.pre-mount=${hook_script_path}/lxc_hook_net_pre-mount.sh")
     if [ -z "${res}" ]; then
         echo >> ${cfg_file}
         echo "#################################################" >> ${cfg_file}
         echo "### Start WindRiver lxc net specific section ####" >> ${cfg_file}
-        echo "lxc.hook.pre-mount = ${hook_script_loc}" >> ${cfg_file}
+        echo "lxc.hook.pre-mount = ${hook_script_path}/lxc_hook_net_pre-mount.sh" >> ${cfg_file}
+
+        # If there is a dpdk type connection then we need to modify
+        # cgroup to allow uio dev
+        conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+        for conn in ${conn_list}; do
+            type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
+            if [ "${type}" == "${NET_TYPE_DPDK}" ]; then
+                echo "lxc.hook.mount = ${hook_script_path}/lxc_hook_net_mount.sh" >> ${cfg_file}
+                echo "lxc.cgroup.devices.allow = c 249:* rwm" >> ${cfg_file}
+                break
+            fi
+        done
+
         echo "### End WindRiver lxc net specific section   ####" >> ${cfg_file}
         echo "#################################################" >> ${cfg_file}
         echo >> ${cfg_file}

@@ -13,6 +13,9 @@ SRC_URI = "file://dom0_contctl \
            file://lxc_common_helpers.sh \
            file://lxc_driver_net.sh \
            file://lxc_hook_net_pre-mount.sh \
+           file://dpdk_nic_bind_wrapper.py \
+           file://lxc_hook_net_mount.sh \
+           file://dom0-contctl.conf \
 "
 
 SRC_FILES_LIST="dom0_contctl \
@@ -21,6 +24,8 @@ dom0-containers \
 lxc_common_helpers.sh \
 lxc_driver_net.sh \
 lxc_hook_net_pre-mount.sh \
+dpdk_nic_bind_wrapper.py \
+lxc_hook_net_mount.sh \
 "
 
 inherit systemd
@@ -39,7 +44,12 @@ do_install() {
 
     install -d ${D}/lib/systemd/system/
     install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}/lib/systemd/system/
+
+    install -d ${D}/${sysconfdir}
+    install -m 0744 ${WORKDIR}/dom0-contctl.conf ${D}/${sysconfdir}
 }
 
 FILES_${PN} += "/opt \
-                /lib/systemd/system"
+                /lib/systemd/system \
+                ${sysconfdir} \
+"
