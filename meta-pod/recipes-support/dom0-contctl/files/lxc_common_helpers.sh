@@ -78,6 +78,7 @@ function get_parent_cn_name_from_cn_name {
         parent_cn_name=$(cat /proc/${lxc_init_pid}/cgroup | grep ":${CGROUP_NAME}:" | \
                 cut -d ":" -f 3 | sed 's:/lxc/:/:g' | xargs dirname | xargs basename)
     fi
+    [ "${parent_cn_name}" == "/" ] && parent_cn_name=${HOST_CN_NAME}
 
     echo ${parent_cn_name}
 }
@@ -142,7 +143,6 @@ function exec_lxc_cmd_cn {
         if [ -n "${lxc_mgr_pid}" ]; then
             nsenter --net --target ${lxc_mgr_pid} -- $@
         else
-            lxc_log "Error, exec_lxc_cmd_cn, container ${cn_name} is not running or started from host."
             return 1
         fi
     fi
@@ -161,6 +161,17 @@ function is_cn_running {
 
     state=$(get_lxc_cn_state_from_cn_name ${cn_name})
     if [ "${state}" == "RUNNING" ]; then
+        return 1
+    else
+        return 0
+   fi
+}
+
+function is_cn_stopped {
+    local cn_name=${1}
+
+    state=$(get_lxc_cn_state_from_cn_name ${cn_name})
+    if [ -z "${state}" -o "${state}" == "STOPPED" ]; then
         return 1
     else
         return 0

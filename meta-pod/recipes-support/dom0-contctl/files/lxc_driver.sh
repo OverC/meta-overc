@@ -222,6 +222,27 @@ function list_containers {
     done
 }
 
+function display_info_container {
+    local cn_name=${1}
+
+    is_cn_exist ${cn_name}
+    [ $? -eq 0 ] && lxc_log "Container ${cn_name} does not exist." && return 1
+    is_cn_stopped ${cn_name}
+    if [ $? -eq 0 ]; then
+        exec_lxc_cmd_cn ${cn_name} lxc-info -n ${cn_name}
+        parent_cn_name=$(get_parent_cn_name_from_cn_name ${cn_name})
+        lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
+        lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
+        echo -e "Lxc mgr pid:\t${lxc_mgr_pid} ($(cat /proc/${lxc_mgr_pid}/comm))"
+        echo -e "Parent:\t\t${parent_cn_name}"
+        echo -e "Uid map:$(cat /proc/${lxc_init_pid}/uid_map)"
+        echo -e "Gid map:$(cat /proc/${lxc_init_pid}/gid_map)"
+    else
+        echo -e "Name:\t\t${cn_name}"
+        echo -e "State:\t\tSTOPPED"
+    fi
+}
+
 function setup_net {
     local cn_name=${1}
     local cfg_file=${2}

@@ -50,6 +50,12 @@ ${0##*/} list [option]...
 
     list all containers and their state
 
+${0##*/} info [option]...
+
+    display all information about container
+
+   -n <container name>       : Name of container to be displayed
+
 ${0##*/} exec-cmd [option]... -- <shell command with options>
 
     invoke a shell cmd against a container
@@ -171,6 +177,10 @@ case "${cmd}" in
         ;;
     list)
         list_containers
+        ;;
+    info)
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        display_info_container "${container_name}"
         ;;
     setup-net)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
