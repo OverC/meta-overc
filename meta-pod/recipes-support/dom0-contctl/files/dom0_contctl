@@ -108,7 +108,7 @@ shift $((OPTIND-1))
 # Now load correct backend driver
 case "${container_type}" in
     lxc)
-        source `dirname $0`/lxc_driver.sh
+        source $(dirname ${0})/lxc_driver.sh
         ;;
     *)
         echo "Error, backend driver ${container_type} is not supported."

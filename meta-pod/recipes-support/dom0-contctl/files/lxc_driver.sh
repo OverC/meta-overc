@@ -1,7 +1,7 @@
 #! /bin/bash
 
-source `dirname $0`/lxc_common_helpers.sh
-source `dirname $0`/lxc_driver_net.sh
+source $(dirname ${0})/lxc_common_helpers.sh
+source $(dirname ${0})/lxc_driver_net.sh
 
 function get_matching_container_group {
     local start_group=${1}
@@ -39,7 +39,7 @@ function lxc_launch_if_fail_then_clean_up {
         # Its might be the case that the network options in cfg file
         # modified during container is up.  This will mess up the
         # networking clean up process later.  So save it.
-        cp ${cfg_file} "`dirname ${cfg_file}`/.config-do-not-modify"
+        cp ${cfg_file} "$(dirname ${cfg_file})/.config-do-not-modify"
         [ $? -ne 0 ] && log_lxc "Warning, cannot save ${cfg_file}"
     fi
 }
@@ -54,7 +54,7 @@ function lxc_launch_prepare {
     [ $? -eq 1 ] && lxc_log "Error, container ${cn_name} is already running." && return 1
 
     # Setup networking
-    cfg_file=`get_lxc_default_config_file ${cn_name}`
+    cfg_file=$(get_lxc_default_config_file ${cn_name})
     lxc_add_net_hook_info_cfg ${cfg_file}
     lxc_setup_net_remote_end ${cfg_file} ${cn_name}
     if [ $? -ne 0 ]; then
@@ -70,7 +70,7 @@ function save_bind_mount_proc_1 {
     # Some lxc-hook scripts need to be able to jump back to Domain0 namespace.
     # As we will invoke nsenter with bind mount current /proc/1.  So let save
     # Domain0 proc 1 to another location.
-    ctl_dom_proc_1_bind_mount_path=`get_lxc_ctl_dom_proc_1_bind_mount_path ${cn_name}`
+    ctl_dom_proc_1_bind_mount_path=$(get_lxc_ctl_dom_proc_1_bind_mount_path ${cn_name})
     mkdir -p ${ctl_dom_proc_1_bind_mount_path} > /dev/null 2>&1
     mount -o bind /proc/1 ${ctl_dom_proc_1_bind_mount_path}
     [ $? -ne 0 ] && lxc_log "Error, cannot bind mount /proc/1 to ${ctl_dom_proc_1_bind_mount_path}"
@@ -108,7 +108,7 @@ function launch_nested_container {
     if [ "$?" == "1" ] ; then
         lxc-start -n ${cn_name} -d
     else
-        lxc_init_pid=`get_lxc_init_pid_from_cn_name ${parent_cn_name}`
+        lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${parent_cn_name})
         if [ -n "${lxc_init_pid}" ]; then
             nsenter -b /proc/${lxc_init_pid}:/proc/1 --net --target ${lxc_init_pid} -- \
                     lxc-start -n ${cn_name} -d
@@ -131,7 +131,7 @@ function enter_container_ns {
     is_cn_running ${cn_name}
     [ $? -eq 0 ] && lxc_log "Error, container ${cn_name} is not active." && return 1
 
-    lxc_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
+    lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
     if [ -n "${lxc_init_pid}" ]; then
         nsenter --mount --uts --ipc --net --pid --target ${lxc_init_pid}
         return 0
@@ -150,25 +150,25 @@ function stop_container {
 
     # When stopping container, we will use the saved config file to
     # do clean up especially for network.
-    cfg_path="`get_lxc_config_path`/${cn_name}"
+    cfg_path="$(get_lxc_config_path)/${cn_name}"
     cfg_file="${cfg_path}/.config-do-not-modify"
     if [ ! -f "${cfg_file}" ]; then
         lxc_log "Fatal Error, saved file ${cfg_path}/.config-do-not-modify does not exist?"
         return 1;
     fi
 
-    current_cn_name=`get_cn_name_from_init_pid 1`
+    current_cn_name=$(get_cn_name_from_init_pid 1)
 
     # Should not stop container while its childs is running.
     # So first find out if this container has any child.
-    cn_list=`lxc-ls`
+    cn_list=$(lxc-ls)
     for i in ${cn_list}; do
         # Dont count this stopping container or the container
         # this function is invoked.
         [ "${current_cn_name}" == "${i}" ] && continue
         [ "${cn_name}" == "${i}" ] && continue
 
-        parent_cn_name=`get_parent_cn_name_from_cn_name ${i}`
+        parent_cn_name=$(get_parent_cn_name_from_cn_name ${i})
         match_cn_name ${parent_cn_name} ${cn_name}
         if [ "$?" == "1" ]; then
             child_name="${i}"
@@ -188,8 +188,8 @@ function stop_container {
 }
 
 function list_containers {
-    cn_list=`lxc-ls`
-    current_cn_name=`get_cn_name_from_init_pid 1`
+    cn_list=$(lxc-ls)
+    current_cn_name=$(get_cn_name_from_init_pid 1)
 
     # Just going through each of all existing containers
     # and find out its state
@@ -199,9 +199,9 @@ function list_containers {
             continue
         fi
 
-        state=`get_lxc_cn_state_from_cn_name ${i}`
+        state=$(get_lxc_cn_state_from_cn_name ${i})
         if [ -n "${state}" ]; then
-            parent_cn_name=`get_parent_cn_name_from_cn_name ${i}`
+            parent_cn_name=$(get_parent_cn_name_from_cn_name ${i})
             echo "${i} (lxc) (${parent_cn_name}) - ${state}"
         else
             echo "${i} (lxc) - STOPPED"

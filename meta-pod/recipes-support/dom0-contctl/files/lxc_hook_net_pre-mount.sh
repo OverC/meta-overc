@@ -3,16 +3,16 @@
 # This script runs in the spawning container's
 # net and mount namespaces.
 
-source `dirname $0`/lxc_driver_net.sh
+source $(dirname ${0})/lxc_driver_net.sh
 
 which ip > /dev/null 2>&1
 [ $? -ne 0 ] && echo "Fatal Error, ip util is not available" && exit 1
-conn_list=`get_lxc_config_option "wr.network.connection" ${LXC_CONFIG_FILE}`
+conn_list=$(get_lxc_config_option "wr.network.connection" ${LXC_CONFIG_FILE})
 [ -z "${conn_list}" ] && exit 0
 
 # Going through each connection
 for conn in ${conn_list}; do
-    cn_eth_name=`lxc_get_veth_cn_end_name ${conn} ${LXC_NAME}`
+    cn_eth_name=$(lxc_get_veth_cn_end_name ${conn} ${LXC_NAME})
 
     # Right now the "cn end" is parked in Domain0 net namespace.
     # Need to jump into Domain0 net namespace and move it over to this
@@ -35,7 +35,7 @@ for conn in ${conn_list}; do
     # we cannot use "nsenter -n -t 1" here. Luckily, we save Domain0 proc 1
     # at lxc config path (e.g. /var/lib/lxc/<container>/.ctl-dom-proc-1)
 
-    ctl_dom_proc_1_bind_mount_path=`get_lxc_ctl_dom_proc_1_bind_mount_path ${LXC_NAME}`
+    ctl_dom_proc_1_bind_mount_path=$(get_lxc_ctl_dom_proc_1_bind_mount_path ${LXC_NAME})
     nsenter -n -t ${ctl_dom_proc_1_bind_mount_path} -- ip link set ${cn_eth_name} netns 1
 done
 lxc_set_net_cn_end_options ${LXC_CONFIG_FILE} ${LXC_NAME}

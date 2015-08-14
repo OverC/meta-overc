@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source `dirname $0`/lxc_common_helpers.sh
+source $(dirname ${0})/lxc_common_helpers.sh
 
 function lxc_get_veth_cn_end_name {
     local conn_name=${1}
@@ -21,7 +21,7 @@ function lxc_set_net_cn_end_options {
     local cn_name=${2}
     local cn_init_pid=${3}
 
-    conn_list=`get_lxc_config_option "wr.network.connection" ${cfg_file}`
+    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     nsenter_ext=""
@@ -30,19 +30,19 @@ function lxc_set_net_cn_end_options {
     # Going through each connection, at this point,
     # connection has been setup for "remote end" veth
     for conn in ${conn_list}; do
-        cn_eth_name=`lxc_get_veth_cn_end_name ${conn} ${cn_name}`
+        cn_eth_name=$(lxc_get_veth_cn_end_name ${conn} ${cn_name})
 
-        hwaddr=`get_lxc_config_option "wr.network.${conn}.hwaddr" ${cfg_file}`
+        hwaddr=$(get_lxc_config_option "wr.network.${conn}.hwaddr" ${cfg_file})
         if [ -n "${hwaddr}" ]; then
             ${nsenter_ext} ip link set ${cn_eth_name} address ${hwaddr}
             [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set hwaddrs ${hwaddr} to ${cn_eth_name}"
         fi
-        ipv4=`get_lxc_config_option "wr.network.${conn}.ipv4" ${cfg_file}`
+        ipv4=$(get_lxc_config_option "wr.network.${conn}.ipv4" ${cfg_file})
         if [ -n "${ipv4}" ]; then
             ${nsenter_ext} ip addr add ${ipv4} dev ${cn_eth_name}
             [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set ipv4 ${ipv4} to ${cn_eth_name}"
         fi
-        new_name=`get_lxc_config_option "wr.network.${conn}.name" ${cfg_file}`
+        new_name=$(get_lxc_config_option "wr.network.${conn}.name" ${cfg_file})
         if [ -n "${new_name}" ]; then
             ${nsenter_ext} ip link set ${cn_eth_name} name ${new_name}
             if [ $? -eq 0 ]; then
@@ -51,7 +51,7 @@ function lxc_set_net_cn_end_options {
                 lxc_log "Warning, ${conn}, cannot change name from ${cn_eth_name} to ${new_name}"
             fi
         fi
-        flags=`get_lxc_config_option "wr.network.${conn}.flags" ${cfg_file} | grep 'up'`
+        flags=$(get_lxc_config_option "wr.network.${conn}.flags" ${cfg_file} | grep 'up')
         if [ -n "${flags}" ]; then
             ${nsenter_ext} ip link set ${cn_eth_name} up
             [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot activate ${cn_eth_name}"
@@ -65,18 +65,18 @@ function lxc_setup_net_cn_end {
 
     # Some basic checks
     [ ! -e "${cfg_file}" ] && return 1
-    cn_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
+    cn_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
     [ -z "${cn_init_pid}" ] && return 1
     which ip > /dev/null 2>&1
     [ $? -ne 0 ] && lxc_log "Error, ip util is not available" && return 1
 
-    conn_list=`get_lxc_config_option "wr.network.connection" ${cfg_file}`
+    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     # Going through each connection, at this point,
     # connection has been setup for "remote end" veth
     for conn in ${conn_list}; do
-        cn_eth_name=`lxc_get_veth_cn_end_name ${conn} ${cn_name}`
+        cn_eth_name=$(lxc_get_veth_cn_end_name ${conn} ${cn_name})
         # Now switch "cn end" to correct namespace
         ip link set ${cn_eth_name} netns ${cn_init_pid}
         [ $? -ne 0 ] && lxc_log "Error, ${conn}, cannot switch ${cn_eth_name} to ${cn_init_pid} net namespace" \
@@ -102,17 +102,17 @@ function lxc_setup_net_remote_end {
 
     # Get list of connections specified in cfg file.
     # Each connection is specified by options wr.network.connection
-    conn_list=`get_lxc_config_option "wr.network.connection" ${cfg_file}`
+    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 0
 
     # Going through each connection
     for conn in ${conn_list}; do
 
         # Extract this connection specific info
-        type=`get_lxc_config_option "wr.network.${conn}.type" ${cfg_file}`
-        remote_cn=`get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file}`
-        remote_type=`get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file}`
-        remote_link=`get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file}`
+        type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
+        remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
+        remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
+        remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
         cn_eth_name="veth-${cn_name}-${conn}-0"
         remote_eth_name="veth-${cn_name}-${conn}-1"
         cn_pid=""
@@ -157,7 +157,7 @@ function lxc_setup_net_remote_end {
                 fi
 
             elif [ -n "${remote_cn}" ]; then
-                cn_pid=`get_lxc_init_pid_from_cn_name ${remote_cn}`
+                cn_pid=$(get_lxc_init_pid_from_cn_name ${remote_cn})
                 if [ -n "${cn_pid}" ]; then
                     # No need to invoke nsenter here as we want to park "cn end" into Domain0
                     # net namespace, and at this point we are actually in Domain0 net namespace.
@@ -181,12 +181,12 @@ function lxc_setup_net_remote_end {
             fi
 
             if [ -n "${cn_pid}" ]; then
-                hwaddr=`get_lxc_config_option "wr.network.${conn}.remote.hwaddr" ${cfg_file}`
+                hwaddr=$(get_lxc_config_option "wr.network.${conn}.remote.hwaddr" ${cfg_file})
                 if [ -n "${hwaddr}" ]; then
                     nsenter -n -t ${cn_pid} -- ip link set ${remote_eth_name} address ${hwaddr}
                     [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set hwaddrs ${hwaddr} to ${remote_eth_name}"
                 fi
-                ipv4=`get_lxc_config_option "wr.network.${conn}.remote.ipv4" ${cfg_file}`
+                ipv4=$(get_lxc_config_option "wr.network.${conn}.remote.ipv4" ${cfg_file})
                 if [ -n "${ipv4}" ]; then
                     nsenter -n -t ${cn_pid} -- ip addr add ${ipv4} dev ${remote_eth_name}
                     [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot set ipv4 ${ipv4} to ${remote_eth_name}"
@@ -208,7 +208,7 @@ function lxc_setup_net_remote_end {
                     *)
                         ;;
                 esac
-                flags=`get_lxc_config_option "wr.network.${conn}.remote.flags" ${cfg_file} | grep 'up'`
+                flags=$(get_lxc_config_option "wr.network.${conn}.remote.flags" ${cfg_file} | grep 'up')
                 if [ -n "${flags}" ]; then
                     nsenter -n -t ${cn_pid} -- ip link set ${remote_eth_name} up
                     [ $? -ne 0 ] && lxc_log "Warning, ${conn}, cannot activate ${remote_eth_name}"
@@ -216,7 +216,7 @@ function lxc_setup_net_remote_end {
 
                 # Up script will be executed in Domain0 all namespaces.  Its up to the script
                 # to decide different namespace to jump into.
-                script_up=`get_lxc_config_option "wr.network.${conn}.remote.script.up" ${cfg_file}`
+                script_up=$(get_lxc_config_option "wr.network.${conn}.remote.script.up" ${cfg_file})
                 if [ -x "${script_up}" ]; then
                     ${script_up} "${remote_cn}" "${cn_pid}" "${type}" "${remote_type}" "${remote_link}"
                 else
@@ -245,17 +245,17 @@ function lxc_remove_net {
 
     # Get list of connections specified in cfg file.
     # Each connection is specified by options wr.network.connection
-    conn_list=`get_lxc_config_option "wr.network.connection" ${cfg_file}`
+    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     # Going through each connection
     for conn in ${conn_list}; do
 
         # Extract this connection specific info
-        type=`get_lxc_config_option "wr.network.${conn}.type" ${cfg_file}`
-        remote_cn=`get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file}`
-        remote_type=`get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file}`
-        remote_link=`get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file}`
+        type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
+        remote_cn=$(get_lxc_config_option "wr.network.${conn}.remote.cn" ${cfg_file})
+        remote_type=$(get_lxc_config_option "wr.network.${conn}.remote.type" ${cfg_file})
+        remote_link=$(get_lxc_config_option "wr.network.${conn}.remote.link" ${cfg_file})
         remote_eth_name="veth-${cn_name}-${conn}-1"
         cn_pid=""
 
@@ -269,13 +269,13 @@ function lxc_remove_net {
                     return 1
                 fi
             elif [ -n "${remote_cn}" ]; then
-                cn_pid=`get_lxc_init_pid_from_cn_name ${remote_cn}`
+                cn_pid=$(get_lxc_init_pid_from_cn_name ${remote_cn})
             fi
 
             if [ -n "${cn_pid}" ]; then
                 # Down script will be executed in Domain 0 all namespaces.  Its up to the script
                 # to decide what namespace to jump into
-                script_down=`get_lxc_config_option "wr.network.${conn}.remote.script.down" ${cfg_file}`
+                script_down=$(get_lxc_config_option "wr.network.${conn}.remote.script.down" ${cfg_file})
                 if [ -x "${script_down}" ]; then
                     ${script_down} "${remote_cn}" "${cn_pid}" "${type}" "${remote_type}" "${remote_link}"
                 else
@@ -319,9 +319,9 @@ function lxc_remove_net {
 function lxc_add_net_hook_info_cfg {
     local cfg_file=${1}
 
-    hook_script_loc="`dirname $0`/lxc_hook_net_pre-mount.sh"
+    hook_script_loc="$(dirname ${0})/lxc_hook_net_pre-mount.sh"
 
-    res=`cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^lxc.hook.pre-mount=${hook_script_loc}"`
+    res=$(cat ${cfg_file} | sed 's/[ ,\t]//g' | grep "^lxc.hook.pre-mount=${hook_script_loc}")
     if [ -z "${res}" ]; then
         echo >> ${cfg_file}
         echo "#################################################" >> ${cfg_file}

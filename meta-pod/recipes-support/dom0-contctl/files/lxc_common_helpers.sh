@@ -15,8 +15,8 @@ function match_cn_name {
     # names match.
 
     [ -z "${1}" -o -z "${2}" ] && return 0
-    match1=`echo ${1} | grep "^${2}"`
-    match2=`echo ${2} | grep "^${1}"`
+    match1=$(echo ${1} | grep "^${2}")
+    match2=$(echo ${2} | grep "^${1}")
     [ -n "${match1}" -o -n "${match2}" ] && return 1
     return 0
 }
@@ -24,8 +24,8 @@ function match_cn_name {
 function get_cn_name_from_init_pid {
     local init_pid=${1}
 
-    cn_name=`cat /proc/${init_pid}/cgroup | grep ":cpuset:" |\
-            cut -d ":" -f 3 | xargs basename`
+    cn_name=$(cat /proc/${init_pid}/cgroup | grep ":cpuset:" |\
+            cut -d ":" -f 3 | xargs basename)
     echo "${cn_name}"
 }
 
@@ -36,10 +36,10 @@ function get_lxc_mgr_pid_from_cn_name {
     # of lxc container.  All lxc-xxxx commands must
     # inherit net namespace of this process.
 
-    lxc_mgr_pid_list=`ps -e -o comm,pid | grep "^lxc-start" | awk '{print $2}'`
+    lxc_mgr_pid_list=$(ps -e -o comm,pid | grep "^lxc-start" | awk '{print $2}')
     for i in ${lxc_mgr_pid_list}; do
-        lxc_cn_init_pid=`pgrep -P $i`
-        this_cn_name=`get_cn_name_from_init_pid ${lxc_cn_init_pid}`
+        lxc_cn_init_pid=$(pgrep -P $i)
+        this_cn_name=$(get_cn_name_from_init_pid ${lxc_cn_init_pid})
 
         match_cn_name ${this_cn_name} ${cn_name}
         if [ $? -eq 1 ]; then
@@ -60,9 +60,9 @@ function get_lxc_init_pid_from_cn_name {
     # 1 child process which is the first process
     # (normally /sbin/init") of container
 
-    lxc_mgr_pid=`get_lxc_mgr_pid_from_cn_name ${cn_name}`
+    lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
     if [ -n "${lxc_mgr_pid}" ]; then
-        lxc_init_pid=`pgrep -P ${lxc_mgr_pid}`
+        lxc_init_pid=$(pgrep -P ${lxc_mgr_pid})
     fi
     echo ${lxc_init_pid}
 }
@@ -71,10 +71,10 @@ function get_parent_cn_name_from_cn_name {
     local cn_name=${1}
 
     parent_cn_name=""
-    lxc_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
+    lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
     if [ -n "${lxc_init_pid}" ]; then
-        parent_cn_name=`cat /proc/${lxc_init_pid}/cgroup | grep ":cpuset:" | \
-                cut -d ":" -f 3 | sed 's:/lxc/:/:g' | xargs dirname | xargs basename`
+        parent_cn_name=$(cat /proc/${lxc_init_pid}/cgroup | grep ":cpuset:" | \
+                cut -d ":" -f 3 | sed 's:/lxc/:/:g' | xargs dirname | xargs basename)
     fi
 
     echo ${parent_cn_name}
@@ -83,7 +83,7 @@ function get_parent_cn_name_from_cn_name {
 function is_cn_exist {
     local cn_name=${1}
 
-    cn_list=`lxc-ls`
+    cn_list=$(lxc-ls)
     for i in ${cn_list}; do
         [ "${i}" == "${cn_name}" ] && return 1
     done
@@ -93,7 +93,7 @@ function is_cn_exist {
 function is_current_cn {
     local cn_name=${1}
 
-    current_cn_name=`get_cn_name_from_init_pid 1`
+    current_cn_name=$(get_cn_name_from_init_pid 1)
     [ "${current_cn_name}" == "${cn_name}" ] && return 1
     return 0
 }
@@ -109,7 +109,7 @@ function exec_cmd_container {
     if [ $? -eq 1 ] ; then
         $@
     else
-        lxc_init_pid=`get_lxc_init_pid_from_cn_name ${cn_name}`
+        lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
         if [ -n "${lxc_init_pid}" ]; then
             nsenter -u -i -m -n -p -t ${lxc_init_pid} -- $@
         else
@@ -130,7 +130,7 @@ function exec_lxc_cmd_cn {
     if [ $? -eq 1 ] ; then
         $@
     else
-        lxc_mgr_pid=`get_lxc_mgr_pid_from_cn_name ${cn_name}`
+        lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
         if [ -n "${lxc_mgr_pid}" ]; then
             nsenter --net --target ${lxc_mgr_pid} -- $@
         else
@@ -143,15 +143,15 @@ function exec_lxc_cmd_cn {
 function get_lxc_cn_state_from_cn_name {
     local cn_name=${1}
 
-    state=`exec_lxc_cmd_cn ${cn_name} lxc-info -n ${cn_name} \
-            | grep "State:" | awk '{print $2}'`
+    state=$(exec_lxc_cmd_cn ${cn_name} lxc-info -n ${cn_name} \
+            | grep "State:" | awk '{print $2}')
     echo "${state}"
 }
 
 function is_cn_running {
     local cn_name=${1}
 
-    state=`get_lxc_cn_state_from_cn_name ${cn_name}`
+    state=$(get_lxc_cn_state_from_cn_name ${cn_name})
     if [ "${state}" == "RUNNING" ]; then
         return 1
     else
@@ -160,19 +160,19 @@ function is_cn_running {
 }
 
 function get_lxc_config_path {
-    echo `lxc-config lxc.lxcpath`
+    echo $(lxc-config lxc.lxcpath)
 }
 
 function get_lxc_default_config_file {
     local cn_name=${1}
 
-    echo "`get_lxc_config_path`/${cn_name}/config"
+    echo "$(get_lxc_config_path)/${cn_name}/config"
 }
 
 function get_lxc_ctl_dom_proc_1_bind_mount_path {
     local cn_name=${1}
 
-    echo "`get_lxc_config_path`/${cn_name}/.ctl-dom-proc-1"
+    echo "$(get_lxc_config_path)/${cn_name}/.ctl-dom-proc-1"
 }
 
 function get_lxc_config_option {
