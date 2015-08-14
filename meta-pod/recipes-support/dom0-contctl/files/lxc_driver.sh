@@ -178,7 +178,7 @@ function stop_container {
     done
 
     if [ -z ${child_name} ]; then
-        exec_lxc_cmd_cn ${cn_name} lxc-stop -n ${cn_name}
+        exec_lxc_cmd_cn ${cn_name} lxc-stop -n ${cn_name} -k
     else
         lxc_log "Error, child ${child_name} container is running"
     fi
