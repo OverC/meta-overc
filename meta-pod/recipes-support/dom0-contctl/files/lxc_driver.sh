@@ -145,7 +145,11 @@ function enter_container_ns {
 
     lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
     if [ -n "${lxc_init_pid}" ]; then
-        nsenter --mount --uts --ipc --net --pid --target ${lxc_init_pid}
+        # nsenter (setns) will fail if user namespace of ${lxc_init_pid} pid is the same
+        # as this user namespace of process running this script.
+        are_pids_same_namespace "user" "1" "${lxc_init_pid}"
+        [ $? -ne 1 ] && nsenter_opts="--user"
+        nsenter ${nsenter_opts} --mount --uts --ipc --net --pid --target ${lxc_init_pid}
         return 0
     else
         lxc_log "Error, cannot enter container ${cn_name}. Please make sure its active?"

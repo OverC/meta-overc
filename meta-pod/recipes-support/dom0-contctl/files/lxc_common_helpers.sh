@@ -120,7 +120,9 @@ function exec_cmd_container {
     else
         lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
         if [ -n "${lxc_init_pid}" ]; then
-            nsenter -u -i -m -n -p -t ${lxc_init_pid} -- $@
+            are_pids_same_namespace "user" "1" "${lxc_init_pid}"
+            [ $? -ne 1 ] && nsenter_opts="-U"
+            nsenter ${nsenter_opts} -u -i -m -n -p -t ${lxc_init_pid} -- $@
         else
             lxc_log "Error, exec_lxc_cmd_cn, container ${cn_name} is not running or started from host."
             return 1
@@ -297,4 +299,15 @@ function get_lxc_config_option {
     # Get list of values associated with this option then picks out the last value
     # in the list.
     echo "$(get_lxc_config_option_list ${cfg_option} ${cfg_file} | awk '{print $NF}')"
+}
+
+function are_pids_same_namespace {
+    local namespace=${1}
+    local pid1=${2}
+    local pid2=${3}
+
+    pid1_ns_id=$(ls -l /proc/${pid1}/ns | grep "${namespace} -> ${namespace}:" | sed -e 's/.*\[//' -e 's/\]//')
+    pid2_ns_id=$(ls -l /proc/${pid2}/ns | grep "${namespace} -> ${namespace}:" | sed -e 's/.*\[//' -e 's/\]//')
+    [ "${pid1_ns_id}" == "${pid2_ns_id}" ] && return 1
+    return 0
 }
