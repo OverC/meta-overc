@@ -16,6 +16,7 @@ SRC_URI = "file://dom0_contctl \
            file://dpdk_nic_bind_wrapper.py \
            file://lxc_hook_net_mount.sh \
            file://dom0-contctl.conf \
+           file://lxc_launch_group.sh \
 "
 
 SRC_FILES_LIST="dom0_contctl \
@@ -26,6 +27,7 @@ lxc_driver_net.sh \
 lxc_hook_net_pre-mount.sh \
 dpdk_nic_bind_wrapper.py \
 lxc_hook_net_mount.sh \
+lxc_launch_group.sh \
 "
 
 inherit systemd

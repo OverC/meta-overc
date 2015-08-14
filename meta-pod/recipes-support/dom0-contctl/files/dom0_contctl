@@ -34,6 +34,13 @@ ${0##*/} launch [option]...
 
    -n <container name>: Name of container to be launched
 
+${0##*/} launch-group [option]...
+
+    Auto launch containers.
+
+   -g <group name>: Containers belonging to this group name will be auto
+                    launched.  Repeat this option for multiple groups
+
 ${0##*/} relaunch [option]...
 
     relaunch an active container.  It first stop active container,
@@ -104,6 +111,7 @@ cmd=${1}
 container_name=""
 parent_container_name=""
 cfg_file=""
+start_group=""
 
 
 OPTIND=2
@@ -122,7 +130,7 @@ while getopts "h?n:t:p:a:c:g:" opt; do
         parent_container_name=$OPTARG
         ;;
     g)
-        start_group=$OPTARG
+        start_group="${start_group} $OPTARG"
         ;;
     c)
         cfg_file=$OPTARG
@@ -146,23 +154,10 @@ case "${container_type}" in
         ;;
 esac
 
-if [ -n "${start_group}" ]; then
-    echo "Start group (${start_group}) passed, building container start list"
-    start_containers=`get_matching_container_group ${start_group}`
-fi
-
 case "${cmd}" in
     launch-peer)
-        if [ -z "${start_containers}" ]; then
-            start_containers=${container_name}
-        fi
-
-        [ -z "${start_containers}" ] && echo "Error, please provide container name" && exit 1
-
-        for c in ${start_containers}; do
-            echo "Launching ${c} as peer"
-            launch_peer_container ${c}
-        done
+        [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
+        launch_peer_container ${container_name}
         ;;
     launch-nested)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
@@ -173,6 +168,9 @@ case "${cmd}" in
     launch)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1
         launch_container "${container_name}"
+        ;;
+    launch-group)
+        launch_group "${start_group}"
         ;;
     enter-ns)
         [ -z "${container_name}" ] && echo "Error, please provide container name" && exit 1

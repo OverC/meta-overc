@@ -2,28 +2,7 @@
 
 source $(dirname ${0})/lxc_common_helpers.sh
 source $(dirname ${0})/lxc_driver_net.sh
-
-function get_matching_container_group {
-    local start_group=${1}
-
-    # look in /var/lib/lxc/<container>/config for groups that match
-    local lxcbase=${LXCBASE}
-    if [ -z "${lxcbase}" ]; then
-	lxcbase=/var/lib/lxc
-    fi
-
-    matches=""
-    for c in `ls ${lxcbase}/`; do
-	if [ -f "${lxcbase}/${c}/config" ]; then
-	    group=`grep lxc.group "${lxcbase}/${c}/config" | cut -f2 -d'=' | sed 's/ *//'`
-	    if [ "${group}" == "${start_group}" ]; then
-		matches="${matches} ${c}"
-	    fi
-	fi
-    done
-
-    echo ${matches}
-}
+source $(dirname ${0})/lxc_launch_group.sh
 
 LAUNCH_CMD_DB_KEY="wr.launch_cmd"
 

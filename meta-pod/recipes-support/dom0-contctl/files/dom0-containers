@@ -60,7 +60,7 @@ case "$1" in
         fi
 
         # Start autoboot containers first then the NULL group "peer".
-        "$bindir"/dom0_contctl launch-peer $OPTIONS $BOOTGROUPS
+        "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
         touch "$lockdir"/dom0
     ;;
 
