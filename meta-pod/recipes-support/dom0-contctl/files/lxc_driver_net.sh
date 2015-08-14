@@ -30,7 +30,7 @@ function lxc_set_net_cn_end_options {
     local cn_init_pid=${3}
     local root_fs_mount=${4}
 
-    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+    conn_list=$(get_lxc_config_option_list "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     # Going through each connection
@@ -139,7 +139,7 @@ function lxc_setup_net_cn_end {
     which ip > /dev/null 2>&1
     [ $? -ne 0 ] && lxc_log "Error, ip util is not available" && return 1
 
-    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+    conn_list=$(get_lxc_config_option_list "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     # Going through each connection, at this point,
@@ -178,7 +178,7 @@ function lxc_setup_net_remote_end {
 
     # Get list of connections specified in cfg file.
     # Each connection is specified by options wr.network.connection
-    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+    conn_list=$(get_lxc_config_option_list "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 0
 
     # Going through each connection
@@ -420,7 +420,7 @@ function lxc_remove_net {
 
     # Get list of connections specified in cfg file.
     # Each connection is specified by options wr.network.connection
-    conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+    conn_list=$(get_lxc_config_option_list "wr.network.connection" ${cfg_file})
     [ -z "${conn_list}" ] && return 1
 
     # Going through each connection
@@ -556,7 +556,7 @@ function lxc_add_net_hook_info_cfg {
 
         # If there is a dpdk type connection then we need to modify
         # cgroup to allow uio dev
-        conn_list=$(get_lxc_config_option "wr.network.connection" ${cfg_file})
+        conn_list=$(get_lxc_config_option_list "wr.network.connection" ${cfg_file})
         for conn in ${conn_list}; do
             type=$(get_lxc_config_option "wr.network.${conn}.type" ${cfg_file})
             if [ "${type}" == "${NET_TYPE_DPDK}" ]; then

@@ -7,7 +7,7 @@ source $(dirname ${0})/lxc_driver_net.sh
 
 which ip > /dev/null 2>&1
 [ $? -ne 0 ] && echo "Fatal Error, ip util is not available" && exit 1
-conn_list=$(get_lxc_config_option "wr.network.connection" ${LXC_CONFIG_FILE})
+conn_list=$(get_lxc_config_option_list "wr.network.connection" ${LXC_CONFIG_FILE})
 [ -z "${conn_list}" ] && exit 0
 
 # Going through each connection

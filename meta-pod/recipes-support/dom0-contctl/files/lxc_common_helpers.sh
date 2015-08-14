@@ -207,9 +207,49 @@ function get_lxc_ctl_dom_proc_1_bind_mount_path {
     echo "$(get_lxc_config_path)/${cn_name}/.ctl-dom-proc-1"
 }
 
+function get_lxc_config_option_in_cfg {
+    local cfg_option=${1}
+    local cfg_file=${2}
+
+    if [ -e "${cfg_file}" ]; then
+        cat ${cfg_file} | sed 's/[ \t]//g' | grep "^${cfg_option}" | cut -d '=' -f 2
+    else
+        echo ""
+    fi
+}
+
+function get_lxc_config_seg_files {
+    local cfg_file=${1}
+    local child_cfg_segment_files=""
+    local i=""
+
+    # Here we recursive to find all the included segment cfg files
+    local parent_cfg_segment_files=$(get_lxc_config_option_in_cfg "lxc.include" ${cfg_file})
+    for i in ${parent_cfg_segment_files}; do
+        child_cfg_segment_files="${child_cfg_segment_files} $(get_lxc_config_seg_files ${i})"
+    done
+    echo "${child_cfg_segment_files} ${cfg_file}"
+}
+
+function get_lxc_config_option_list {
+    local cfg_option=${1}
+    local cfg_file=${2}
+    local cfg_segment_files=""
+    local values_list=""
+    local i=""
+
+    cfg_segment_files=$(get_lxc_config_seg_files ${cfg_file})
+    for i in ${cfg_segment_files}; do
+        values_list="${values_list} $(get_lxc_config_option_in_cfg ${cfg_option} ${i})"
+    done
+    echo ${values_list}
+}
+
 function get_lxc_config_option {
     local cfg_option=${1}
     local cfg_file=${2}
 
-    cat ${cfg_file} | sed 's/[ \t]//g' | grep "^${cfg_option}" | cut -d '=' -f 2
+    # Get list of values associated with this option then picks out the last value
+    # in the list.
+    echo "$(get_lxc_config_option_list ${cfg_option} ${cfg_file} | awk '{print $NF}')"
 }
