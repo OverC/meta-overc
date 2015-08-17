@@ -22,6 +22,7 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   packagegroup-container \
+                  packagegroup-service-discovery \
                   ${POD_DOM0_EXTRA_INSTALL} \
                  "
 

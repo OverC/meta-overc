@@ -1,16 +1,25 @@
-# Copyright (C) 2015 Wind River Systems
-#
-# This expands dom0 with extra facilities to keep it looking much
-# like previous incarnations.  Remove this bbappend if you want dom0
-# to just be a container control mechanism, with the extra facilities
-# residing in other domain containers.
+SUMMARY = "A container image for domain E which is used as a graphical interface for users"
+DESCRIPTION = "Launched from the essential image, this is a container image \
+               which provides a graphical ui. This will be the point of \
+               interaction for most users. \
+              "
+HOMEPAGE = "http://www.windriver.com"
 
-include pod-dom0.bb
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
+                    file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-IMAGE_INSTALL_append = "${DOM0_MAIN_PKGS} \
+IMAGE_FEATURES += "package-management doc-pkgs x11-base"
+IMAGE_FSTYPES = "tar.bz2"
+
+IMAGE_INSTALL_append = "packagegroup-core-boot \
+                        packagegroup-dom0 \
+                        packagegroup-util-linux \
+                        packagegroup-core-ssh-openssh \
                         packagegroup-core-full-cmdline \
                         packagegroup-builder \
                         packagegroup-xfce \
+                        packagegroup-container \
                         ntp \
                         ntpdate \
                         ntp-utils \
@@ -40,4 +49,6 @@ XSERVER_append = "xserver-xorg \
 
 ALTERNATIVE_PRIORITY_xfce4-session[x-session-manager] = "60"
 
-IMAGE_FEATURES += "x11-base"
+inherit core-image
+inherit builder-base
+
