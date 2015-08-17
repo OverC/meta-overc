@@ -27,11 +27,18 @@ DEPENDS += "go-cross \
     "
 
 PKG_NAME = "github.com/hashicorp/consul"
-SRC_URI = "git://${PKG_NAME}.git"
+SRC_URI = "git://${PKG_NAME}.git \
+           file://consul.service \
+          "
 SRCREV = "5aa90455ce78d4d41578bafc86305e6e6b28d7d2"
 
 S = "${WORKDIR}/git"
 CCACHE = ""
+
+inherit systemd
+
+SYSTEMD_SERVICE_${PN} = "consul.service"
+SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 #Stops go from installing and testing the package
 do_configure(){
@@ -55,8 +62,10 @@ do_compile() {
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
     install -d ${D}${prefix}/bin
+    install -d ${D}/lib/systemd/system
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
     cp -a ${S}/.gopath/bin/* ${D}${prefix}/bin/
+    cp ${WORKDIR}/consul.service ${D}/lib/systemd/system
 }
 
-FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/* ${prefix}/bin/*"
+FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/* ${prefix}/bin/* /lib/systemd/system"

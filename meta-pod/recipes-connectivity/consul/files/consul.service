@@ -1,0 +1,12 @@
+[Unit]
+Description=Launch Consul Cluster
+
+[Service]
+Restart=on-failure
+RestartSec=45
+ExecStartPre=/bin/sh -c 'echo -ne \'{"data_dir":\"/var/consul","server":true,"bootstrap_expect":1,\' > /tmp/consul.conf'
+ExecStartPre=/bin/sh -c 'echo -ne \'"bind_addr":"\'$(ifconfig br0 | awk \'/inet addr/{print substr($2,6)}\')\'"}\' >> /tmp/consul.conf'
+ExecStart=/usr/bin/consul agent -config-file=/tmp/consul.conf
+
+[Install]
+WantedBy=multi-user.target
