@@ -122,6 +122,18 @@ nbd has been created properly started):
 
 We now have a bootable device, with an embedded installer + installation payload.
 
+NOTES:
+
+  * Puppet - The installer is able to apply puppet configurations
+    during the installation. To use this functionality you will have
+    to add 'puppet' to your build by including meta-cloud-services
+    (git://git.yoctoproject.org/meta-cloud-services) to your build's
+    layers and adding 'IMAGE_INSTALL_append += "puppet"' to your
+    build. Set INSTALL_PUPPET_DIR in the install config script to then
+    enable puppet configuration of your installation. Puppet is run in
+    the context of the installed 'pod-essential' at the end of the
+    installation if using pod-install.sh.
+
 OverC installation
 ------------------
 
