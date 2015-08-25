@@ -1,0 +1,126 @@
+Introduction
+==============================================================
+This provides a generic framework for performing container
+maintenance on a system. It provides the capability to perform
+a number of commands such as starting, stopping, activating,
+rollback, etc on containers. The framework depends on an calling
+scripts which handles the underlying mechanisms of doing the actual
+container work, these container scripts allows you to customize
+for different types of containers including lxc.
+
+
+Container scripts
+==============================================================
+For each template container type, the activate, start, stop, send image and
+update behaviours can be customized by calling container scripts with
+certain arguments.
+
+Currently, the scripts are expected to reside in /etc/overc/container,
+for other locations, redefine CONTAINER_SCRIPT_PATH in Overc/container.py
+
+A sample container script exists in the container-scripts directory
+for a template "example" - the template name corresponds to the name of
+the script.
+
+These scripts will be called with arguments as follows...
+
+activate container:
+    <script> -a <name>
+
+start container:
+    <script> -S <name>
+
+stop container:
+    <script> -K <name>
+
+send image for template:
+    <script> -s <image url>
+
+update image:
+    <script> -U
+
+rollback container:
+    <script> -R <name> <snapshot>
+
+list container:
+    <script> -L
+
+list container snapshots:
+    <script> -B <name>
+
+container status:
+    <script> -A <name>
+
+    return value:
+        0: does not exist
+        2: exists, not active
+        3: exists, active
+
+
+Usage
+==============================================================
+list_containers     list containers available
+usage: overc container list_containers template
+  template    template of container
+
+list_snapshots      list snapshots available for container
+usage: overc container list_snapshots [-h] name template
+positional arguments:
+  name        name of container
+  template    template of container
+
+
+rollback            rollback container upgrade
+usage: overc container rollback [-h] name snapshot_name template
+positional arguments:
+  name           name of container
+  snapshot_name  name of snapshot
+  template    template of container
+
+update              update to the latest available
+usage: overc container update [-h] template
+positional arguments:
+  template    template of container
+
+    This calls the container script of the template with
+    the update option.
+
+send_image          send container image for template
+usage: overc container send_image [-h] image_url template
+positional arguments:
+  image_url   location of image
+  template    template of container
+
+    This calls the container script of the template with
+    the send image option. The expected behaviour is that
+    the container's image for the specified template will 
+    be replaced by the specified image url.
+
+start               start container
+usage: overc container start [-h] name template
+positional arguments:
+  name        name of container
+  template    template of container
+
+    This calls the container script of the template with
+    the start container option.
+
+stop                stop container
+usage: overc container stop [-h] name template
+positional arguments:
+  name        name of container
+  template    template of container
+
+    This calls the container script of the template with
+    the stop container option.
+
+activate            activate container
+usage: overc container activate [-h] [-f] name template
+positional arguments:
+  name         name of container
+  template     template of container
+
+  -f: force the container to be created if it's active
+
+    This calls the container script of the template with
+    the activate container option.

@@ -1,0 +1,140 @@
+#!/usr/bin/python -Es
+# Copyright (C) 2015-2016 WindRiver
+# AUTHOR: Fupan Li <fupan.li@windriver.com>, Amy Fong <amy.fong@windriver.com>
+#
+# overc is a tool for managing OverC Systems and Containers
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License as
+#    published by the Free Software Foundation; either version 2 of
+#    the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+#    02110-1301 USA.
+#
+#
+import sys, os
+import argparse
+import gettext
+import subprocess
+import Overc
+
+PROGNAME="overc"
+gettext.bindtextdomain(PROGNAME, "/usr/share/locale")
+gettext.textdomain(PROGNAME)
+try:
+    gettext.install(PROGNAME,
+                    unicode=True,
+                    codeset = 'utf-8')
+except TypeError:
+    # Failover to python3 install
+    gettext.install(PROGNAME,
+                    codeset = 'utf-8')
+except IOError:
+    import builtins
+    builtins.__dict__['_'] = str
+
+class HelpByDefaultArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_help()
+        sys.stderr.write('\nerror: %s\n' % message)
+        sys.exit(2)
+
+if __name__ == '__main__':
+    overc=Overc.Overc()
+    parser = HelpByDefaultArgumentParser(description=overc.help())
+    subparser = parser.add_subparsers(help=_("commands"))
+
+    if os.path.exists("/usr/bin/smart"):
+        hostp = subparser.add_parser("host",help=_("execute OverC host commands"))
+        host_subparser = hostp.add_subparsers(help=_("host commands"))
+        rollbackp = host_subparser.add_parser("rollback", help=_("switch to alternate core system at boot"))
+        rollbackp.set_defaults(func=overc.host_rollback)
+        rollbackp.add_argument("-r", "--reboot", dest="reboot",
+                               action="store_true",
+                               help=_("initiate a reboot after rollback is prepared"))
+
+        upgradep = host_subparser.add_parser("upgrade", help=_("upgrade to the latest core system if it is available"))
+        upgradep.set_defaults(func=overc.host_upgrade)
+        upgradep.add_argument("-r", "--reboot", dest="reboot",
+                               action="store_true",
+                               help=_("if an upgrade is available, reboot after deployment is complete"))
+        upgradep.add_argument("-y", "--yes", dest="yes",
+                               action="store_true",
+                               help=_("Do not ask for confirmation"))
+
+        updatep = host_subparser.add_parser("update", help=_("update the OverC packages database"))
+        updatep.set_defaults(func=overc.host_update)
+
+        newerp = host_subparser.add_parser("newer", help=_("shows packages that have available upgrades."))
+        newerp.set_defaults(func=overc.host_newer)
+
+
+
+
+    container = subparser.add_parser("container",help=_("execute OverC container commands"))
+    container_subparser = container.add_subparsers(help=_("container commands"))
+
+    c_rollback = container_subparser.add_parser("rollback", help=_("rollback container upgrade"))
+    c_rollback.set_defaults(func=overc.container_rollback)
+    c_rollback.add_argument('name', help="name of container")
+    c_rollback.add_argument('snapshot_name', help="name of snapshot")
+    c_rollback.add_argument('template', help="template of container")
+
+    c_list_containers = container_subparser.add_parser("list_containers", help=_("list containers available"))
+    c_list_containers.set_defaults(func=overc.container_list)
+    c_list_containers.add_argument('template', help="template of container")
+
+    c_list_snapshots = container_subparser.add_parser("list_snapshots", help=_("list snapshots available for container"))
+    c_list_snapshots.set_defaults(func=overc.container_snapshot_list)
+    c_list_snapshots.add_argument('name', help="name of container")
+    c_list_snapshots.add_argument('template', help="template of container")
+
+    c_update = container_subparser.add_parser("update", help=_("update to the latest available"))
+    c_update.set_defaults(func=overc.container_update)
+    c_update.add_argument('template', help="template of container")
+
+    c_send_image = container_subparser.add_parser("send_image", help=_("send container image for template"))
+    c_send_image.set_defaults(func=overc.container_send_image)
+    c_send_image.add_argument('image_url', help="location of image")
+    c_send_image.add_argument('template', help="template of container")
+
+    c_activate = container_subparser.add_parser("activate", help=_("activate container"))
+    c_activate.set_defaults(func=overc.container_activate)
+    c_activate.add_argument('name', help="name of container")
+    c_activate.add_argument('template', help="template of container")
+    c_activate.add_argument('-f', '--force', dest="force", action="store_true", help=_("stops container if it's active"))
+
+    c_start = container_subparser.add_parser("start", help=_("start container"))
+    c_start.set_defaults(func=overc.container_start)
+    c_start.add_argument('name', help="name of container")
+    c_start.add_argument('template', help="template of container")
+
+    c_stop = container_subparser.add_parser("stop", help=_("stop container"))
+    c_stop.set_defaults(func=overc.container_stop)
+    c_stop.add_argument('name', help="name of container")
+    c_stop.add_argument('template', help="template of container")
+
+    try:
+        args = parser.parse_args()
+        overc.set_args(args)
+        sys.exit(args.func())
+    except ValueError as e:
+        sys.stderr.write("%s\n" % str(e))
+        sys.exit(1)
+    except IOError as e:
+        sys.stderr.write("%s\n" % str(e))
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(0)
+    except subprocess.CalledProcessError as e:
+        sys.stderr.write("\n")
+        sys.exit(e.returncode)
+ 

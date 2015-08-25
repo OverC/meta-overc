@@ -1,0 +1,104 @@
+Introduction
+==============================================================
+A REST API has been implemented to interface with overc. This
+has been implement using Python Flask.
+
+Note, in the json responses, '\n' has been replaced to ';'.
+
+Usage (Server)
+==============================================================
+
+run_server.py [-d]  [-p <port>]
+	-p <port> specifies port to listen on, defaults to 5555
+	-d        runs in debugging mode
+
+
+Usage (Client)
+==============================================================
+host commands, please see README for more information.
+
+Rollback the system:
+http://0.0.0.0:<port>/host/rollback
+
+Upgrade the system:
+http://0.0.0.0:<port>/host/upgrade?reboot=[True|False]'
+
+    The system is conditionally rebooted after performing an
+    upgrade by the reboot parameter.
+
+Update the package list:
+http://0.0.0.0:<port>/host/update
+
+Shows rpm packages available for updates
+http://0.0.0.0:<port>/host/newer
+
+    Note: this performs a host update before checking for newew packages
+
+
+Container commands, please see README.container for more information
+
+Container list:
+    list containers available
+http://0.0.0.0:<port>/container/list?template=<template name>
+  template    template of container
+
+Container list snapshots:
+    list snapshots available for container
+http://0.0.0.0:<port>/container/list_snapshots?name=<container name>&template=<template name>'
+arguments:
+  name           name of container
+  template    template of container
+
+Container send image:
+    send container image for template
+http://0.0.0.0:<port>/container/send_image?url=<image url>&template=<template name>'
+arguments:
+  image_url   location of image
+  template    template of container
+
+Container update:
+    update to the latest available container
+http://0.0.0.0:<port>/container/update?template=<template name>'
+arguments:
+  template    template of container
+
+Container start:
+    starts container
+http://0.0.0.0:<port>/container/start?name=<container name>&template=<template name>'
+arguments:
+  name        name of container
+  template    template of container
+
+Container stop:
+    stops container
+http://0.0.0.0:<port>/container/stop?name=<container name>&template=<template name>'
+arguments:
+  name        name of container
+  template    template of container
+
+Container rollback:
+   rollback container to the specified snapshot version
+http://0.0.0.0:<port>/container/rollback?name=<container name>&snapshot=<snapshot name>&template=<template name>'
+arguments:
+  name           name of container
+  snapshot_name  name of snapshot
+  template    template of container
+
+Container activate:
+    activates specified container
+    container can either be new or existing
+    if container exists and is running, stops the running container
+http://0.0.0.0:<port>/container/activate?name=<container name>&template=<template name>'
+arguments:
+  name         name of container
+  template     template of container
+
+Container upgrade:
+    updates container and then activates it
+    container can either be new or existing
+    if container exists and is running, stops the running container
+http://0.0.0.0:<port>/container/upgrade?name=<container name>&template=<template name>'
+arguments:
+  name         name of container
+  template     template of container
+

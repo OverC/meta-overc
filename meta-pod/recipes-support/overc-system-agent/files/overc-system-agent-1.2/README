@@ -1,0 +1,84 @@
+Overc: /usr/bin/overc
+
+Introduction
+==============================================================
+This project provides atomic upgrades of the OverC host system.
+The upgrades process uses the BtrFS's snapshot feature and the 
+smartpm package management to make the upgrades process atomic 
+and rollbackable.
+
+
+Requirements of the system's deployment
+==============================================================
+In order to use this project to do atomic and rollbackable 
+upgrades, the host system's installation should meet the following
+special requirements:
+
+1) The boot directory should be installed/mounted on a separate disk 
+   partion. The UEFI or grub bootloader can be installed on this
+   partion. This partion can be formated any filesystem which UEFI/grub
+   supported.
+
+2) The rootfs should be deployed in a BtrFS formatted disk/partion.
+   In addition, it should not be located in the BtrFS's root tree,
+   instead it should be in the root tree's subvolume named 'rootfs'.
+   After installation, the subvolume of 'rootfs' should be set mounted 
+   as default. The subvolume is identified by <id>, which is returned 
+   by the subvolume list command. For how to set the default subvolume,
+   please see https://btrfs.wiki.kernel.org/index.php/Manpage/btrfs-subvolume.
+
+3) In order to do the upgrades successfully, The BtrFS's quota should 
+   be at least twice of the rootfs's size.
+
+4) The bootloader(grub)'s boot menu should afford two boot entry:
+   The default one should be for the normal boot, and the second one
+   should be for the backup boot. The backup boot entry's kernel option
+   should be as below:
+
+   linux /bzImage_bakup rootflags=subvol=rootfs_bakup root=/dev/<sdX>
+
+   The backup's kernel is named as 'bzImage_bakup' and the backup's rootfs
+   is deployed in the subvolume of 'rootfs_bakup'.
+
+Usage
+==============================================================
+
+1. To update packages lists:
+----------------------------
+
+$overc host update
+
+This command will calling smartpm to do the rpm database's update.
+
+If there are new packages available for upgrade, then you can run
+to upgrade.
+
+2. Upgrade the system:
+--------------------------
+
+$overc host upgrade 
+
+This command will create a snapshot of the current running rootfs for
+backup boot and then create another snapshot for upgrading. After the
+upgrading successfully, it will set the upgraded snapshot subvolume as
+the mounted default one. The next reboot will switch to the upgraded 
+system.
+
+In order to do system reboot after the upgrades, please append '-r' to
+the upgrade command.
+
+3. Rollback the system
+-------------------------
+After a system upgrades and reboot, if there is something wrong, the system
+can be rollback to the previous system.
+
+There are two way to rollback to the previous status: one is by selecting
+the backup boot entry in the bootloader when do booting, and the other one
+by running:
+
+$overc host rollback -r
+
+in the system.
+
+Notes: it's not allowed to run rollback command just after run upgrades.
+This will put the system into an unkwon status.
