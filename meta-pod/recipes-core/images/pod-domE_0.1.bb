@@ -12,6 +12,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 IMAGE_FEATURES += "package-management doc-pkgs x11-base"
 IMAGE_FSTYPES = "tar.bz2"
 
+PACKAGE_EXCLUDE = "busybox*"
+
 IMAGE_INSTALL_append = "packagegroup-core-boot \
                         packagegroup-dom0 \
                         packagegroup-util-linux \
