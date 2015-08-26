@@ -1,0 +1,47 @@
+From eb54ac918948c707006d87f036082d82f2898fbc Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 26 Aug 2015 14:48:25 -0400
+Subject: [PATCH] gnome-disk-utility: fix build issues against libnotify 0.7+
+
+To fix:
+
+| /home/paul/poky/build/tmp/work/core2-64-overc-linux/gnome-disk-utility/2.32.0-r4/gnome-disk-utility-2.32.0/src/notification/notification-main.c: In function 'update_status_icon':
+| /home/paul/poky/build/tmp/work/core2-64-overc-linux/gnome-disk-utility/2.32.0-r4/gnome-disk-utility-2.32.0/src/notification/notification-main.c:533:34: error: too many arguments to function 'notify_notification_new'
+|    data->ata_smart_notification = notify_notification_new (
+|                                   ^
+| In file included from /home/paul/poky/build/tmp/sysroots/genericx86-64/usr/include/libnotify/notify.h:27:0,
+|                  from /home/paul/poky/build/tmp/work/core2-64-overc-linux/gnome-disk-utility/2.32.0-r4/gnome-disk-utility-2.32.0/src/notification/notification-main.c:32:
+| /home/paul/poky/build/tmp/sysroots/genericx86-64/usr/include/libnotify/notification.h:114:21: note: declared here
+|  NotifyNotification *notify_notification_new                  (const char         *summary,
+|                      ^
+| /home/paul/poky/build/tmp/work/core2-64-overc-linux/gnome-disk-utility/2.32.0-r4/gnome-disk-utility-2.32.0/src/notification/notification-main.c:540:17: error: implicit declaration of function 'notify_notification_attach_to_status_icon' [-Werror=implicit-function-declaration]
+|                  notify_notification_attach_to_status_icon (data->ata_smart_notification,
+|                  ^
+| /home/paul/poky/build/tmp/work/core2-64-overc-linux/gnome-disk-utility/2.32.0-r4/gnome-disk-utility-2.32.0/src/notification/notification-main.c:540:17: warning: nested extern declaration of 'notify_notification_attach_to_status_icon' [-Wnested-externs]
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ src/notification/notification-main.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/notification/notification-main.c b/src/notification/notification-main.c
+index 18e9672f7d12..45640949df35 100644
+--- a/src/notification/notification-main.c
++++ b/src/notification/notification-main.c
+@@ -535,10 +535,11 @@ update_status_icon (NotificationData *data)
+                     _("A hard disk may be failing"),
+                     /* Translators: This is used as the text of the notification*/
+                     _("One or more hard disks report health problems. Click the icon to get more information."),
+-                    "gtk-dialog-warning",
+-                    NULL);
++                    "gtk-dialog-warning");
++#if 0 /* #if !defined(NOTIFY_VERSION_MINOR) || (NOTIFY_VERSION_MAJOR == 0 && NOTIFY_VERSION_MINOR < 7) */
+                 notify_notification_attach_to_status_icon (data->ata_smart_notification,
+                                                            data->status_icon);
++#endif
+                 notify_notification_set_urgency (data->ata_smart_notification, NOTIFY_URGENCY_CRITICAL);
+                 notify_notification_set_timeout (data->ata_smart_notification, NOTIFY_EXPIRES_NEVER);
+                 show_notification (data);
+-- 
+2.4.4
+
