@@ -5,6 +5,7 @@ inherit extrausers
 EXTRA_USERS_PARAMS = "usermod -p '\$6\$itWJK/a95NGi5AVs\$0zlkWdhpXg5CWtEC0YxIH8P.BwaKTOmaSiUPOC8YdqQPZz66UiRt2oZa5UWpXXq8AfdiSSCpMz6b.zYNxCK1o/' root;"
 
 ROOTFS_POSTPROCESS_COMMAND += "builder_configure_host ; "
+ROOTFS_POSTPROCESS_COMMAND += "systemd_autostart_fixups ; "
 
 builder_configure_host() {
 #    bbnote "builder: configuring host"
@@ -12,6 +13,15 @@ builder_configure_host() {
     echo "${TARGETNAME}" > ${IMAGE_ROOTFS}/etc/hostname
 
 }
+
+systemd_autostart_fixups() {
+    if [ -d "${IMAGE_ROOTFS}/etc/rpm-postinsts" ]; then
+        for post in ${IMAGE_ROOTFS}/etc/rpm-postinsts/*; do
+            sed -i 's/systemctl restart/systemctl --no-block restart/' $post
+        done
+    fi
+}
+
 
 ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit_network; ', 'systemd_bridged_network; ', d)}"
 
