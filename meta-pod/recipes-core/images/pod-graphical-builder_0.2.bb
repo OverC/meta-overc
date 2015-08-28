@@ -16,6 +16,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
 		  packagegroup-container \
+		  packagegroup-container-setup \
 		  packagegroup-graphical-builder \
 		  ${POD_BUILDER_EXTRA_INSTALL} \
 		 "

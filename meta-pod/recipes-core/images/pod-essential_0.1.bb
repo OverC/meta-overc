@@ -15,6 +15,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-essential \
                   packagegroup-util-linux \
                   packagegroup-container \
+		  packagegroup-container-setup \
                   ${POD_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
