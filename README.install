@@ -83,6 +83,8 @@ That file, located in files/grub-usb.cfg in the installer tree is used by
 grub when booting, and must be tailored to the target device AND version
 of grub.
 
+Copy the grub configuration to ~/.overc/ and edit to suit your device(s).
+
 ** NOTE: the grub installed on the machine writing the USB stick is used to
          populate the bootable device. 
 
@@ -92,7 +94,7 @@ of grub.
          The only current solution is to install grub2, or modify the files
          to suit your version of grub.
 
-Finally, edit config-usb-pod.sh.sample to list the containers and essential rootfs
+Finally, edit config-usb-pod.sh to list the containers and essential rootfs
 that is to be installed. This is typically:
 
  HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
