@@ -101,18 +101,21 @@ class Btrfs(Utils):
             os.system('rm -rf /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
             os.system('cp /proc/mounts /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
             os.system('mkdir /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
+            os.system('mount -o bind /dev /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
             result = os.system('chroot /sysroot/%s smart upgrade -y' % upgrade_rootfs[self.rootfs])
 
             if result != 0:
                 self.message = 'Error: System update failed! It has no effect on the running system!'
                 self.message += '\n'
                 self.message += 'Please do not run rollback!'
+                os.system('umount /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
                 return False
                 # sys.exit(2)
 
             os.system('rm -rf /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
             os.system('ln -s /proc/mounts /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
             os.system('rm -rf /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
+            os.system('umount /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
 
             upgrade_bzImage = '/sysroot/%s/boot/bzImage' % upgrade_rootfs[self.rootfs]
             if os.path.islink(upgrade_bzImage):
