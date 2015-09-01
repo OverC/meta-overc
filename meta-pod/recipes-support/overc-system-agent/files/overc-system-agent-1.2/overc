@@ -70,6 +70,10 @@ if __name__ == '__main__':
                                action="store_true",
                                help=_("Do not ask for confirmation"))
 
+        upgradep.add_argument("-f", "--force", dest="force",
+                               action="store_true",
+                               help=_("do system backup and upgrade even the system is up to date"))
+
         updatep = host_subparser.add_parser("update", help=_("update the OverC packages database"))
         updatep.set_defaults(func=overc.host_update)
 

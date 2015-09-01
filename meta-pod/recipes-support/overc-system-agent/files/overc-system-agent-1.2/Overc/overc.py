@@ -49,7 +49,7 @@ class Overc(object):
     def _need_upgrade(self):
         self.host_update()
         argv = "newer"
-        if self.package._smartpm(argv) == 0:
+        if self.package._smartpm(argv) == 0 or self.args.force:
             return True
         else:
             return False
