@@ -114,11 +114,14 @@ class Btrfs(Utils):
             os.system('ln -s /proc/mounts /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
             os.system('rm -rf /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
 
-            upgrade_kernel = '/sysroot/%s/boot/bzImage' % upgrade_rootfs[self.rootfs]
+            upgrade_bzImage = '/sysroot/%s/boot/bzImage' % upgrade_rootfs[self.rootfs]
+            if os.path.islink(upgrade_bzImage):
+                upgrade_kernel = '/sysroot/%s/%s' % (upgrade_rootfs[self.rootfs], os.path.realpath(upgrade_bzImage))
+            else:
+                upgrade_kernel = upgrade_bzImage
+
             upgrade_kernel_md5 = ''
             if os.path.exists(upgrade_kernel):
-                if os.path.islink(upgrade_kernel):
-                    upgrade_kernel = '/sysroot/%s/%s' % (upgrade_rootfs[self.rootfs], os.path.realpath(upgrade_kernel))
                 upgrade_kernel_md5 = self._compute_checksum(upgrade_kernel)
 
             if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
