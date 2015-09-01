@@ -66,12 +66,16 @@ class Btrfs(Utils):
     def _cleanup_subvol(self):
         subp=subprocess.Popen('/usr/bin/btrfs subvolume list /sysroot',shell=True,stdout=subprocess.PIPE)
         c=subp.stdout.readline()
+        subvol_stack = []
         while c:
             c_list = c.split()
             if  c_list[8] != self.rootfs:
-                argv = 'subvolume delete /sysroot/%s' % c_list[8]
-                self._btrfs(argv)
+                subvol = 'subvolume delete /sysroot/%s' % c_list[8]
+                subvol_stack.append(subvol)
             c=subp.stdout.readline()
+
+        while subvol_stack:
+            self._btrfs(subvol_stack.pop())
 
     def _do_upgrade(self):
         #first remove the previous rootfs and bakup current running rootfs
