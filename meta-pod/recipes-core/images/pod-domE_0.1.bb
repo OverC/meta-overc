@@ -14,7 +14,7 @@ IMAGE_FSTYPES = "tar.bz2"
 
 PACKAGE_EXCLUDE = "busybox*"
 
-IMAGE_INSTALL_append = "packagegroup-core-boot \
+IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-dom0 \
                         packagegroup-util-linux \
                         packagegroup-core-ssh-openssh \
