@@ -26,6 +26,19 @@ container runtimes. These are:
 OverC build
 -----------
 
+Modify local.conf with following settings:
+
+ # build the pod distro
+ DISTRO ?= "pod"
+
+ # build the genericx86 machine, ussing the common-pc-64 branch
+ MACHINE="genericx86-64"
+ KMACHINE_genericx86-64 ?= "common-pc-64"
+
+ # IMPORTANT: remove 'image-mklibs image-prelink' from the default
+ #            user classes. They break lxc-autostart.
+ USER_CLASSES ?= "buildstats"
+
 Clone the layers described in the meta-overc/README, and build the images
 mentioned in the overview:
 
