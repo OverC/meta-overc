@@ -20,6 +20,7 @@ PACKAGES = "\
      packagegroup-dom0-extended \
      packagegroup-dom0-networking \
      packagegroup-dom0-perl \
+     packagegroup-dom0-python \
      packagegroup-dom0-tools \
     "
 
@@ -29,6 +30,7 @@ RDEPENDS_packagegroup-dom0 = "\
      packagegroup-dom0-extended \
      packagegroup-dom0-networking \
      packagegroup-dom0-perl \
+     packagegroup-dom0-python \
      packagegroup-dom0-tools \
     "
 
@@ -43,6 +45,10 @@ RDEPENDS_packagegroup-dom0-doc = " \
 
 RDEPENDS_packagegroup-dom0-perl = " \
      ${OVERC_COMMON_PERL} \
+    "
+
+RDEPENDS_packagegroup-dom0-python = " \
+     ${OVERC_COMMON_PYTHON} \
     "
 
 RDEPENDS_packagegroup-dom0-extended = "\

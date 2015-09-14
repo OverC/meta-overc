@@ -96,6 +96,11 @@ OVERC_COMMON_PERL = " \
      perl-pod \
     "
 
+OVERC_COMMON_PYTHON = " \
+     python-misc \
+     python-pip \
+    "
+
 OVERC_COMMON_TOOLS = "\
      killall \
      lsof \
