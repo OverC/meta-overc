@@ -9,7 +9,7 @@ SRC_URI = " \
 
 inherit distutils
 
-RDEPENDS_${PN} = "btrfs-tools python-smartpm"
+RDEPENDS_${PN} = "btrfs-tools python-smartpm python-argparse python-subprocess"
 
 FILES_${PN}-dev += "${libdir}/pkgconfig"
 
