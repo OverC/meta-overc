@@ -3,8 +3,7 @@ HOMEPAGE = "https://www.consul.io/"
 LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
-DEPENDS += "go-cross \
-    circbuf \
+DEPENDS += "circbuf \
     consul-migrate \
     go-checkpoint \
     go-msgpack \
@@ -32,10 +31,9 @@ SRC_URI = "git://${PKG_NAME}.git \
           "
 SRCREV = "5aa90455ce78d4d41578bafc86305e6e6b28d7d2"
 
-S = "${WORKDIR}/git"
 CCACHE = ""
 
-inherit systemd
+inherit systemd golang
 
 SYSTEMD_SERVICE_${PN} = "consul.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
@@ -44,28 +42,9 @@ SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 do_configure(){
 }
 
-do_compile() {
-    #Setting up GOPATH to find deps (including those already in consul)
-    cd ${S}
-    rm -rf .gopath
-    mkdir -p .gopath/src/$(dirname ${PKG_NAME})
-    ln -sf ../../../.. .gopath/src/${PKG_NAME} 
-    export GOPATH=${S}:${STAGING_DIR_TARGET}/${prefix}/local/go:${S}/.gopath
-    export GOARCH="${TARGET_ARCH}"
-    # supported amd64, 386, arm
-    if [ "${TARGET_ARCH}" = "x86_64" ]; then
-            export GOARCH="amd64"
-    fi
-    go install github.com/hashicorp/consul
+do_install_append() {
+    install -d ${D}/${systemd_unitdir}/system
+    cp ${WORKDIR}/consul.service ${D}/${systemd_unitdir}/system
 }
 
-do_install() {
-    install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    install -d ${D}${prefix}/bin
-    install -d ${D}/lib/systemd/system
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
-    cp -a ${S}/.gopath/bin/* ${D}${prefix}/bin/
-    cp ${WORKDIR}/consul.service ${D}/lib/systemd/system
-}
-
-FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/* ${prefix}/bin/* /lib/systemd/system"
+FILES_${PN} += "${systemd_unitdir}/system"
