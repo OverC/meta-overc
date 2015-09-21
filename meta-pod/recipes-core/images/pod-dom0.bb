@@ -12,7 +12,7 @@ POD_DOM0_EXTRA_INSTALL ?= " "
 
 PACKAGE_EXCLUDE = "busybox* "
 
-PV = "0.4"
+PV = "0.5"
 
 DOM0_MAIN_PKGS = " packagegroup-core-boot \
                    packagegroup-dom0 \
@@ -24,6 +24,8 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   packagegroup-container \
                   packagegroup-service-discovery \
+                  pod-cmd-server \
+                  pod-cmd-server-dom0-conf \
                   ${POD_DOM0_EXTRA_INSTALL} \
                  "
 
