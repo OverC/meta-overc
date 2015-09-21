@@ -1,0 +1,28 @@
+From 6f66c21f29d5398149d4d4e82e1c83104347726c Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Mon, 21 Sep 2015 19:03:54 +0000
+Subject: [PATCH] scripts: all scripts should use same path for bash
+
+When we uprev to the latest version of etcd we will pickup a fix in
+commit 1239e1ce6fbee8217e89962251addd2d77da7b5d [test, scripts: use
+/usr/bin/env to find bash] but for now we can just modify this one
+script to be consistent with the others.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+ scripts/build-docker | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/build-docker b/scripts/build-docker
+index 986032e..5bd029a 100755
+--- a/scripts/build-docker
++++ b/scripts/build-docker
+@@ -1,4 +1,4 @@
+-#!/usr/bin/bash
++#!/bin/bash
+ tar cv --files-from /dev/null | docker import - scratch
+ 
+ cat <<DF > Dockerfile
+-- 
+2.0.1
+
