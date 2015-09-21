@@ -1,0 +1,20 @@
+#!/bin/bash
+
+. /etc/pod-cmd-server-functions
+
+container_to_monitor="local"
+
+setup_sending_mechanism fifo
+
+target_state=$( systemctl list-units --type=target )
+echo ${target_state} | grep -qi reboot
+if [ $? == 0 ]; then
+	command="reboot"
+else
+	echo ${target_state} | grep -qi poweroff
+	if [ $? == 0 ]; then
+		command="poweroff"
+	fi
+fi
+
+timeout 5s bash -c "echo ${command} >${sending_mechanism_output_stream}"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Container Shutdown Notifier Service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/sbin/container-shutdown-notifier
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
