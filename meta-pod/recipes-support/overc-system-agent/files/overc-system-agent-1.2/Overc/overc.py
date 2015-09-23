@@ -2,9 +2,10 @@ import sys, os
 import subprocess
 from Overc.package import Package
 from Overc.container import Container
+from Overc.utils import ROOTMOUNT
 
 def Is_btrfs():
-    return not os.system('btrfs subvolume show / >/dev/null 2>&1')
+    return not os.system('btrfs subvolume show %s >/dev/null 2>&1' % ROOTMOUNT)
 
 def Is_lvm():
     #to be done

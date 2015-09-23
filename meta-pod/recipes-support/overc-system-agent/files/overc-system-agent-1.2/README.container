@@ -25,31 +25,31 @@ the script.
 These scripts will be called with arguments as follows...
 
 activate container:
-    <script> -a <name>
+    <script> -a -n <name> [-f]
 
 start container:
-    <script> -S <name>
+    <script> -S -n <name>
 
 stop container:
-    <script> -K <name>
+    <script> -K -n <name>
 
 send image for template:
-    <script> -s <image url>
+    <script> -s -u <image url>
 
 update image:
     <script> -U
 
 rollback container:
-    <script> -R <name> <snapshot>
+    <script> -R -n <name> [-b <snapshot>]
 
 list container:
     <script> -L
 
 list container snapshots:
-    <script> -B <name>
+    <script> -B -n <name>
 
 container status:
-    <script> -A <name>
+    <script> -A -n <name>
 
     return value:
         0: does not exist
@@ -71,11 +71,11 @@ positional arguments:
 
 
 rollback            rollback container upgrade
-usage: overc container rollback [-h] name snapshot_name template
+usage: overc container rollback [-h] name template [snapshot_name]
 positional arguments:
   name           name of container
-  snapshot_name  name of snapshot
   template    template of container
+  snapshot_name  name of snapshot [optional parameter]
 
 update              update to the latest available
 usage: overc container update [-h] template

@@ -10,98 +10,76 @@ class Container(object):
         pass
 
     def activate(self, name, template, force_create):
-        args = "-A %s" % name
-        container_status = self.run_script(template, args, True)
-        if container_status == 3:
-            if force_create:
-                print "Stopping container %s" % name
-                retval = self.stop(name, template)
-                if retval != 0:
-                    self.message = "Error! Cannot stop container %s" % name
-                    return
-            else:
-                self.message = "Error! %s container is active" % name
-                return
-        elif container_status == 1:
-            self.message = "Error! Acquiring container status failed"
-            return container_status
-
-        args = "-a %s" % name
+        args = "-a -n %s" % name
+        if force_create:
+            args += " -f"
         retval = self.run_script(template, args)
         if retval != 0:
-            self.message = "Activate failed"
+            self.message += "\nActivate failed"
+        else:
+            self.message += "\nActivate ok"
         return retval
 
     def rollback(self, name, snapshot_name, template):
-        args = "-A %s" % name
-        container_status = self.run_script(template, args, True)
-        if container_status == 3:
-            self.message = "Error! %s container is active" % name
-            return
-        elif container_status == "0":
-            self.message = "Error! %s container does not exist" % name
-            return
-        elif container_status == 1:
-            self.message = "Error! Acquiring container status failed"
-            return container_status
-
-        args = "-R %s %s" % (name, snapshot_name)
+        args = "-R -n %s" % name
+        if snapshot_name is not None:
+            args += " -b %s" % snapshot_name
         retval = self.run_script(template, args)
         if retval is 0:
-            self.message = "Rollback ok"
+            self.message += "\nRollback ok"
         else:
-            self.message = "Rollback failed"
+            self.message += "\nRollback failed"
         return retval
  
     def start(self, name, template):
-        args = "-S %s" % name
+        args = "-S -n %s" % name
         retval = self.run_script(template, args)
         if retval is 0:
-            self.message = "Start ok"
+            self.message += "\nStart ok"
         else:
-            self.message = "Start failed"
+            self.message += "\nStart failed"
         return retval
  
     def stop(self, name, template):
-        args = "-K %s" % name
+        args = "-K -n %s" % name
         retval = self.run_script(template, args)
         if retval is 0:
-            self.message = "Stop ok"
+            self.message += "\nStop ok"
         else:
-            self.message = "Stop failed"
+            self.message += "\nStop failed"
         return retval
  
     def send_image(self, template, image_url):
-        args = "-s %s" % image_url
+        args = "-s -u %s" % image_url
         retval = self.run_script(template, args)
         if retval is 0:
-            self.message = "Send Image ok"
+            self.message += "\nSend Image ok"
         else:
-            self.message = "Send Image failed"
+            self.message += "\nSend Image failed"
         return retval
 
     def update(self, template):
         args = "-U"
         retval = self.run_script(template, args)
         if retval is 0:
-            self.message = "Upgrade ok"
+            self.message += "\nUpgrade ok"
         else:
-            self.message = "Upgrade failed"
+            self.message += "\nUpgrade failed"
         return retval
 
     def list(self, template):
         args = "-L"
         retval = self.run_script(template, args)
         if retval != 0:
-            self.message = "List failed"
+            self.message += "\nList failed"
         return retval
 
     def list_snapshot(self, name, template):
-        args = "-B %s" % name
+        args = "-B -n %s" % name
         retval = self.run_script(template, args)
         return retval
         if retval != 0:
-            self.message = "List snapshot failed"
+            self.message += "\nList snapshot failed"
         return retval
 
     def run_script(self, template, args, failok=False):

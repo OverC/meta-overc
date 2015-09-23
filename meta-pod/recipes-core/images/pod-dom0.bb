@@ -18,6 +18,7 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
                    packagegroup-dom0 \
                    packagegroup-util-linux \
                    packagegroup-core-ssh-openssh \
+                   overc-system-agent \
                  "
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \

@@ -171,6 +171,9 @@ run (assuming an installation to a second virtual disk):
 
          Do not run it against a device with data you cannot afford to lose.
 
+** Note: To create the root filesystem in btrfs, add -b option to pod-install.sh
+ % ./sbin/pod-install.sh -b images/pod-essential-* vdb
+
 Once this completes, the device is powered off, and is ready with the OverC
 runtime.
 

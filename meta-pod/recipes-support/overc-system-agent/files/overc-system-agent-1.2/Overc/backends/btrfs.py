@@ -1,6 +1,7 @@
 import sys, os
 import subprocess
 from Overc.utils  import Utils
+from Overc.utils  import ROOTMOUNT
 
 class Btrfs(Utils):
     def __init__(self):
@@ -47,7 +48,7 @@ class Btrfs(Utils):
             os.system('mount -o subvolid=5 %s /sysroot' % self.rootdev)
 
     def _get_bootmode(self):
-        self.rootfs = self._get_btrfs_value("/", "Name")
+        self.rootfs = self._get_btrfs_value(ROOTMOUNT, "Name")
         if self.rootfs == "rootfs_bakup":
             return True
         else:
