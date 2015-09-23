@@ -1,5 +1,7 @@
 import sys, os
 
+ROOTMOUNT = "/essential"
+
 class Utils(object):
     def __init__(self):
         pass
