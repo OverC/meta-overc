@@ -20,6 +20,7 @@ RDEPENDS_${PN} = "\
 	python-markupsafe \
 	python-werkzeug \
 	bash \
+	overc-installer \
 	"
 
 FILES_${PN}-dev += "${libdir}/pkgconfig"
@@ -38,7 +39,7 @@ do_install() {
 	install -m644 ${S}/COPYING ${D}/opt/${BPN}/
 	install -m644 ${S}/PKG-INFO ${D}/opt/${BPN}/
 	install -m644 ${S}/README* ${D}/opt/${BPN}/
-	install -m755 ${S}/overc* ${D}/opt/${BPN}/
+	install -m755 ${S}/overc ${D}/opt/${BPN}/
 	install -m755 ${S}/*.py ${D}/opt/${BPN}/
 
 	install -d ${D}/${sysconfdir}/overc/container/
