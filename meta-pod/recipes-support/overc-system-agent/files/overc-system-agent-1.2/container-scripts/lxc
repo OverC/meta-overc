@@ -8,20 +8,34 @@ usage() {
 	cat <<EOT;
 Usage: $0 [OPTION] ...
 
-  -A <container name>    container status
-                         0: does not exist
-                         2: exists, not active
-                         3: exists, active
+  -A -n <container name>
+	container status
 
-  -a <container name>    activate container
-  -R <container name> <snapshot>
-                         rollback container with snapshot
-  -L                     list containers
-  -B <container name>    list container snapshots
-  -s <container url>     update container image with url
-  -U                     update container image      
-  -S <container name>    start container
-  -K <container name>    stop container
+	retval:
+	0: does not exist
+	2: exists, not active
+	3: exists, active
+
+  -a -n <container name> [-f]
+	activate container
+
+	-f: force
+  -R -n <container name> [-b <snapshot>]
+	rollback container with last snapshot
+
+	-b: snapshot to rollback to [most recent if unspecified]
+  -L
+	list containers
+  -B -n <container name>
+	list container snapshots
+  -s -u <container url>
+	update container image with url
+  -U
+	update container image
+  -S -n <container name>
+	start container
+  -K -n <container name>
+	stop container
 EOT
 }
 
@@ -81,15 +95,21 @@ activate() {
 	local rollback_needed
 	
         # 0: does not exist
-        # 1: exists, not active
-        # 2: exists, active
+        # 2: exists, not active
+        # 3: exists, active
 	container_status $container
 	status=$?
 	
-	if [ $status -eq 2 ]; then
-		echo "Error! Container is active"
-		exit 1	
-	elif [ $status -eq 0 ]; then
+	if [ $status -eq 3 ]; then
+		if [ $force -eq 1 ]; then
+			stop_container $container
+		else
+			echo "Error! Container is active"
+			exit 1	
+		fi
+	fi
+
+	if [ $status -eq 0 ]; then
 		/usr/bin/lxc-create -B best -n $container -t $template
 		if [ $? -ne 0 ]; then
 			echo "Error! lxc-create fail"
@@ -161,7 +181,7 @@ pull_image() {
 	if [ $? -eq 0 ]; then
 		# test what we downloaded
 		items=0
-		for i in $tmp/*;do 
+		for i in $tmp/*;do
 			if [ -f $i ]; then
 				items=$(expr $items + 1)
 				new_image=$i
@@ -232,12 +252,15 @@ rollback_container() {
 	local snapshot=$2
 
         # 0: does not exist
-        # 1: exists, not active
-        # 2: exists, active
+        # 2: exists, not active
+        # 3: exists, active
 	container_status $container
 	status=$?
 	if [ $status -eq 0 ]; then
-		echo "Container $container does not exist"
+		echo "Error! Container $container does not exist"
+		exit 1
+	elif [ $status -eq 3 ]; then
+		echo "Error! Container $container is active"
 		exit 1
 	fi
 
@@ -249,61 +272,80 @@ rollback_container() {
 	return 0
 }
 
-retval=0
-while getopts :a:s:US:K:LB:R:A: opt
+set_command() {
+	if [ -n "$command" ]; then
+		echo "Error! Multiple actions not supported"
+		exit 1
+	fi
+	command=${1}
+}
+
+verify_arg_set() {
+	arg=$1
+
+	cmd="if [ -z \$$arg ]; then echo \"Error! $arg not specified\"; exit 1; else echo \"arg: $arg == \$$arg\"; fi"
+	eval $cmd
+}
+
+force=0
+command=""
+while getopts :asUSKLBRAn:fu:b: opt
 do
 	case $opt in
-	A)
-		container=$OPTARG	
-		container_status $container
-		retval=$?
-		;;
-	a)
-		container=$OPTARG	
-		echo "Activate container: $container"
-		activate $container
-		;;
-	s)
-		container_url=$OPTARG	
-		echo "Update container image with $container_url"
-		pull_image $container_url
-		;;
-	U)
-		echo "Pull on container image"
-		pull_image $upstream_url
-		;;
-	S)
-		container=$OPTARG	
-		echo "Start container $container"
-		start_container $container
-		retval=$?
-		;;
-	K)
-		container=$OPTARG	
-		echo "Stop container $container"
-		stop_container $container
-		;;
-	L)
-		echo "List containers"
-		list_container
-		;;
-	B)
-		container=$OPTARG	
-		echo "List snapshots on container: $container"
-		list_snapshots $container
-		;;
-	R)
-		container=$OPTARG	
-		shift
-		shift
-		snapshot=$1
-		if [ -z $snapshot ]; then
-			usage
+	n)
+		if [ -n "$container" ]; then
+			echo "Error! Container specified more than once"
 			exit 1
 		fi
-		echo "Rollback snapshots on container $container to $snapshot"
-		rollback_container $container $snapshot
-		retval=$?
+		container=$OPTARG
+		;;
+	f)
+		if [ $force -ne 0 ]; then
+			echo "Error! Force specified more than once"
+			exit 1
+		fi
+		force=1
+		;;
+	u)
+		if [ -n "$container_url" ]; then
+			echo "Error! Container url specified more than once"
+			exit 1
+		fi
+		container_url=$OPTARG
+		;;
+	b)
+		if [ -n "$snapshot" ]; then
+			echo "Error! Snapshot specified more than once"
+			exit 1
+		fi
+		snapshot=$OPTARG
+		;;
+	A)
+		set_command "status"
+		;;
+	a)
+		set_command "activate"
+		;;
+	s)
+		set_command "sync"
+		;;
+	U)
+		set_command "update"
+		;;
+	S)
+		set_command "start"
+		;;
+	K)
+		set_command "stop"
+		;;
+	L)
+		set_command "list"
+		;;
+	B)
+		set_command "list_snapshots"
+		;;
+	R)
+		set_command "rollback"
 		;;
 	*)
 		usage
@@ -311,4 +353,65 @@ do
 		;;
 	esac
 done
+
+retval=0
+case "${command}" in
+	status)
+		verify_arg_set container
+		container_status $container
+		retval=$?
+		;;
+	activate)
+		verify_arg_set container
+		echo "Activate container: $container"
+		activate $container
+		;;
+	sync)
+		verify_arg_set container_url
+		echo "Update container image with $container_url"
+		pull_image $container_url
+		;;
+	update)
+		echo "Pull on container image"
+		pull_image $upstream_url
+		;;
+	start)
+		verify_arg_set container
+		echo "Start container $container"
+		start_container $container
+		retval=$?
+		;;
+	stop)
+		verify_arg_set container
+		echo "Stop container $container"
+		stop_container $container
+		;;
+	list)
+		echo "List containers"
+		list_container
+		;;
+	list_snapshots)
+		verify_arg_set container
+		echo "List snapshots on container: $container"
+		list_snapshots $container
+		;;
+	rollback)
+		verify_arg_set container
+		if [ -z $snapshot ]; then
+			snapshot=`lxc-snapshot -L -n $container|tail -1|awk '{print $1}'`
+			if [ -z "$snapshot" -o "$snapshot" = "No" ]; then
+				echo "Error! Cannot find snapshot to restore to"
+				usage
+				exit 1
+			fi
+		fi
+		echo "Rollback snapshots on container $container to $snapshot"
+		rollback_container $container $snapshot
+		retval=$?
+		;;
+	*)
+		echo "Error! Command not specified"
+		retval=1
+		;;
+esac
 exit $retval

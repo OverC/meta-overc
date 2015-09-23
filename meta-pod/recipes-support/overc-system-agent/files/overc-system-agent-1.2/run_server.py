@@ -52,13 +52,13 @@ def host_newer():
 
 @app.route('/container/rollback')
 def container_rollback():
-    usage =  'Usage: ' + request.url_root + 'container/rollback?name=<container name>&snapshot=<snapshot name>&template=<template name>'
+    usage =  'Usage: ' + request.url_root + 'container/rollback?name=<container name>&snapshot=<snapshot name>&template=<template name> [snapshot optional]'
 
     overc=Overc.Overc()
     container_name = request.args.get('name')
     snapshot = request.args.get('snapshot')
     template = request.args.get('template')
-    if container_name is None or snapshot is None or template is None:
+    if container_name is None or template is None:
         return json_msg(usage)
     overc._container_rollback(container_name, snapshot, template)
     return json_msg(overc.message)
