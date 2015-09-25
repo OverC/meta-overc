@@ -283,7 +283,7 @@ set_command() {
 verify_arg_set() {
 	arg=$1
 
-	cmd="if [ -z \$$arg ]; then echo \"Error! $arg not specified\"; exit 1; else echo \"arg: $arg == \$$arg\"; fi"
+	cmd="if [ -z \$$arg ]; then echo \"Error! $arg not specified\"; exit 1; fi"
 	eval $cmd
 }
 
