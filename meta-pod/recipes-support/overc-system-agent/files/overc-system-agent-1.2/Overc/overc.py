@@ -103,56 +103,64 @@ class Overc(object):
     def container_rollback(self):
         self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_rollback(self, container, snapshot, template):
-        self.container.rollback(container, snapshot, template)
+        self.retval = self.container.rollback(container, snapshot, template)
         self.message = self.container.message
 
     def container_list(self):
         self._container_list(self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_list(self, template):
-        self.container.list(template)
+        self.retval = self.container.list(template)
         self.message = self.container.message
 
     def container_snapshot_list(self):
         self._container_snapshot_list(self.args.name, self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_snapshot_list(self, container, template):
-        self.container.list_snapshot(container, template)
+        self.retval = self.container.list_snapshot(container, template)
         self.message = self.container.message
 
     def container_activate(self):
         self._container_activate(self.args.name, self.args.template, self.args.force)
         print self.message
+        sys.exit(self.retval)
     def _container_activate(self, container, template, force):
-        self.container.activate(container, template, force)
+        self.retval = self.container.activate(container, template, force)
         self.message = self.container.message
 
     def container_start(self):
         self._container_start(self.args.name, self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_start(self, container, template):
-        self.container.start(container, template)
+        self.retval = self.container.start(container, template)
         self.message = self.container.message
 
     def container_stop(self):
         self._container_stop(self.args.name, self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_stop(self, container, template):
-        self.container.stop(container, template)
+        self.retval = self.container.stop(container, template)
         self.message = self.container.message
 
     def container_update(self):
         self._container_update(self.args.template)
         print self.message
+        sys.exit(self.retval)
     def _container_update(self, template):
-        self.container.update(template)
+        self.retval = self.container.update(template)
         self.message = self.container.message
 
     def container_send_image(self):
         self._container_send_image(self.args.template, self.args.image_url)
         print self.message
+        sys.exit(self.retval)
     def _container_send_image(self, template, url):
-        self.container.send_image(template, url)
+        self.retval = self.container.send_image(template, url)
         self.message = self.container.message
 
