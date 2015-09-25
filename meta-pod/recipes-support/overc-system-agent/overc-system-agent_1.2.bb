@@ -30,6 +30,7 @@ do_install() {
 	install -d ${D}/opt/${BPN}/Overc
 	install -d ${D}/opt/${BPN}/Overc/backends
 	install -d ${D}/opt/${BPN}/container-scripts
+	install -d ${D}/opt/${BPN}/test
 
 	install -m755 ${S}/container-scripts/* ${D}/opt/${BPN}/container-scripts
 
@@ -41,6 +42,8 @@ do_install() {
 	install -m644 ${S}/README* ${D}/opt/${BPN}/
 	install -m755 ${S}/overc ${D}/opt/${BPN}/
 	install -m755 ${S}/*.py ${D}/opt/${BPN}/
+
+	install -m755 ${S}/test/*.sh ${D}/opt/${BPN}/test
 
 	install -d ${D}/${sysconfdir}/overc/container/
 	install -m755 ${S}/container-scripts/* ${D}/${sysconfdir}/overc/container/
