@@ -1,6 +1,6 @@
 [Unit]
 Description=Container Shutdown Notifier Service
-After=local-fs.target
+RequiresMountsFor=/opt/container/local
 
 [Service]
 Type=oneshot
