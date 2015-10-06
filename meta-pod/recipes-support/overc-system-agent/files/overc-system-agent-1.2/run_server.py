@@ -162,6 +162,19 @@ def container_upgrade():
     result = result1 + "\n" + result2
     return json_msg(result)
 
+@app.route('/container/delete')
+def container_delete():
+    usage = 'Usage: ' + request.url_root + 'container/delete?name=<container name>&template=<template name>'
+
+    overc=Overc.Overc()
+    container_name = request.args.get('name')
+    template = request.args.get('template')
+    if container_name is None or template is None:
+        return json_msg(usage)
+    force = True
+    overc._container_delete(container_name, template, force)
+    return json_msg(overc.message)
+
 if __name__ == '__main__':
     default_port = 5555
     try:

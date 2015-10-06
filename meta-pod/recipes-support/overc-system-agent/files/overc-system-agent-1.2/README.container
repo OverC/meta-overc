@@ -11,9 +11,9 @@ for different types of containers including lxc.
 
 Container scripts
 ==============================================================
-For each template container type, the activate, start, stop, send image and
-update behaviours can be customized by calling container scripts with
-certain arguments.
+For each template container type, the activate, start, stop, send image,
+update, and delete behaviours can be customized by calling container
+scripts with certain arguments.
 
 Currently, the scripts are expected to reside in /etc/overc/container,
 for other locations, redefine CONTAINER_SCRIPT_PATH in Overc/container.py
@@ -55,6 +55,9 @@ container status:
         0: does not exist
         2: exists, not active
         3: exists, active
+
+delete container:
+    <script> -d -n <name> [-f]
 
 
 Usage
@@ -124,3 +127,14 @@ positional arguments:
 
     This calls the container script of the template with
     the activate container option.
+
+delete               delete container
+usage: overc container delete [-h] [-f] name template
+positional arguments:
+  name        name of container
+  template    template of container
+
+  -f: force the container to be deleted if it's active
+
+    This calls the container script of the template with
+    the delete container option.

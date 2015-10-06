@@ -36,6 +36,10 @@ Usage: $0 [OPTION] ...
 	start container
   -K -n <container name>
 	stop container
+  -d -n <container name> [-f]
+	delete container
+
+	-f: force
 EOT
 }
 
@@ -272,6 +276,32 @@ rollback_container() {
 	return 0
 }
 
+delete_container() {
+	local container=$1
+
+        # 0: does not exist
+        # 2: exists, not active
+        # 3: exists, active
+	container_status $container
+	status=$?
+
+	if [ $status -eq 3 ]; then
+		if [ $force -eq 1 ]; then
+			stop_container $container
+		else
+			echo "Error! Container is active"
+			exit 1
+		fi
+	elif [ $status -eq 0 ]; then
+		echo "Error! Container does not exist"
+		exit 1
+	fi
+
+	# destroy all snapshots as well
+	lxc-snapshot -n $container -d ALL
+	lxc-destroy -n $container
+}
+
 set_command() {
 	if [ -n "$command" ]; then
 		echo "Error! Multiple actions not supported"
@@ -289,7 +319,7 @@ verify_arg_set() {
 
 force=0
 command=""
-while getopts :asUSKLBRAn:fu:b: opt
+while getopts :asUSKLBRAn:fu:b:d opt
 do
 	case $opt in
 	n)
@@ -346,6 +376,9 @@ do
 		;;
 	R)
 		set_command "rollback"
+		;;
+	d)
+		set_command "delete"
 		;;
 	*)
 		usage
@@ -407,6 +440,12 @@ case "${command}" in
 		fi
 		echo "Rollback snapshots on container $container to $snapshot"
 		rollback_container $container $snapshot
+		retval=$?
+		;;
+	delete)
+		verify_arg_set container
+		echo "Delete container: $container"
+		delete_container $container
 		retval=$?
 		;;
 	*)

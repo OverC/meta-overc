@@ -126,6 +126,12 @@ if __name__ == '__main__':
     c_stop.add_argument('name', help="name of container")
     c_stop.add_argument('template', help="template of container")
 
+    c_delete = container_subparser.add_parser("delete", help=_("delete container"))
+    c_delete.set_defaults(func=overc.container_delete)
+    c_delete.add_argument('name', help="name of container")
+    c_delete.add_argument('template', help="template of container")
+    c_delete.add_argument('-f', '--force', dest="force", action="store_true", help=_("stops container if it's active"))
+
     try:
         args = parser.parse_args()
         overc.set_args(args)

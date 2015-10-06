@@ -164,3 +164,11 @@ class Overc(object):
         self.retval = self.container.send_image(template, url)
         self.message = self.container.message
 
+    def container_delete(self):
+        self._container_delete(self.args.name, self.args.template, self.args.force)
+        print self.message
+        sys.exit(self.retval)
+    def _container_delete(self, container, template, force):
+        self.retval = self.container.delete(container, template, force)
+        self.message = self.container.message
+

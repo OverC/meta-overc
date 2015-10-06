@@ -102,3 +102,10 @@ arguments:
   name         name of container
   template     template of container
 
+Container delete:
+    deletes a container
+    if container exists and is running, stops the running container
+http://0.0.0.0:<port>/container/delete?name=<container name>&template=<template name>'
+arguments:
+  name        name of container
+  template    template of container
