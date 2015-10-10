@@ -23,7 +23,7 @@ class Btrfs(Utils):
         c=subp.stdout.readline().strip()
         while c:
             c_list = c.split()
-            if  c_list[2] == "/":
+            if  c_list[2] == ROOTMOUNT:
                 return c_list[0]
             c=subp.stdout.readline()
 
@@ -70,7 +70,8 @@ class Btrfs(Utils):
         subvol_stack = []
         while c:
             c_list = c.split()
-            if  c_list[8] != self.rootfs:
+            subvolid = c_list[8].split('/')[0]
+            if  subvolid != self.rootfs:
                 subvol = 'subvolume delete /sysroot/%s' % c_list[8]
                 subvol_stack.append(subvol)
             c=subp.stdout.readline()

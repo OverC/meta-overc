@@ -49,8 +49,7 @@ class Overc(object):
 
     def _need_upgrade(self):
         self.host_update()
-        argv = "newer"
-        if self.package._smartpm(argv) == 0 or self.args.force:
+        if self.host_newer() == 0 or self.args.force:
             return True
         else:
             return False
@@ -59,34 +58,36 @@ class Overc(object):
         print "host status"
 
     def host_newer(self):
-        argv = "newer"
-        self.host_update()
-        tmp1 = self.package.message
-        self.package._smartpm(argv)
-        tmp2 = self.package.message
-        self.message = tmp1 + "\n" + tmp2
-        print self.message
+        lxcdevdir = "%s/dev/" % ROOTMOUNT
+        os.system('cp -ua /dev/urandom  %s' % lxcdevdir)
+        rc = self.package._smartpm('newer', chroot=ROOTMOUNT)
+        self.message += self.package.message
+        return rc
 
     def host_update(self):
-        argv = "update"
-        self.package._smartpm(argv)
-        self.message = self.package.message
-        print self.message
-       
+        lxcdevdir = "%s/dev/" % ROOTMOUNT
+        os.system('cp -ua /dev/urandom  %s' % lxcdevdir)
+        rc = self.package._smartpm('update', chroot=ROOTMOUNT)
+        self.message += self.package.message
+        return rc
+
     def host_upgrade(self):
-        self._host_upgrade(self.args.reboot)
+        self._host_upgrade()
+
+        if self.args.reboot:
+            self.message += "\nrebooting..."
+            print self.message
+            os.system('reboot')
+
         print self.message
-    def _host_upgrade(self, reboot):
+
+    def _host_upgrade(self):
         if self._need_upgrade():
             self.agency.do_upgrade()
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
        
-        if reboot:
-            # os.system('reboot')
-            self.message += "\nrebooting..."
-
     def host_rollback(self):
         if self.bakup_mode:
             self.message = "Error: You are running in the backup mode, cannot do rollback!"

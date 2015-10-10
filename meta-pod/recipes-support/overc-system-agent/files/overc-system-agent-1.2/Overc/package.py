@@ -35,6 +35,7 @@ class Package(object):
         rc = child.poll()
         if rc != 0:
             print "Error!: %s" % ' '.join(cmd)
+        return rc
  
     def _get_kernel(self, path):
         if path == "/":
