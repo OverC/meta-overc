@@ -59,8 +59,13 @@ class Container(object):
             self.message += "\nSend Image failed"
         return retval
 
-    def update(self, template):
-        args = "-U"
+    def update(self, template, name=None, rpm=None):
+        #by now only dom0 template support rpm update
+        #lxc template will be supported later.
+        if rpm and template == "dom0":
+            args = "-U -r -n %s" % name
+        else:
+            args = "-U"
         retval = self.run_script(template, args)
         if retval is 0:
             self.message += "\nUpgrade ok"
@@ -78,9 +83,21 @@ class Container(object):
     def list_snapshot(self, name, template):
         args = "-B -n %s" % name
         retval = self.run_script(template, args)
-        return retval
         if retval != 0:
             self.message += "\nList snapshot failed"
+        return retval
+
+    def snapshot(self, name, template):
+        #by now only dom0 template support container snapshot
+        #lxc template will be supported later.
+        if template != "dom0":
+            self.message += "\nBy now only dom0 template support container snapshot!"
+            return 0
+
+        args = "-p -n %s" % name
+        retval = self.run_script(template, args)
+        if retval != 0:
+            self.message += "\nsnapshot failed"
         return retval
 
     def delete(self, name, template, force_delete):

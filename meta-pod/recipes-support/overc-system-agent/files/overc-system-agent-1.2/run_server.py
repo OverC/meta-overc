@@ -84,6 +84,18 @@ def container_list():
     overc._container_list(template)
     return json_msg(overc.message)
 
+@app.route('/container/snapshot')
+def container_snapshot():
+    usage = 'Usage: ' + request.url_root + 'container/snapshot?name=<container name>&template=<template name>'
+    overc=Overc.Overc()
+    template = request.args.get('template')
+    container_name = request.args.get('name')
+    if template is None or container_name is None:
+        return json_msg(usage)
+                                
+    overc._container_snapshot(container_name, template)
+    return json_msg(overc.message)
+
 @app.route('/container/list_snapshots')
 def container_list_snapshots():
     usage = 'Usage: ' + request.url_root + 'container/list_snapshots?name=<container name>&template=<template name>'
@@ -147,19 +159,29 @@ def container_stop():
 
 @app.route('/container/upgrade')
 def container_upgrade():
-    usage = 'Usage: ' + request.url_root + 'container/upgrade?name=<container name>&template=<template name>'
+    usage = 'Usage: ' + request.url_root + 'container/upgrade?name=<container name>&template=<template name>&rpm=yes|no'
 
     overc=Overc.Overc()
     container_name = request.args.get('name')
     template = request.args.get('template')
+    rpm = request.args.get('rpm')
     if container_name is None or template is None:
         return json_msg(usage)
+
     force = True
-    overc._container_update(template)
-    result1 = overc.message
-    overc._container_activate(container_name, template, force)
-    result2 = overc.message
-    result = result1 + "\n" + result2
+    if rpm is not None and rpm == 'yes':
+        if container_name is None:
+            return json_msg(usage)
+        else:
+            overc._container_update(template, container_name, True)
+            result = overc.message
+    else:
+        overc._container_update(template)
+        result1 = overc.message
+        overc._container_activate(container_name, template, force)
+        result2 = overc.message
+        result = result1 + "\n" + result2
+
     return json_msg(result)
 
 @app.route('/container/delete')
