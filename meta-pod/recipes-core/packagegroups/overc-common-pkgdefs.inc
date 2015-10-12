@@ -5,6 +5,7 @@
 OVERC_COMMON_DISK = " \
      btrfs-tools \
      e2fsprogs-tune2fs \
+     dosfstools \
      hdparm \
      mdadm \
      mktemp \
