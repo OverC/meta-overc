@@ -17,15 +17,15 @@ IMAGE_FSTYPES = "tar.bz2"
 
 PACKAGE_EXCLUDE = "busybox*"
 
-IMAGE_INSTALL_append = "packagegroup-core-boot \
-                        packagegroup-core-ssh-openssh \
-                        packagegroup-core-full-cmdline \
-                        packagegroup-util-linux \
-                        packagegroup-builder \
-                        packagegroup-dom0 \
-                        packagegroup-container \
-			${POD_DOM_SERVER_EXTRA_INSTALL} \
-                       "
+IMAGE_INSTALL += "packagegroup-core-boot \
+                  packagegroup-core-ssh-openssh \
+                  packagegroup-core-full-cmdline \
+                  packagegroup-util-linux \
+                  packagegroup-builder \
+                  packagegroup-dom0 \
+                  packagegroup-container \
+                  ${POD_DOM_SERVER_EXTRA_INSTALL} \
+                  "
 
 inherit core-image
 inherit builder-base
