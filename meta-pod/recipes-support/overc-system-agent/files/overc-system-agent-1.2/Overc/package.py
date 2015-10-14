@@ -1,13 +1,40 @@
 import sys, os
 import subprocess
+import select
 
 class Package(object):
     def __init__(self):
         pass
 
-    def _smartpm(self, args):
-        # return os.system('/usr/bin/smart %s' % args)
-        self.message = subprocess.Popen(["/usr/bin/smart", args], stdout=subprocess.PIPE).communicate()[0]
+    def _smartpm(self, args, chroot=None):
+        cmd = []
+        if chroot != None:
+            cmd.append("chroot")
+            cmd.append(chroot)
+        cmd.append("/usr/bin/smart")
+        cmd.append(args)
+        print "Running: %s" % ' '.join(cmd)
+        child = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.message = ''
+        while True:
+            fds = select.select([child.stdout.fileno(), child.stderr.fileno()], [], [])
+
+            for fd in fds[0]:
+                if fd == child.stdout.fileno():
+                    read = child.stdout.readline()
+                    if read != '':
+                        sys.stdout.write(read)
+                    self.message += read
+                if fd == child.stderr.fileno():
+                    read = child.stderr.readline()
+                    if read != '':
+                        sys.stderr.write(read)
+                    self.message += read
+            if child.poll() != None:
+                break
+        rc = child.poll()
+        if rc != 0:
+            print "Error!: %s" % ' '.join(cmd)
  
     def _get_kernel(self, path):
         if path == "/":
