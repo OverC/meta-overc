@@ -4,6 +4,8 @@ container_dir=/var/lib/lxc
 container_image=/root/pod-builder-genericx86-64.tar.bz2
 upstream_url=http://openlinux.windriver.com/overc/images/genericx86-64/pod-builder-genericx86-64.tar.bz2
 
+LXCBASE=/var/lib/lxc
+
 usage() {
 	cat <<EOT;
 Usage: $0 [OPTION] ...
@@ -40,6 +42,10 @@ Usage: $0 [OPTION] ...
 	delete container
 
 	-f: force
+  -r -n <container name>
+        update container using rpm packages
+  -p -n <container name>
+        creates a snapshot of the container
 EOT
 }
 
@@ -83,6 +89,7 @@ populate_rootfs() {
 
 	echo "Extracting container image $container_image..."
 	cd $container_dir/$container/rootfs
+	rm -rf $container_dir/$container/rootfs/*
 	tar jxf $container_image
 	if [ $? -ne 0 ]; then
 		return 1
@@ -93,7 +100,7 @@ populate_rootfs() {
 activate() {
 	local container=$1
 	local dir=$container_dir/$1
-	local template="wrlinux"
+	local template="sshd"
 	local status
 	local snapshot
 	local rollback_needed
@@ -247,6 +254,12 @@ list_snapshots() {
 	/usr/bin/lxc-snapshot -L -n $container
 }
 
+snapshot() {
+	local container=$1
+
+	/usr/bin/lxc-snapshot -n $container
+}
+
 list_container() {
 	/usr/bin/lxc-ls
 }
@@ -302,6 +315,48 @@ delete_container() {
 	lxc-destroy -n $container
 }
 
+runcmd_in_container() {
+	local container=$1
+	local dir=$LXCBASE/$container/rootfs
+
+        # 0: does not exist
+        # 2: exists, not active
+        # 3: exists, active
+	container_status $container
+	status=$?
+
+	if [ $status -eq 3 ]; then
+		lxc-attach -n $1 -- $2
+	elif [ $status -eq 0 ]; then
+		echo "Error! Container does not exist"
+		exit 1
+	else
+		if [ ! -d $dir ]; then
+			echo "Error! Container rootfs $dir does not exist!"
+			exit 1
+		fi
+		chroot $dir $2
+	fi
+}
+
+rpm_upgrade() {
+	local container=$1
+
+	runcmd_in_container $container "smart update"
+	if [ ! $? -eq 0 ]; then
+		echo "Error! smart update failed in container $container"
+		exit 1
+	fi
+	runcmd_in_container $container "smart newer"
+	if [ ! $? -eq 0 ]; then
+		return 0
+	fi
+
+	echo "snapshots on container: $container"
+	snapshot $container
+	runcmd_in_container $container "smart upgrade -y"
+}
+
 set_command() {
 	if [ -n "$command" ]; then
 		echo "Error! Multiple actions not supported"
@@ -319,7 +374,8 @@ verify_arg_set() {
 
 force=0
 command=""
-while getopts :asUSKLBRAn:fu:b:d opt
+
+while getopts :asprUSKLBRAn:fu:b:d opt
 do
 	case $opt in
 	n)
@@ -380,6 +436,12 @@ do
 	d)
 		set_command "delete"
 		;;
+	p)
+		set_command "snapshot"
+		;;
+	r)
+		set_command "rpm_upgrade"
+		;;
 	*)
 		usage
 		exit 1
@@ -428,6 +490,11 @@ case "${command}" in
 		echo "List snapshots on container: $container"
 		list_snapshots $container
 		;;
+	snapshot)
+		verify_arg_set container
+		echo "Create snapshot on container: $container"
+		snapshot $container
+		;;
 	rollback)
 		verify_arg_set container
 		if [ -z $snapshot ]; then
@@ -447,6 +514,11 @@ case "${command}" in
 		echo "Delete container: $container"
 		delete_container $container
 		retval=$?
+		;;
+	rpm_upgrade)
+		verify_arg_set container
+		echo "RPM upgrade container: $container"
+		rpm_upgrade $container
 		;;
 	*)
 		echo "Error! Command not specified"

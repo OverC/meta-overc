@@ -101,21 +101,25 @@ if __name__ == '__main__':
     c_list_snapshots.add_argument('name', help="name of container")
     c_list_snapshots.add_argument('template', help="template of container")
 
-    c_snapshot = container_subparser.add_parser("snapshot", help=_("snapshot for an available container"))
-    c_snapshot.set_defaults(func=overc.container_snapshot)
-    c_snapshot.add_argument('name', help="name of container")
-    c_snapshot.add_argument('template', help="template of container")
-    
     c_update = container_subparser.add_parser("update", help=_("update to the latest available"))
     c_update.set_defaults(func=overc.container_update)
     c_update.add_argument('template', help="template of container")
-    c_update.add_argument('name', nargs="?", help="name of container")
-    c_update.add_argument("-r", "--rpm", dest="rpm", action="store_true", help=_("Update container using rpm feeds"))
 
     c_send_image = container_subparser.add_parser("send_image", help=_("send container image for template"))
     c_send_image.set_defaults(func=overc.container_send_image)
     c_send_image.add_argument('image_url', help="location of image")
     c_send_image.add_argument('template', help="template of container")
+
+    c_snapshot = container_subparser.add_parser("snapshot", help=_("snapshot for an available container"))
+    c_snapshot.set_defaults(func=overc.container_snapshot)
+    c_snapshot.add_argument('name', help="name of container")
+    c_snapshot.add_argument('template', help="template of container")
+
+    c_upgrade = container_subparser.add_parser("upgrade", help=_("upgrade container to the latest available"))
+    c_upgrade.set_defaults(func=overc.container_upgrade)
+    c_upgrade.add_argument('name', nargs="?", help="name of container")
+    c_upgrade.add_argument('template', help="template of container")
+    c_upgrade.add_argument("-r", "--rpm", dest="rpm", action="store_true", help=_("Update container using rpm feeds"))
 
     c_activate = container_subparser.add_parser("activate", help=_("activate container"))
     c_activate.set_defaults(func=overc.container_activate)

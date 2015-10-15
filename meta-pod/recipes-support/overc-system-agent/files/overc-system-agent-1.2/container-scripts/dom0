@@ -36,8 +36,6 @@ Usage: $0 [OPTION] ...
 	update container image with url
   -U
 	update container image
-  -U -r -n <container name>
-        update container using rpm packages
   -S -n <container name>
 	start container
   -K -n <container name>
@@ -46,6 +44,10 @@ Usage: $0 [OPTION] ...
 	delete container
 
 	-f: force
+  -r -n <container name>
+        update container using rpm packages
+  -p -n <container name>
+        creates a snapshot of the container
 EOT
 }
 
@@ -210,7 +212,7 @@ list_snapshots() {
 }
 
 snapshot() {
-        local container=$1
+	local container=$1
 	$OVERC_CCTL snapshot -n $container
 }
 
@@ -298,30 +300,25 @@ list_container() {
 }
 
 runcmd_in_container() {
-        $DOM0_CTL exec-cmd -n $1 $2
+	$DOM0_CTL exec-cmd -n $1 $2
 }
 
-update_container() {
-       if [ $rpm -eq 1 ]; then
-               verify_arg_set container
-               runcmd_in_container $container "smart update"
-               if [ ! $? -eq 0 ]; then
-                       echo "smart update failed in container $container"
-                       exit 1
-               fi
-               runcmd_in_container $container "smart newer"
-               if [ ! $? -eq 0 ]; then
-                       return 0
-               fi
+rpm_upgrade() {
+	local container=$1
 
-               echo "snapshots on container: $container"
-               snapshot $container
-               runcmd_in_container $container "smart upgrade -y"
-                                                                                
-       else            
-               echo "Pull on container image"
-               pull_image
-       fi
+	runcmd_in_container $container "smart update"
+	if [ ! $? -eq 0 ]; then
+		echo "Error! smart update failed in container $container"
+		exit 1
+	fi
+	runcmd_in_container $container "smart newer"
+	if [ ! $? -eq 0 ]; then
+		return 0
+	fi
+
+	echo "snapshots on container: $container"
+	snapshot $container
+	runcmd_in_container $container "smart upgrade -y"
 }
 
 delete_container() {
@@ -365,14 +362,10 @@ verify_arg_set() {
 
 force=0
 command=""
-rpm=0
 
-while getopts :asprUSKLBRAn:fu:b: opt
+while getopts :asprUSKLBRAn:fu:b:d opt
 do
 	case $opt in
-        r)
-               rpm=1
-               ;;
 	n)
 		if [ -n "$container" ]; then
 			echo "Error! Container specified more than once"
@@ -432,8 +425,11 @@ do
 		set_command "delete"
 		;;
         p)
-                set_command "snapshot"
-                ;;
+		set_command "snapshot"
+		;;
+        r)
+		set_command "rpm_upgrade"
+		;;
 	*)
 		usage
 		exit 1
@@ -459,7 +455,8 @@ case "${command}" in
 		pull_single_image $container_url
 		;;
 	update)
-		update_container 
+		echo "Pull on container image"
+		pull_image
 		;;
 	start)
 		verify_arg_set container
@@ -483,7 +480,7 @@ case "${command}" in
 		;;
 	snapshot)
 		verify_arg_set container
-		echo "snapshots on container: $container"
+		echo "Create snapshot on container: $container"
 		snapshot $container
 		;;
 	rollback)
@@ -499,6 +496,11 @@ case "${command}" in
 		echo "Delete container: $container"
 		delete_container $container
 		retval=$?
+		;;
+	rpm_upgrade)
+		verify_arg_set container
+		echo "RPM upgrade container: $container"
+		rpm_upgrade $container
 		;;
 	*)
 		echo "Error! Command not specified"

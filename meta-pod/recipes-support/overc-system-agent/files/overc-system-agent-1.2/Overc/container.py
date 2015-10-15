@@ -59,14 +59,27 @@ class Container(object):
             self.message += "\nSend Image failed"
         return retval
 
-    def update(self, template, name=None, rpm=None):
-        #by now only dom0 template support rpm update
-        #lxc template will be supported later.
-        if rpm and template == "dom0":
-            args = "-U -r -n %s" % name
-        else:
-            args = "-U"
+    def update(self, template):
+        args = "-U"
         retval = self.run_script(template, args)
+        if retval is 0:
+            self.message += "\nUpdate ok"
+        else:
+            self.message += "\nUpdate failed"
+        return retval
+
+    def upgrade(self, name, template, rpm_upgrade=False):
+        if rpm_upgrade:
+            args = "-r -n %s" % name
+            retval = self.run_script(template, args)
+        else:
+            retval = self.update(template)
+            if retval is 0:
+                msg1 = self.message
+                force = True
+                retval = self.activate(name, template, force)
+                msg2 = self.message
+                self.message = msg1 + "\n" + msg2
         if retval is 0:
             self.message += "\nUpgrade ok"
         else:
@@ -88,16 +101,10 @@ class Container(object):
         return retval
 
     def snapshot(self, name, template):
-        #by now only dom0 template support container snapshot
-        #lxc template will be supported later.
-        if template != "dom0":
-            self.message += "\nBy now only dom0 template support container snapshot!"
-            return 0
-
         args = "-p -n %s" % name
         retval = self.run_script(template, args)
         if retval != 0:
-            self.message += "\nsnapshot failed"
+            self.message += "\nSnapshot failed"
         return retval
 
     def delete(self, name, template, force_delete):

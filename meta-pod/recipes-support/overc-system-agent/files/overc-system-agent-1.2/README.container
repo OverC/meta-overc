@@ -37,7 +37,10 @@ send image for template:
     <script> -s -u <image url>
 
 update image:
-    <script> -U [-r -n <name>]
+    <script> -U
+
+upgrade image:
+    <script> -r -n <name>
 
 rollback container:
     <script> -R -n <name> [-b <snapshot>]
@@ -62,9 +65,6 @@ container status:
 delete container:
     <script> -d -n <name> [-f]
 
-
-Notes: only dom0 template support "snapshot container" and
-"update container using rpm repository".
 
 Usage
 ==============================================================
@@ -94,20 +94,28 @@ positional arguments:
     This calls the container script of the template with
     the update option.
 
-update              update the specified container using rpm repository
-usage: overc container update [-h] name template -r
+upgrade             upgrade the specified container
+usage: overc container upgrade [-h] name template [-r]
 positional arguments:
   name        name of container
   template    template of container
 
+  -r: upgrades the specified container using rpm repository
+
     This calls the container script of the template with
-    the update option using rpm repository method.
+    the upgrade option.
+
+    If rpm option is not specified, it calls updates on the
+    container template and then activates the container name.
 
 snapshot            snapshot a container
 usage: overc container snapshot [-h] name template
 positional arguments:
   name        name of container
   template    template of container
+
+    This calls the container script of the template with
+    the create snapshot option.
 
 send_image          send container image for template
 usage: overc container send_image [-h] image_url template
@@ -117,7 +125,7 @@ positional arguments:
 
     This calls the container script of the template with
     the send image option. The expected behaviour is that
-    the container's image for the specified template will 
+    the container's image for the specified template will
     be replaced by the specified image url.
 
 start               start container

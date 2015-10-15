@@ -151,10 +151,10 @@ class Overc(object):
         self.message = self.container.message
 
     def container_update(self):
-        self._container_update(self.args.template, self.args.name, self.args.rpm)
+        self._container_update(self.args.template)
         sys.exit(self.retval)
-    def _container_update(self, template, name=None, rpm=None):
-        self.retval = self.container.update(template, name, rpm)
+    def _container_update(self, template):
+        self.retval = self.container.update(template)
         self.message = self.container.message
 
     def container_send_image(self):
@@ -171,3 +171,9 @@ class Overc(object):
         self.retval = self.container.delete(container, template, force)
         self.message = self.container.message
 
+    def container_upgrade(self):
+        self._container_upgrade(self.args.name, self.args.template, self.args.rpm)
+        sys.exit(self.retval)
+    def _container_upgrade(self, container, template, rpm):
+        self.retval = self.container.upgrade(container, template, rpm)
+        self.message = self.container.message

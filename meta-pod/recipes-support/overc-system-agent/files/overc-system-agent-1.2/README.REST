@@ -58,11 +58,10 @@ arguments:
 
 Container update:
     update to the latest available container
-http://0.0.0.0:<port>/container/update?name=<container name>&template=<template name>'
+http://0.0.0.0:<port>/container/update?template=<template name>'
 arguments:
-  name        name of container
   template    template of container
-  
+
 Container start:
     starts container
 http://0.0.0.0:<port>/container/start?name=<container name>&template=<template name>'
@@ -102,9 +101,13 @@ arguments:
   template     template of container
 
 Container upgrade:
-    updates container and then activates it
-    container can either be new or existing
-    if container exists and is running, stops the running container
+    if rpm is no or unspecified:
+       updates container and then activates it
+       container can either be new or existing
+       if container exists and is running, stops the running container
+    otherwise (rpm is yes)
+       creates a snapshot of the container and then does a package level
+       upgrade to the system
 http://0.0.0.0:<port>/container/upgrade?name=<container name>&template=<template name>&rpm=yes|no'
 arguments:
   name         name of container

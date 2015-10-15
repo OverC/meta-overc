@@ -92,7 +92,7 @@ def container_snapshot():
     container_name = request.args.get('name')
     if template is None or container_name is None:
         return json_msg(usage)
-                                
+
     overc._container_snapshot(container_name, template)
     return json_msg(overc.message)
 
@@ -167,22 +167,15 @@ def container_upgrade():
     rpm = request.args.get('rpm')
     if container_name is None or template is None:
         return json_msg(usage)
+    if rpm is None or rpm == 'no':
+        rpm_upgrade = False
+    elif rpm == 'yes':
+        rpm_upgrade = True
+    elif rpm != 'no':
+        return json_msg(usage)
 
-    force = True
-    if rpm is not None and rpm == 'yes':
-        if container_name is None:
-            return json_msg(usage)
-        else:
-            overc._container_update(template, container_name, True)
-            result = overc.message
-    else:
-        overc._container_update(template)
-        result1 = overc.message
-        overc._container_activate(container_name, template, force)
-        result2 = overc.message
-        result = result1 + "\n" + result2
-
-    return json_msg(result)
+    overc._container_upgrade(container_name, template, rpm_upgrade)
+    return json_msg(overc.message)
 
 @app.route('/container/delete')
 def container_delete():
