@@ -12,6 +12,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-util-linux \
                   packagegroup-core-ssh-openssh \
                   packagegroup-container \
+                  packagegroup-service-discovery-and-configuration \
                   packagegroup-dom1 \
                  "
 

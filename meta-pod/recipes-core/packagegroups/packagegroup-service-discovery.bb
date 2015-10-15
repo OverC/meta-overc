@@ -4,7 +4,17 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 
 inherit packagegroup
 
-RDEPENDS_${PN} = " \
-    consul \
+PACKAGES = "\
+    packagegroup-service-discovery \
+    packagegroup-service-discovery-and-configuration \
+"
+
+RDEPENDS_packagegroup-service-discovery = "\
     etcd  \
 "
+
+RDEPENDS_packagegroup-service-discovery-and-configuration = "\
+    consul \
+"
+
+
