@@ -6,9 +6,7 @@ Subject: [PATCH] polkit: use  instead of hardcoded /lib
 Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 ---
  data/Makefile.am              | 2 +-
- src/polkitagent/Makefile.am   | 3 ++-
- src/polkitbackend/Makefile.am | 3 ++-
- 3 files changed, 5 insertions(+), 3 deletions(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 Index: polkit-0.112/data/Makefile.am
 ===================================================================
@@ -22,28 +20,4 @@ Index: polkit-0.112/data/Makefile.am
 +libprivdir = $(libdir)/polkit-1
  
  # ----------------------------------------------------------------------------------------------------
- 
-Index: polkit-0.112/src/polkitagent/Makefile.am
-===================================================================
---- polkit-0.112.orig/src/polkitagent/Makefile.am
-+++ polkit-0.112/src/polkitagent/Makefile.am
-@@ -78,6 +78,7 @@ libpolkit_agent_1_la_LIBADD =
- 
- libpolkit_agent_1_la_LDFLAGS = -export-symbols-regex '(^polkit_.*)'
- 
-+#libprivdir = $(libdir)/polkit-1
- libprivdir = $(libdir)/polkit-1
- libpriv_PROGRAMS = polkit-agent-helper-1
- 
-Index: polkit-0.112/src/polkitbackend/Makefile.am
-===================================================================
---- polkit-0.112.orig/src/polkitbackend/Makefile.am
-+++ polkit-0.112/src/polkitbackend/Makefile.am
-@@ -67,6 +67,7 @@ rules_DATA = 50-default.rules
- 
- # ----------------------------------------------------------------------------------------------------
- 
-+#libprivdir = $(libdir)/polkit-1
- libprivdir = $(libdir)/polkit-1
- libpriv_PROGRAMS = polkitd
  
