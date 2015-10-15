@@ -7,7 +7,11 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-POD_ESSENTIAL_EXTRA_INSTALL ?= ""
+
+# we don't want this to be a container image even
+# configure with --enable-container=yes
+USE_DEPMOD = "1"
+POD_ESSENTIAL_EXTRA_INSTALL ?= "kernel-modules"
 
 PACKAGE_EXCLUDE = "busybox*"
 
