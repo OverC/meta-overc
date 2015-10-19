@@ -19,3 +19,5 @@ consul_migrate_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/bin
     cp -a ${D}${prefix}/bin/* ${SYSROOT_DESTDIR}${prefix}/bin/
 }
+
+CLEANBROKEN = "1"

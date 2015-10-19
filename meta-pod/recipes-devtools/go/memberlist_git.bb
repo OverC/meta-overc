@@ -28,3 +28,6 @@ memberlist_sysroot_preprocess () {
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
+
+CLEANBROKEN = "1"
+
