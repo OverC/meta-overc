@@ -28,6 +28,7 @@ class Overc(object):
         self.agency = Host_update()
         self.package = Package()
         self.container = Container()
+        self.message = ""
         
         if not self.agency:
             print "Error: cannot get the right backends!"
