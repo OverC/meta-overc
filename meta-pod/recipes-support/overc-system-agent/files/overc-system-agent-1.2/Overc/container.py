@@ -1,7 +1,6 @@
 import sys, os
 import os.path
-import subprocess
-import select
+from Overc.utils import Process
 
 # containers template named scripts
 CONTAINER_SCRIPT_PATH = "/etc/overc/container/"
@@ -124,29 +123,12 @@ class Container(object):
             self.message = "Error! Missing file: %s" % fname
             return 1
         cmd = "%s %s" % (fname, args)
-        print "Running: %s" % cmd
-
-        child = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.message = ''
-        while True:
-            fds = select.select([child.stdout.fileno(), child.stderr.fileno()], [], [])
-
-            for fd in fds[0]:
-                if fd == child.stdout.fileno():
-                    read = child.stdout.readline()
-                    if read != '':
-                        sys.stdout.write(read)
-                    self.message += read
-                if fd == child.stderr.fileno():
-                    read = child.stderr.readline()
-                    if read != '':
-                        sys.stderr.write(read)
-                    self.message += read
-            if child.poll() != None:
-                break
-        rc = child.poll()
-        if rc is 0:
+        process = Process()
+        retval = process.run(cmd)
+        self.message = process.message
+        if retval is 0:
             print "%s ok" % fname
         elif not failok:
-            print "Error! %s failed" % fname
-        return rc
+                print "Error! %s failed" % fname
+        return retval
+

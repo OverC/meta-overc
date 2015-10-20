@@ -1,6 +1,5 @@
-import sys, os
-import subprocess
-import select
+import sys, os 
+from Overc.utils import Process 
 
 class Package(object):
     def __init__(self):
@@ -13,29 +12,13 @@ class Package(object):
             cmd.append(chroot)
         cmd.append("/usr/bin/smart")
         cmd.append(args)
-        print "Running: %s" % ' '.join(cmd)
-        child = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.message = ''
-        while True:
-            fds = select.select([child.stdout.fileno(), child.stderr.fileno()], [], [])
-
-            for fd in fds[0]:
-                if fd == child.stdout.fileno():
-                    read = child.stdout.readline()
-                    if read != '':
-                        sys.stdout.write(read)
-                    self.message += read
-                if fd == child.stderr.fileno():
-                    read = child.stderr.readline()
-                    if read != '':
-                        sys.stderr.write(read)
-                    self.message += read
-            if child.poll() != None:
-                break
-        rc = child.poll()
-        if rc != 0:
-            print "Error!: %s" % ' '.join(cmd)
-        return rc
+        cmd_s = ' '.join(cmd)
+        process = Process()
+        retval = process.run(cmd_s)
+        self.message = process.message
+        if retval is not 0:
+            print "Error!: %s" % cmd_s
+        return retval
  
     def _get_kernel(self, path):
         if path == "/":
