@@ -117,6 +117,15 @@ class Container(object):
             self.message += "\nDelete failed"
         return retval
 
+    def delete_snapshots(self, name, template):
+        args = "-D -n %s" % name
+        retval = self.run_script(template, args)
+        if retval is 0:
+            self.message += "\nDelete snapshots ok"
+        else:
+            self.message += "\nDelete snapshots failed"
+        return retval
+
     def run_script(self, template, args, failok=False):
         fname = CONTAINER_SCRIPT_PATH + "/" + template
         if not os.path.isfile(fname):

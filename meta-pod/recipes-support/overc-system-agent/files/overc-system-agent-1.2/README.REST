@@ -121,3 +121,10 @@ http://0.0.0.0:<port>/container/delete?name=<container name>&template=<template 
 arguments:
   name        name of container
   template    template of container
+
+Container delete snapshots:
+    deletes all snapshots of a container
+http://0.0.0.0:<port>/container/delete_snapshots?name=<container name>&template=<template name>'
+arguments:
+  name        name of container
+  template    template of container

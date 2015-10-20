@@ -190,6 +190,18 @@ def container_delete():
     overc._container_delete(container_name, template, force)
     return json_msg(overc.message)
 
+@app.route('/container/delete_snapshots')
+def container_delete_snapshots():
+    usage = 'Usage: ' + request.url_root + 'container/delete_snapshots?name=<container name>&template=<template name>'
+
+    overc=Overc.Overc()
+    container_name = request.args.get('name')
+    template = request.args.get('template')
+    if container_name is None or template is None:
+        return json_msg(usage)
+    overc._container_delete_snapshots(container_name, template)
+    return json_msg(overc.message)
+
 if __name__ == '__main__':
     default_port = 5555
     try:

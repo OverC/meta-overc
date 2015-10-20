@@ -48,6 +48,8 @@ Usage: $0 [OPTION] ...
         update container using rpm packages
   -p -n <container name>
         creates a snapshot of the container
+  -D -n <container name>
+        deletes all snapshots of the container
 EOT
 }
 
@@ -345,6 +347,27 @@ delete_container() {
 	$OVERC_CCTL delete -n $container -F
 }
 
+delete_snapshots() {
+	local container=$1
+
+        # 0: does not exist
+        # 2: exists, not active
+        # 3: exists, active
+	container_status $container
+	status=$?
+
+	if [ $status -eq 0 ]; then
+		echo "Error! Container does not exist"
+		exit 1
+	fi
+
+	$OVERC_CCTL histlist -n $container|while read l; do
+		i=`echo $l|awk  '{print $1;}'`
+		echo $i
+		$OVERC_CCTL histdel -n $container -i $i -r
+	done
+}
+
 set_command() {
 	if [ -n "$command" ]; then
 		echo "Error! Multiple actions not supported"
@@ -363,7 +386,7 @@ verify_arg_set() {
 force=0
 command=""
 
-while getopts :asprUSKLBRAn:fu:b:d opt
+while getopts :DasprUSKLBRAn:fu:b:d opt
 do
 	case $opt in
 	n)
@@ -429,6 +452,9 @@ do
 		;;
         r)
 		set_command "rpm_upgrade"
+		;;
+	D)
+		set_command "delete_snapshots"
 		;;
 	*)
 		usage
@@ -501,6 +527,12 @@ case "${command}" in
 		verify_arg_set container
 		echo "RPM upgrade container: $container"
 		rpm_upgrade $container
+		;;
+	delete_snapshots)
+		verify_arg_set container
+		echo "Delete snapshots container: $container"
+		delete_snapshots $container
+		retval=$?
 		;;
 	*)
 		echo "Error! Command not specified"

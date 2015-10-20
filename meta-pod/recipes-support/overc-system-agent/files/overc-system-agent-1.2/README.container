@@ -65,6 +65,9 @@ container status:
 delete container:
     <script> -d -n <name> [-f]
 
+delete container snapshots:
+    <script> -D -n <name>
+
 
 Usage
 ==============================================================
@@ -167,3 +170,12 @@ positional arguments:
 
     This calls the container script of the template with
     the delete container option.
+
+delete_snapshots               remove all snapshots of a container
+usage: overc container delete_snapshots [-h] name template
+positional arguments:
+  name        name of container
+  template    template of container
+
+    This calls the container script of the template with
+    the delete snapshots container option.
