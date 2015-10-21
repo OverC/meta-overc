@@ -1,0 +1,30 @@
+From 2ad162ec61883567a48bd83f518fa2e7edfa16e8 Mon Sep 17 00:00:00 2001
+From: fli <fupan.li@windriver.com>
+Date: Wed, 15 Jul 2015 11:00:26 +0800
+Subject: [PATCH] python-smartpm: change the smart data-dir to
+ /usr/lib/smart/data-dir
+
+The /var/ dir sometimes are mount on volatile device, which will cause
+problem, so add an option to change it to a more safe place.
+
+Signed-off-by: fli <fupan.li@windriver.com>
+---
+ smart/const.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/smart/const.py b/smart/const.py
+index c63069b..d58ada2 100644
+--- a/smart/const.py
++++ b/smart/const.py
+@@ -66,7 +66,7 @@ BLOCKSIZE = 16384
+ 
+ DISTROFILE  = "/usr/lib/smart/distro.py"
+ PLUGINSDIR  = "/usr/lib/smart/plugins/"
+-DATADIR     = "/var/lib/smart/"
++DATADIR     = "/usr/lib/smart/data-dir"
+ USERDATADIR = "~/.smart/"
+ CONFFILE    = "config"
+ 
+-- 
+1.9.1
+
