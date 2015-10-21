@@ -1,0 +1,709 @@
+From c209714bde91f7cf25ef8af68a6711b6d15ce396 Mon Sep 17 00:00:00 2001
+From: fupan li <fupan.li@windriver.com>
+Date: Fri, 29 May 2015 11:26:42 +0800
+Subject: [PATCH] smartpm: add a builddep command to install all of the build
+ required packages
+
+This command will figure of the building required packages
+for your given srpm package and try to install all of these
+packages in the system. If a new version of an already installed
+package is available, it will be selected for installation.
+
+For more information about its usage, please run:
+$smart builddep -h.
+
+Signed-off-by: fupan li <fupan.li@windriver.com>
+---
+ smart/backends/rpm/base.py     |  10 ++-
+ smart/backends/rpm/header.py   |  57 ++++++++++++---
+ smart/backends/rpm/metadata.py |  30 ++++++--
+ smart/cache.py                 | 160 ++++++++++++++++++++++++++++++++++++++++-
+ smart/commands/builddep.py     | 148 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 387 insertions(+), 18 deletions(-)
+ create mode 100644 smart/commands/builddep.py
+
+diff --git a/smart/backends/rpm/base.py b/smart/backends/rpm/base.py
+index d720617..b69396c 100644
+--- a/smart/backends/rpm/base.py
++++ b/smart/backends/rpm/base.py
+@@ -41,9 +41,9 @@ except ImportError:
+         traceback.print_exc()
+     raise Error, _("'rpm' python module is not available")
+ 
+-__all__ = ["RPMPackage", "RPMProvides", "RPMNameProvides", "RPMPreRequires",
+-           "RPMRequires", "RPMUpgrades", "RPMConflicts", "RPMObsoletes",
+-           "rpm", "getTS", "getArchScore", "getArchColor", "system_provides",
++__all__ = ["RPMPackage", "RPMSourcePackage", "RPMProvides", "RPMNameProvides", "RPMPreRequires",
++           "RPMRequires", "RPMUpgrades", "RPMConflicts", "RPMObsoletes", "RPMBuildRequires", 
++           "RPMBuildConflicts", "rpm", "getTS", "getArchScore", "getArchColor", "system_provides",
+            "collapse_libc_requires"]
+ 
+ def rpm_join_dbpath(root, dbpath):
+@@ -296,6 +296,7 @@ class RPMPackage(Package):
+                         rc = -cmp(getArchScore(selfarch), getArchScore(otherarch))
+         return rc == -1
+ 
++class RPMSourcePackage(SourcePackage, RPMPackage): pass
+ class RPMProvides(Provides):         __slots__ = ()
+ class RPMNameProvides(RPMProvides):  __slots__ = ()
+ 
+@@ -336,6 +337,9 @@ class RPMObsoletes(Depends):
+                 return False
+         return checkdep(prvver, self.relation, selfver)
+ 
++class RPMBuildRequires(RPMDepends,Requires): __slots__ = ()
++class RPMBuildConflicts(RPMDepends,Conflicts):     __slots__ = ()
++
+ _SCOREMAP = {}
+ def getArchScore(arch, _sm=_SCOREMAP):
+     try:
+diff --git a/smart/backends/rpm/header.py b/smart/backends/rpm/header.py
+index 4880f43..5823de4 100644
+--- a/smart/backends/rpm/header.py
++++ b/smart/backends/rpm/header.py
+@@ -245,18 +245,25 @@ class RPMHeaderLoader(Loader):
+         CM = self.COMPMAP
+         CF = self.COMPFLAGS
+         Pkg = RPMPackage
++        SrcPkg = RPMSourcePackage
+         Prv = RPMProvides
+         NPrv = RPMNameProvides
+         PreReq = RPMPreRequires
+         Req = RPMRequires
+         Obs = RPMObsoletes
+         Cnf = RPMConflicts
++        BldReq = RPMBuildRequires
++        BldCnf = RPMBuildConflicts
+         prog = iface.getProgress(self._cache)
+         for h, offset in self.getHeaders(prog):
++            source = True
+             if h[1106]: # RPMTAG_SOURCEPACKAGE
+-                continue
++                source = True
++            if h[1044]: # RPMTAG_SOURCERPM
++                source = False
+             arch = h[1022] # RPMTAG_ARCH
+-            if getArchScore(arch) == 0:
++            if getArchScore(arch) == 0 \
++                and arch != "src" and arch != "nosrc" and not source:
+                 continue
+ 
+             name = h[1000] # RPMTAG_NAME
+@@ -268,7 +275,9 @@ class RPMHeaderLoader(Loader):
+                 # RPMTAG_VERSION, RPMTAG_RELEASE
+                 version = "%s-%s" % (h[1001], h[1002])
+             versionarch = "%s@%s" % (version, arch)
+-
++            
++            if source and arch != "src" and arch != "nosrc":
++                arch = "src"
+             n = h[1047] # RPMTAG_PROVIDENAME
+             v = h[1113] # RPMTAG_PROVIDEVERSION
+             prvdict = {}
+@@ -313,7 +322,8 @@ class RPMHeaderLoader(Loader):
+                                 recdict[(f[i]&7744 and PreReq or Req,
+                                          intern(ni), r, vi)] = True
+                             else:
+-                                reqdict[(f[i]&7744 and PreReq or Req,
++                                reqdict[(f[i]&7744 and PreReq or \
++                                        (source and BldReq or Req),
+                                          intern(ni), r, vi)] = True
+                 recargs = collapse_libc_requires(recdict.keys())
+                 reqargs = collapse_libc_requires(reqdict.keys())
+@@ -334,7 +344,8 @@ class RPMHeaderLoader(Loader):
+                     vi = v[i] or None
+                     if vi and vi[:2] == "0:":
+                         vi = vi[2:]
+-                    cnfargs.append((Cnf, n[i], CM.get(f[i]&CF), vi))
++                    cnfargs.append((source and BldCnf or Cnf, \
++                            n[i], CM.get(f[i]&CF), vi))
+             else:
+                 cnfargs = []
+ 
+@@ -370,10 +381,14 @@ class RPMHeaderLoader(Loader):
+                 if distepoch:
+                     distversion += distepoch
+                 versionarch = "%s@%s" % (distversion, arch)
+-
+-            pkg = self.buildPackage((Pkg, name, versionarch),
++            
++            if not source:
++                pkg = self.buildPackage((Pkg, name, versionarch),
+                                     prvargs, reqargs, upgargs, cnfargs, recargs)
+-            pkg.loaders[self] = offset
++                pkg.loaders[self] = offset
++            else:
++                pkg = self.buildSourcePackage((SrcPkg, name, versionarch),
++                                 reqargs, cnfargs)
+             self._offsets[offset] = pkg
+             self._groups[pkg] = intern(h[rpm.RPMTAG_GROUP])
+ 
+@@ -580,6 +595,25 @@ class RPMPackageListLoader(RPMHeaderListLoader):
+     def getMD5(self, info):
+         return info._h[CRPMTAG_MD5]
+ 
++class RPMSourcePackageListLoader(RPMHeaderListLoader):
++    
++    def getFileName(self, info):
++        h = info._h
++        filename = h[CRPMTAG_FILENAME]
++        if not filename:
++            raise Error, _("Package list with no CRPMTAG_FILENAME tag")
++        directory = h[CRPMTAG_DIRECTORY]
++        if directory:
++            filename = os.path.join(directory, filename)
++        
++        return filename
++                            
++    def getSize(self, info):
++        return info._h[CRPMTAG_FILESIZE]
++                                   
++    def getMD5(self, info):
++        return info._h[CRPMTAG_MD5]
++
+ class URPMILoader(RPMHeaderListLoader):
+ 
+     def __init__(self, filename, baseurl, listfile):
+@@ -773,9 +807,14 @@ class RPMFileChannel(FileChannel):
+         self._digest = digest
+         return True
+ 
++class RPMSourceFileChannel(RPMFileChannel): pass
++
+ def createFileChannel(filename):
+-    if filename.endswith(".rpm") and not filename.endswith(".src.rpm"):
++    if filename.endswith(".src.rpm"):
++        return RPMSourceFileChannel(filename)
++    elif filename.endswith(".rpm"):
+         return RPMFileChannel(filename)
++
+     return None
+ 
+ hooks.register("create-file-channel", createFileChannel)
+diff --git a/smart/backends/rpm/metadata.py b/smart/backends/rpm/metadata.py
+index 99b28ef..ee31d0a 100644
+--- a/smart/backends/rpm/metadata.py
++++ b/smart/backends/rpm/metadata.py
+@@ -36,6 +36,7 @@ from smart import *
+ import posixpath
+ import locale
+ import os
++import re
+ 
+ NS_COMMON    = "http://linux.duke.edu/metadata/common"
+ NS_RPM       = "http://linux.duke.edu/metadata/rpm"
+@@ -163,6 +164,7 @@ class RPMMetaDataLoader(Loader):
+         arch = None
+         disttag = None
+         distepoch = None
++        source = True
+         info = {}
+         reqdict = {}
+         recdict = {}
+@@ -197,7 +199,8 @@ class RPMMetaDataLoader(Loader):
+                         skip = None
+ 
+                 elif tag == ARCH:
+-                    if getArchScore(elem.text) == 0:
++                    if getArchScore(elem.text) == 0 \
++                            and elem.text != "src" and elem.text != "nosrc":
+                         skip = PACKAGE
+                     else:
+                         arch = elem.text
+@@ -252,6 +255,7 @@ class RPMMetaDataLoader(Loader):
+                 elif tag == SOURCERPM:
+                     if elem.text:
+                         info["sourcerpm"] = elem.text
++                        source = False
+ 
+                 elif tag == GROUP:
+                     if elem.text:
+@@ -296,6 +300,9 @@ class RPMMetaDataLoader(Loader):
+                             if elem.get("pre") == "1":
+                                 reqdict[(RPMPreRequires,
+                                         ename, erelation, eversion)] = True
++                            elif source:
++                                reqdict[(RPMBuildRequires,
++                                        ename, erelation, eversion)] = True
+                             else:
+                                 reqdict[(RPMRequires,
+                                         ename, erelation, eversion)] = True
+@@ -317,13 +324,18 @@ class RPMMetaDataLoader(Loader):
+                         cnfdict[tup] = True
+ 
+                     elif lasttag == CONFLICTS:
+-                        cnfdict[(RPMConflicts,
++                        if source:
++                            cnfdict[(RPMBuildConflicts,
++                                 ename, erelation, eversion)] = True
++                        else:
++                            cnfdict[(RPMConflicts,
+                                  ename, erelation, eversion)] = True
+                                     
+                 elif elem.tag == PACKAGE:
+ 
+                     # Use all the information acquired to build the package.
+-
++                    if source and arch != "src" and arch != "nosrc":
++                        arch = "src"
+                     versionarch = "%s@%s" % (version, arch)
+ 
+                     upgdict[(RPMObsoletes,
+@@ -350,9 +362,16 @@ class RPMMetaDataLoader(Loader):
+                             distversion += distepoch
+                         versionarch = "%s@%s" % (distversion, arch)
+ 
+-                    pkg = self.buildPackage((RPMPackage, name, versionarch),
++                    if "sourcerpm" in info and arch != "src" and arch != "nosrc":
++                        pkg = self.buildPackage((RPMPackage, name, versionarch),
+                                             prvargs, reqargs, upgargs, cnfargs, recargs)
+-                    pkg.loaders[self] = info
++                        pkg.loaders[self] = info
++                    else:
++                        epochre = re.compile("[0-9]+:")
++                        versionarch = epochre.sub("", versionarch)
++                        pkg = self.buildSourcePackage((RPMSourcePackage, name, versionarch),
++                                reqargs, cnfargs)
++                        pkg.loaders[self] = info
+ 
+                     # Store the provided files for future usage.
+                     if filedict:
+@@ -372,6 +391,7 @@ class RPMMetaDataLoader(Loader):
+                     arch = None
+                     disttag = None
+                     distepoch = None
++                    source = True
+                     pkgid = None
+                     reqdict.clear()
+                     recdict.clear()
+diff --git a/smart/cache.py b/smart/cache.py
+index cec8bb3..24123ea 100644
+--- a/smart/cache.py
++++ b/smart/cache.py
+@@ -134,6 +134,44 @@ class Package(object):
+          self.priority,
+          self.loaders) = state
+ 
++class SourcePackage(object):
++ 
++    def __init__(self, name, version):
++        self.name = name
++        self.version = version
++        self.buildrequires = ()
++        self.buildconflicts = ()
++        self.installed = False
++        self.essential = False
++        self.priority = 0
++        self.loaders = {}
++ 
++    def __repr__(self):
++        return str(self)
++ 
++    def __str__(self):
++        return "%s-%s" % (self.name, self.version)
++ 
++    def __getstate__(self):
++        return (self.name,
++                self.version,
++                self.buildrequires,
++                self.buildconflicts,
++                self.installed,
++                self.essential,
++                self.priority,
++                self.loaders)
++ 
++    def __setstate__(self, state):
++        (self.name,
++         self.version,
++         self.buildrequires,
++         self.buildconflicts,
++         self.installed,
++         self.essential,
++         self.priority,
++         self.loaders) = state
++
+ class PackageInfo(object):
+     def __init__(self, package, order=0):
+         self._package = package
+@@ -272,6 +310,9 @@ class PackageInfo(object):
+ 
+     def __lt__(self, other):
+         return self._order < other._order
++class SourcePackageInfo(object):
++    def __init__(self, package):
++        self._package = package
+ 
+ class Provides(object):
+     def __init__(self, name, version):
+@@ -364,12 +405,15 @@ class Loader(object):
+ 
+     def __init__(self):
+         self._packages = []
++        self._sourcepackages = []
+         self._channel = None
+         self._cache = None
+         self._installed = False
+ 
+     def getPackages(self):
+         return self._packages
++    def getSourcePackages(self):
++        return self._sourcepackages
+ 
+     def getChannel(self):
+         return self._channel
+@@ -397,6 +441,7 @@ class Loader(object):
+ 
+     def reset(self):
+         del self._packages[:]
++        del self._sourcepackages[:]
+ 
+     def load(self):
+         pass
+@@ -509,6 +554,50 @@ class Loader(object):
+                 if not req.packages:
+                     cache._requires.remove(req)
+ 
++    def buildSourcePackage(self, srcargs, depargs=[], cnfargs=[]):
++        cache = self._cache
++        src = srcargs[0](*srcargs[1:])
++
++        if depargs:
++            src.buildrequires = []
++            for args in depargs:
++                req = cache._objmap.get(args)
++                if not req:
++                    req = args[0](*args[1:])
++                    cache._objmap[args] = req
++                    cache._buildrequires.append(req)
++                src.buildrequires.append(req)
++
++        if cnfargs:
++            src.buildconflicts = []
++            for args in cnfargs:
++                cnf = cache._objmap.get(args)
++                if not cnf:
++                    cnf = args[0](*args[1:])
++                    cache._objmap[args] = cnf
++                    cache._buildconflicts.append(cnf)
++                src.buildconflicts.append(cnf)
++     
++        found = False
++        lst = cache._objmap.get(srcargs)
++        if lst is not None:
++            for lstsrc in lst:
++                if src.equals(lstsrc):
++                    src = lstsrc
++                    found = True
++                    break
++            else:
++                lst.appendsrc
++        else:
++            cache._objmap[srcargs] = [src]
++      
++        if not found:
++            cache._sourcepackages.append(src)
++      
++        self._sourcepackages.append(src)
++      
++        return src
++
+     def search(self, searcher):
+         # Loaders are responsible for searching on PackageInfo. They
+         # should use the fastest possible method. The one here is
+@@ -587,11 +676,14 @@ class Cache(object):
+     def __init__(self):
+         self._loaders = []
+         self._packages = []
++        self._sourcepackages = []
+         self._provides = []
+         self._requires = []
+         self._recommends = []
+         self._upgrades = []
+         self._conflicts = []
++        self._buildrequires = []
++        self._buildconflicts = []
+         self._objmap = {}
+ 
+     def reset(self):
+@@ -622,6 +714,7 @@ class Cache(object):
+             if cnf.providedby:
+                 del cnf.providedby[:]
+         del self._packages[:]
++        del self._sourcepackages[:]
+         del self._provides[:]
+         del self._requires[:]
+         del self._recommends[:]
+@@ -766,6 +859,23 @@ class Cache(object):
+                     lst.append(cnf)
+                 else:
+                     cnfnames[name] = [cnf]
++        bldreqnames = {}
++        for req in self._buildrequires:
++            for name in req.getMatchNames():
++                lst = bldreqnames.get(name)
++                if lst:
++                    lst.append(req)
++                else:
++                    bldreqnames[name] = [req]
++        bldcnfnames = {}
++        for cnf in self._conflicts:
++            for name in cnf.getMatchNames():
++                lst = bldcnfnames.get(name)
++                if lst:
++                    lst.append(cnf)
++                else:
++                    bldcnfnames[name] = [cnf]
++
+         for prv in self._provides:
+             lst = reqnames.get(prv.name)
+             if lst:
+@@ -815,6 +925,22 @@ class Cache(object):
+                             prv.conflictedby.append(cnf)
+                         else:
+                             prv.conflictedby = [cnf]
++            lst = bldreqnames.get(prv.name)
++            if lst:
++                for req in lst:
++                    if req.matches(prv):
++                        if req.providedby:
++                            req.providedby.append(prv)
++                        else:
++                            req.providedby = [prv]
++            lst = bldcnfnames.get(prv.name)
++            if lst:
++                for req in lst:
++                    if req.matches(prv):
++                        if req.providedby:
++                             req.providedby.append(prv) 
++                        else:
++                             req.providedby = [prv]
+ 
+     def getPackages(self, name=None):
+         if not name:
+@@ -822,6 +948,12 @@ class Cache(object):
+         else:
+             return [x for x in self._packages if x.name == name]
+ 
++    def getSourcePackages(self, source=None):
++        if not source:
++            return self._sourcepackages
++        else:
++            return [x for x in self._sourcepackages if str(x) == source]
++
+     def getProvides(self, name=None):
+         if not name:
+             return self._provides
+@@ -852,6 +984,18 @@ class Cache(object):
+         else:
+             return [x for x in self._conflicts if x.name == name]
+ 
++    def getBuildRequires(self, name=None):
++        if not name:
++            return self._buildrequires
++        else:
++            return [x for x in self._buildrequires if x.name == name]
++ 
++    def getBuildConflicts(self, name=None):
++        if not name:
++            return self._buildconflicts
++        else:
++            return [x for x in self._buildconflicts if x.name == name]
++ 
+     def search(self, searcher):
+         if searcher.nameversion:
+             for pkg in self._packages:
+@@ -894,6 +1038,7 @@ class Cache(object):
+         state["__stateversion__"] = self.__stateversion__
+         state["_loaders"] = self._loaders
+         state["_packages"] = self._packages
++        state["_sourcepackages"] = self._sourcepackages
+         return state
+ 
+     def __setstate__(self, state):
+@@ -901,6 +1046,7 @@ class Cache(object):
+             raise StateVersionError
+         self._loaders = state["_loaders"]
+         self._packages = state["_packages"]
++        self._sourcepackages = state["_sourcepackages"]
+         provides = {}
+         requires = {}
+         recommends = {}
+@@ -927,8 +1073,20 @@ class Cache(object):
+         self._recommends = recommends.keys()
+         self._upgrades = upgrades.keys()
+         self._conflicts = conflicts.keys()
++        buildrequires = {}
++        buildconflicts = {}
++        for src in self._sourcepackages:
++            for dep in src.buildrequires:
++                dep.packages.append(src)
++                buildrequires[dep] = True
++            for cnf in src.buildconflicts:
++                cnf.packages.append(src)
++                buildconflicts[cnf] = True
++        self._buildrequires = buildrequires.keys()
++        self._buildconflicts = buildconflicts.keys()
+         self._objmap = {}
+ 
+-from ccache import *
++# TODO: ccache.c
++#from ccache import *
+ 
+ # vim:ts=4:sw=4:et
+diff --git a/smart/commands/builddep.py b/smart/commands/builddep.py
+new file mode 100644
+index 0000000..e6be215
+--- /dev/null
++++ b/smart/commands/builddep.py
+@@ -0,0 +1,148 @@
++#
++# Copyright (c) 2015 WindRiver, Inc.
++#
++# Written by Fupan Li <fupan.li@windriver.com>
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU Library General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++#
++from smart.transaction import Transaction, PolicyInstall, sortUpgrades
++from smart.transaction import INSTALL, REINSTALL
++from smart.option import OptionParser
++from smart.cache import Package
++from smart import *
++import string
++import re
++import os
++
++USAGE=_("smart builddep [options] srpm-package ...")
++
++DESCRIPTION=_("""
++This command will figure out the packagees required to build a 
++given srpm package and try to install all of these packages in 
++the system. If a new version of an already installed  package 
++is available, it will be selected for installation.
++""")
++
++EXAMPLES=_("""
++smart builddep srpm-pkg
++smart builddep http://some.url/some/path/srpm-pkg
++""")
++
++def parse_options(argv):
++    parser = OptionParser(usage=USAGE,
++                          description=DESCRIPTION,
++                          examples=EXAMPLES)
++    parser.add_option("--urls", action="store_true",
++                      help=_("dump needed urls and don't commit operation"))
++    parser.add_option("--download", action="store_true",
++                      help=_("download packages and don't commit operation"))
++    parser.add_option("--dump", action="store_true",
++                      help=_("dump package names and versions to stderr but "
++                             "don't commit operation"))
++    parser.add_option("-y", "--yes", action="store_true",
++                      help=_("do not ask for confirmation"))
++    opts, args = parser.parse_args(argv)
++    opts.args = args
++    return opts
++
++def main(ctrl, opts):
++ 
++    # Argument check
++    if not opts.args:
++        raise Error, _("no package(s) given")
++
++    urls = []
++    for arg in opts.args[:]:
++        if (os.path.isfile(arg) and
++            '/' in arg or ctrl.checkPackageFile(arg)):
++            ctrl.addFileChannel(arg)
++            opts.args.remove(arg)
++        elif ":/" in arg:
++            urls.append(arg)
++    if urls:
++        succ, fail = ctrl.downloadURLs(urls, _("packages"),
++                                       targetdir=os.getcwd())
++        if fail:
++            raise Error, _("Failed to download packages:\n") + \
++                         "\n".join(["    %s: %s" % (url, fail[url])
++                                    for url in fail])
++        for url, file in succ.items():
++            ctrl.addFileChannel(file)
++            opts.args.remove(url)
++    if sysconf.get("auto-update"):
++        from smart.commands import update
++        updateopts = update.parse_options([])
++        update.main(ctrl, updateopts)
++    else:
++        ctrl.reloadChannels()
++    cache = ctrl.getCache()
++    trans = Transaction(cache, PolicyInstall)
++    reqpkgs = []
++    for channel in ctrl.getFileChannels():
++        for loader in channel.getLoaders():
++            for pkg in loader.getSourcePackages():
++                if pkg.buildrequires:
++                    for req in pkg.buildrequires:
++                        if req.providedby:
++                            for prv in req.providedby:
++                                for prvpkg in prv.packages:
++                                    if not prvpkg.installed and prvpkg not in reqpkgs:
++                                        reqpkgs.append(prvpkg)
++                                    else:
++                                        iface.warning(_("%s has been installed!") % prvpkg.name)
++                        else:
++                            ratio, results, suggestions = ctrl.search(req.name)
++                            if not results:
++                                if suggestions:
++                                    dct = {}
++                                    for r, obj in suggestions:
++                                        if isinstance(obj, Package):
++                                            dct[obj] = True
++                                        else:
++                                            dct.update(dict.fromkeys(obj.packages, True))
++                                    raise Error, _("'%s' matches no packages. Suggestions:\n%s") % \
++                                                       (req.name, "\n".join(["    "+str(x) for x in dct]))
++                                else: #cannot find the build required packages in the repo
++                                    raise Error, _("cannot find the build required packcage of '%s' in the repository") % req.name
++
++                            continue
++
++    if len(reqpkgs) > 1:
++        sortUpgrades(reqpkgs)
++
++    names = {}
++    for pkg in reqpkgs:
++        names.setdefault(str(pkg), []).append(pkg)
++    for name in names:
++        pkg = names[name][0]
++        if pkg.installed:
++            iface.warning(_("%s is already installed") % pkg)
++        else:
++            trans.enqueue(pkg, INSTALL)
++
++    iface.showStatus(_("Computing transaction..."))
++    trans.run()
++    iface.hideStatus()
++    if trans:
++        confirm = not opts.yes
++        if opts.urls:
++            ctrl.dumpTransactionURLs(trans)
++        elif opts.dump:
++            ctrl.dumpTransactionPackages(trans, install=True)
++        elif opts.download:
++            ctrl.downloadTransaction(trans, confirm=confirm)
++        else:
++            ctrl.commitTransaction(trans, confirm=confirm)
++ 
+-- 
+1.8.3.2
+
