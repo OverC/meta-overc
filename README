@@ -1,4 +1,4 @@
-meta-overc/meta-pod
+meta-overc/meta-cube
 ===================
 
 The goal of this layer is to create a yocto build which can be deployed on a

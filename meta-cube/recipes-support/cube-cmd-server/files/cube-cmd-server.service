@@ -1,0 +1,12 @@
+[Unit]
+Description=Cube command server
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/sbin/cube-cmd-server
+ExecStop=/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

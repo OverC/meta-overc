@@ -1,8 +1,8 @@
 OverC Overview
 ------------------
 
-OverC is composed of building blocks (pods) that implement a set of related
-functionality. The current pods are:
+OverC is composed of building blocks (cubes) that implement a set of related
+functionality. The current cubes are:
 
  - dom0: provides control services to the platform and is responsible for
          launching other containers in the system. Dom0 is not manipulated
@@ -16,11 +16,11 @@ functionality. The current pods are:
 OverC also has two essential image types, that provide a foundation for the
 container runtimes. These are:
 
- - pod-builder: This is the image which lists all the packages required to
-                boot the platform. pod-builder is also capable of self
+ - cube-builder: This is the image which lists all the packages required to
+                boot the platform. cube-builder is also capable of self
                 hosting and building the platform itself.
- - pod-essential: This is a minimal runtime which is used for both the
-                  installer and pod-essential in the fully assembled system.
+ - cube-essential: This is a minimal runtime which is used for both the
+                  installer and cube-essential in the fully assembled system.
 
 
 OverC build
@@ -28,8 +28,8 @@ OverC build
 
 Modify local.conf with following settings:
 
- # build the pod distro
- DISTRO ?= "pod"
+ # build the cube distro
+ DISTRO ?= "cube"
 
  # build the genericx86 machine, ussing the common-pc-64 branch
  MACHINE="genericx86-64"
@@ -42,7 +42,7 @@ Modify local.conf with following settings:
 Clone the layers described in the meta-overc/README, and build the images
 mentioned in the overview:
 
-  % bitbake pod-dom0 pod-dom1 pod-domE pod-essential pod-builder
+  % bitbake cube-dom0 cube-dom1 cube-domE cube-essential cube-builder
 
 This will take some time, since multiple images and configurations are
 being build and assembled.
@@ -73,7 +73,7 @@ to a USB stick results in an installer that boots and runs on most x86 targets.
 
  % cd usbhdinstaller
  % mkdir ~/.overc
- % cp config/config-usb-pod.sh.sample ~/.overc/config-usb-pod.sh
+ % cp config/config-usb-cube.sh.sample ~/.overc/config-usb-cube.sh
  % cp config/config-usb.sh.sample ~/.overc/config-usb.sh
 
 Edit the variables in config-usb.sh to suit the build and desired installation.
@@ -84,8 +84,8 @@ In particular:
 And confirm that the following outputs exist in the artifacts directory:
 
  INSTALL_KERNEL="${ARTIFACTS_DIR}/bzImage"
- INSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
- INSTALL_INITRAMFS="${ARTIFACTS_DIR}/pod-builder-initramfs-genericx86-64.cpio.gz"
+ INSTALL_ROOTFS="${ARTIFACTS_DIR}/cube-essential-genericx86-64.tar.bz2"
+ INSTALL_INITRAMFS="${ARTIFACTS_DIR}/cube-builder-initramfs-genericx86-64.cpio.gz"
 
 One other important file to modify is the grub configuration for the bootable
 USB device. It is controlled by the following variable:
@@ -107,14 +107,14 @@ Copy the grub configuration to ~/.overc/ and edit to suit your device(s).
          The only current solution is to install grub2, or modify the files
          to suit your version of grub.
 
-Finally, edit config-usb-pod.sh to list the containers and essential rootfs
+Finally, edit config-usb-cube.sh to list the containers and essential rootfs
 that is to be installed. This is typically:
 
- HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/pod-essential-genericx86-64.tar.bz2"
+ HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/cube-essential-genericx86-64.tar.bz2"
 
- HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/pod-dom0-genericx86-64.tar.bz2 \
-                       ${ARTIFACTS_DIR}/pod-dom1-genericx86-64.tar.bz2 \
-                       ${ARTIFACTS_DIR}/pod-domE-genericx86-64.tar.bz2"
+ HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2 \
+                       ${ARTIFACTS_DIR}/cube-dom1-genericx86-64.tar.bz2 \
+                       ${ARTIFACTS_DIR}/cube-domE-genericx86-64.tar.bz2"
 
 At this point we have the payload to create a bootable USB disk prepared. The
 scripts (or applications) that perform the final install to the target device
@@ -125,7 +125,7 @@ complex, and should be edited to suit the desired target runtime.
             on the USB installer, since they may not be appropriate for your
             target device (and hence remove / wipe data).
 
-pod-install.sh is capable of partitioning a device, installing the essential 
+cube-install.sh is capable of partitioning a device, installing the essential 
 rootfs, configuring grub, extracting container payloads and rebooting the
 device. It serves as a good example for other custom installers.
 
@@ -133,7 +133,7 @@ Once the installer(s) have been modified to suit the target device, the
 following example command produces a bootable nbd USB device (assuming that a
 nbd has been created properly started):
 
- % sudo ./sbin/usb-creator.sh --config ~/.overc/config-usb-pod.sh `pwd` /dev/nbd0
+ % sudo ./sbin/cubeit --config ~/.overc/config-usb-cube.sh `pwd` /dev/nbd0
 
 We now have a bootable device, with an embedded installer + installation payload.
 
@@ -146,33 +146,33 @@ NOTES:
     layers and adding 'IMAGE_INSTALL_append += "puppet"' to your
     build. Set INSTALL_PUPPET_DIR in the install config script to then
     enable puppet configuration of your installation. Puppet is run in
-    the context of the installed 'pod-essential' at the end of the
-    installation if using pod-install.sh.
+    the context of the installed 'cube-essential' at the end of the
+    installation if using cube-install.sh.
 
 OverC installation
 ------------------
 
 Once a bootable installer has been created, insert it into the target and
-boot. The default USB bootable image runs pod-essential, with the login of
+boot. The default USB bootable image runs cube-essential, with the login of
 root/root.
 
 After logging into the bootable device, the installer should be run to move
 artifacts to their final destination device.
 
-In our pod-install.sh example from above, the following commands should be
+In our cube-install.sh example from above, the following commands should be
 run (assuming an installation to a second virtual disk):
 
  % cd /opt/installer/
- % ./sbin/pod-install.sh images/pod-essential-* vdb
+ % ./sbin/cubeit-install images/cube-essential-* vdb
 
-** Note: The pod installer will destroy all data on the target device, since
+** Note: The cube installer will destroy all data on the target device, since
          it re-partitions, create filesystems, installs the boot image and
          the rootfs + container filesystems.
 
          Do not run it against a device with data you cannot afford to lose.
 
-** Note: To create the root filesystem in btrfs, add -b option to pod-install.sh
- % ./sbin/pod-install.sh -b images/pod-essential-* vdb
+** Note: To create the root filesystem in btrfs, add -b option to cube-install.sh
+ % ./sbin/cubeit-install -b images/cube-essential-* vdb
 
 Once this completes, the device is powered off, and is ready with the OverC
 runtime.
