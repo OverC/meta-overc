@@ -9,6 +9,7 @@ inherit packagegroup
 PACKAGES = "\
     packagegroup-container \
     packagegroup-container-setup \
+    packagegroup-docker \
     "
 
 RDEPENDS_${PN} = " \
@@ -20,4 +21,10 @@ RDEPENDS_${PN} = " \
 
 RDEPENDS_${PN}-setup = " \
     lxc-setup \
+"
+
+RDEPENDS_docker = " \
+    docker \
+    libvirt \
+    libvirt-python \
 "
