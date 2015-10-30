@@ -9,7 +9,13 @@ class Btrfs(Utils):
         self.rootfs = None
         self.rootdev = self._getrootdev()
         self.bakup_mode = self._get_bootmode()
-        self.kernel_md5 = self._compute_checksum('/boot/bzImage')
+        
+        if os.path.exists('/boot/bzImage'):
+            self.kernel = "/boot/bzImage"
+        elif os.path.exists('/boot/uImage'):
+            self.kernel = "/boot/uImage"
+
+        self.kernel_md5 = self._compute_checksum(self.kernel)
 
         if not self.rootdev or not self.rootfs:
             print "Error: cannot get the rootfs device!"
@@ -96,9 +102,6 @@ class Btrfs(Utils):
             argv = 'subvolume snapshot /sysroot/%s /sysroot/rootfs_bakup' % self.rootfs
             self._btrfs(argv)
 
-            #backup bzimage
-            os.system('cp -f /boot/bzImage /boot/bzImage_bakup')
-
             #setup upgrade rootfs
             argv = 'subvolume snapshot /sysroot/%s /sysroot/%s' % (self.rootfs, upgrade_rootfs[self.rootfs])
             self._btrfs(argv)
@@ -123,7 +126,7 @@ class Btrfs(Utils):
             os.system('rm -rf /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
             os.system('umount /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
 
-            upgrade_bzImage = '/sysroot/%s/boot/bzImage' % upgrade_rootfs[self.rootfs]
+            upgrade_bzImage = '/sysroot/%s/%s' % (upgrade_rootfs[self.rootfs], self.kernel)
             if os.path.islink(upgrade_bzImage):
                 upgrade_kernel = '/sysroot/%s/%s' % (upgrade_rootfs[self.rootfs], os.path.realpath(upgrade_bzImage))
             else:
@@ -134,7 +137,9 @@ class Btrfs(Utils):
                 upgrade_kernel_md5 = self._compute_checksum(upgrade_kernel)
 
             if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
-                os.system('cp -f %s /boot/bzImage' % upgrade_kernel)
+                #backup kernel
+                os.system('cp -f %s  %s_bakup' % (self.kernel, self.kernel))
+                os.system('cp -f %s %s' % (upgrade_kernel, self.kernel))
 
             #setup default subvolume
             upgrade_subvolid = self._get_btrfs_value('/sysroot/%s' % upgrade_rootfs[self.rootfs], 'Object ID')
@@ -166,18 +171,18 @@ class Btrfs(Utils):
             return False
             # sys.exit(2)
 
-        rollback_kernel = '/sysroot/%s/boot/bzImage' % rollback_rootfs[self.rootfs]
+        rollback_kernel = '/sysroot/%s/%s' % (rollback_rootfs[self.rootfs], self.kernel)
         rollback_kernel_md5 = ''
         if os.path.exists(rollback_kernel):
             if os.path.islink(rollback_kernel):
                 rollback_kernel = '/sysroot/%s/%s' % (rollback_rootfs[self.rootfs], os.path.realpath(rollback_kernel))
         else:
-            rollback_kernel = '/boot/bzImage_bakup'
+            rollback_kernel = '%s_bakup' % self.kernel
 
         upgrade_kernel_md5 = self._compute_checksum(rollback_kernel)
 
         if rollback_kernel_md5 != self.kernel_md5:
-            os.system('cp -f %s /boot/bzImage' % rollback_kernel)
+            os.system('cp -f %s %s' % (rollback_kernel, self.kernel))
 
         #setup default subvolume
         rollback_subvolid = self._get_btrfs_value('/sysroot/%s' % rollback_rootfs[self.rootfs], 'Object ID')
