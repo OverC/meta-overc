@@ -116,4 +116,5 @@ OVERC_COMMON_TOOLS = "\
      sudo \
      tcl \
      time \
+     overc-utils \
     "

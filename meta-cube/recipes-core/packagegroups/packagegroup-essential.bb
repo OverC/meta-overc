@@ -44,4 +44,5 @@ RDEPENDS_packagegroup-essential-only = "\
      watchdog \
      cube-cmd-server \
      cube-cmd-server-host-conf \
+     overc-utils \
     "
