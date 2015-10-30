@@ -104,12 +104,15 @@ positional arguments:
   template    template of container
 
   -r: upgrades the specified container using rpm repository
+  -i: upgrades the container using image and then activates 
+      the container.
 
     This calls the container script of the template with
     the upgrade option.
 
-    If rpm option is not specified, it calls updates on the
-    container template and then activates the container name.
+    If none of "-i" and "-r" is specified, the "rpm" method is 
+    used by default, and if both of "-i" and "-r" are specified, 
+    the "rpm" method will override "image" method. 
 
 snapshot            snapshot a container
 usage: overc container snapshot [-h] name template

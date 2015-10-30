@@ -159,12 +159,14 @@ def container_stop():
 
 @app.route('/container/upgrade')
 def container_upgrade():
-    usage = 'Usage: ' + request.url_root + 'container/upgrade?name=<container name>&template=<template name>&rpm=yes|no'
+    usage = 'Usage: ' + request.url_root + 'container/upgrade?name=<container name>&template=<template name>&rpm=yes|no&image=yes|no'
 
     overc=Overc.Overc()
     container_name = request.args.get('name')
     template = request.args.get('template')
     rpm = request.args.get('rpm')
+    image = request.args.get('image')
+
     if container_name is None or template is None:
         return json_msg(usage)
     if rpm is None or rpm == 'no':
@@ -174,7 +176,14 @@ def container_upgrade():
     elif rpm != 'no':
         return json_msg(usage)
 
-    overc._container_upgrade(container_name, template, rpm_upgrade)
+    if image is None or image == 'no':
+        image_upgrade = False
+    elif image == 'yes':
+        image_upgrade = True
+    elif image != 'no':
+        return json_msg(usage)
+
+    overc._container_upgrade(container_name, template, rpm_upgrade, image_upgrade)
     return json_msg(overc.message)
 
 @app.route('/container/delete')

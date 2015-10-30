@@ -119,7 +119,8 @@ if __name__ == '__main__':
     c_upgrade.set_defaults(func=overc.container_upgrade)
     c_upgrade.add_argument('name', nargs="?", help="name of container")
     c_upgrade.add_argument('template', help="template of container")
-    c_upgrade.add_argument("-r", "--rpm", dest="rpm", action="store_true", help=_("Update container using rpm feeds"))
+    c_upgrade.add_argument("-r", "--rpm", dest="rpm", action="store_true", help=_("Upgrade container using rpm feeds"))
+    c_upgrade.add_argument("-i", "--image", dest="image", action="store_true", help=_("Upgrade container using images"))
 
     c_activate = container_subparser.add_parser("activate", help=_("activate container"))
     c_activate.set_defaults(func=overc.container_activate)

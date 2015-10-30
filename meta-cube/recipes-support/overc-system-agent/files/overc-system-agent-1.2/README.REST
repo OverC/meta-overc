@@ -101,18 +101,19 @@ arguments:
   template     template of container
 
 Container upgrade:
-    if rpm is no or unspecified:
+    if and only if "image" is specified "yes":
        updates container and then activates it
        container can either be new or existing
        if container exists and is running, stops the running container
-    otherwise (rpm is yes)
+    otherwise
        creates a snapshot of the container and then does a package level
        upgrade to the system
 http://0.0.0.0:<port>/container/upgrade?name=<container name>&template=<template name>&rpm=yes|no'
 arguments:
   name         name of container
   template     template of container
-  rpm          update the container using rpm repository or image (optional) 
+  rpm          upgrade the container using rpm repository or image (default)
+  image        upgrade the container using images (optional)
 
 Container delete:
     deletes a container

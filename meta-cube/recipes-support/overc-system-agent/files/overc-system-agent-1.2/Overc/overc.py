@@ -173,10 +173,10 @@ class Overc(object):
         self.message = self.container.message
 
     def container_upgrade(self):
-        self._container_upgrade(self.args.name, self.args.template, self.args.rpm)
+        self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
         sys.exit(self.retval)
-    def _container_upgrade(self, container, template, rpm):
-        self.retval = self.container.upgrade(container, template, rpm)
+    def _container_upgrade(self, container, template, rpm, image):
+        self.retval = self.container.upgrade(container, template, rpm, image)
         self.message = self.container.message
 
     def container_delete_snapshots(self):

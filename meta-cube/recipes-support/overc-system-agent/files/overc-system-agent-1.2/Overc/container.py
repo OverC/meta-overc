@@ -67,11 +67,8 @@ class Container(object):
             self.message += "\nUpdate failed"
         return retval
 
-    def upgrade(self, name, template, rpm_upgrade=False):
-        if rpm_upgrade:
-            args = "-r -n %s" % name
-            retval = self.run_script(template, args)
-        else:
+    def upgrade(self, name, template, rpm_upgrade=True, image_upgrade=False):
+        if image_upgrade and not rpm_upgrade:
             retval = self.update(template)
             if retval is 0:
                 msg1 = self.message
@@ -79,6 +76,10 @@ class Container(object):
                 retval = self.activate(name, template, force)
                 msg2 = self.message
                 self.message = msg1 + "\n" + msg2
+        else:
+            args = "-r -n %s" % name
+            retval = self.run_script(template, args)
+
         if retval is 0:
             self.message += "\nUpgrade ok"
         else:
