@@ -105,5 +105,10 @@ if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
     CMDLINE=""
 fi
 
+if [ -x ${ROOT_MOUNT}/etc/accept_license ]; then
+    chroot ${ROOT_MOUNT} /etc/accept_license
+fi
+
 exec switch_root $ROOT_MOUNT $INIT $CMDLINE ||
     fatal "Couldn't switch_root, dropping to shell"
+
