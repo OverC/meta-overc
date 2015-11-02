@@ -8,12 +8,16 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 
 PACKAGE_EXCLUDE = "busybox* "
 
+CUBE_DOM_1_EXTRA_INSTALL ?= ""
+
+
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-util-linux \
                   packagegroup-core-ssh-openssh \
                   packagegroup-container \
                   packagegroup-service-discovery-and-configuration \
                   packagegroup-dom1 \
+                  ${CUBE_DOM_1_EXTRA_INSTALL} \
                  "
 
 IMAGE_FEATURES += "package-management doc-pkgs"

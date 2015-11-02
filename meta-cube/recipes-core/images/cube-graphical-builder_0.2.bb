@@ -7,7 +7,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
-POD_BUILDER_EXTRA_INSTALL ?= ""
+CUBE_BUILDER_EXTRA_INSTALL ?= ""
 
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \
@@ -18,7 +18,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-container \
 		  packagegroup-container-setup \
 		  packagegroup-graphical-builder \
-		  ${POD_BUILDER_EXTRA_INSTALL} \
+		  ${CUBE_BUILDER_EXTRA_INSTALL} \
 		 "
 
 XSERVER_append = " xserver-xorg \

@@ -14,6 +14,8 @@ IMAGE_FSTYPES = "tar.bz2"
 
 PACKAGE_EXCLUDE = "busybox*"
 
+CUBE_DOM_E_EXTRA_INSTALL ?= ""
+
 IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-dom0 \
                         packagegroup-util-linux \
@@ -25,6 +27,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         ntp \
                         ntpdate \
                         ntp-utils \
+                        ${CUBE_DOM_E_EXTRA_INSTALL} \
                        "
 
 XSERVER_append = "xserver-xorg \
