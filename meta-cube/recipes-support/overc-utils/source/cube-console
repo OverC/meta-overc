@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+usage()
+{
+cat << EOF
+
+  cube-console <console name>
+
+  example:
+    
+      $  cubename cube-essential
+ 
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+        *) break
+            ;;
+    esac
+    shift
+done
+
+
+# essential is only available from dom0, so we need to
+# check that first, and then deal with the specific
+# mounts and information that make it work
+function do_essential_console
+{
+    if [ ! -d "/host/proc" ]; then
+	echo "ERROR: essential console can only be entered via dom0"
+	exit 1
+    fi
+
+    if [ ! -d "/essential" ]; then
+	echo "ERROR: essential filesystem is not available on /essential"
+	exit 1
+    fi
+
+    mount --bind /dev/ /essential/dev
+    mount --bind /host/proc/ /essential/proc
+    cd /essential
+
+    # once we chroot, we are fundamentally is the "essential OS"
+    chroot .
+
+    umount /essential/proc
+    umount /essential/dev/
+}
+
+# Parms: $1 = filename
+function enter_console
+{
+    local consolename=$1
+
+    case $consolename in
+	*essential*)	   
+	    do_essential_console
+	    ;;
+	*)
+	    echo "ERROR: Unknown cube, cannot enter console"
+	    ;;
+    esac
+}
+
+enter_console $1
