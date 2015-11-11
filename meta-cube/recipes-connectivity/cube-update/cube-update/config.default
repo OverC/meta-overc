@@ -1,0 +1,39 @@
+#!/bin/false  This file must be sourced
+#
+# Copyright (C) 2015 Wind River Systems, Inc.
+#
+
+# Default cube-update.sys service configuration
+
+# The directory where the service process stores data.
+#     The /etc/cube-update directory is hard-coded as the
+#     location for the configuration files.  If it is
+#     writable, it can also be used as the location for
+#     the log file and information about the running
+#     service process.
+SERVER_DIR=/etc/cube-update
+
+SERVER_PID_FILE=pid
+SERVER_LOG_FILE=log
+SERVER_PENDING=pending
+SERVER_START_TIME_FILE=startup
+
+# Time in seconds between polls.
+#     Note that there is no attempt to align this on a "natural" time
+#     boundary, nor to account for load-based skew.  This is the time
+#     between the end of a poll and the beginning of the next poll.
+#     The default value is a little less than a week.  For many
+#     environments, this should be reduced in order to pick up security
+#     updates more promptly.
+POLLING_FREQUENCY=600000
+
+# Install updates automatically
+#     Options are "true" or "false" (command to execute).
+#     If true, the service automatically downloads and installs
+#         all available updates.
+#     If false, the service automatically checks for updates, but
+#         does not install them without manual intervention.  The
+#	  fact that updates are available is put in /etc/motd.
+SERVER_AUTO_UPDATE=false
+
+SERVER_UPDATE_COMMAND="/opt/overc-system-agent/overc host upgrade"

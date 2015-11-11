@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# Copyright (C) 2015 Wind River Systems, Inc.
+#
+
+smart update
+pkglist=`smart newer | awk '$NF ~ /^[0-9]+$/ { print $1 }'`
+if [ "$pkglist" != '' ]; then
+    touch /etc/motd
+    grep -v '^CUBEUPDATE: ' /etc/motd > /tmp/$$.motd
+    echo 'CUBEUPDATE: ' >> /tmp/$$.motd
+    echo 'CUBEUPDATE: NOTICE: Updates are available' >> /tmp/$$.motd
+    echo "CUBEUPDATE: $pkglist" >> /tmp/$$.motd
+    echo 'CUBEUPDATE: ' >> /tmp/$$.motd
+    mv /tmp/$$.motd /etc/motd
+fi

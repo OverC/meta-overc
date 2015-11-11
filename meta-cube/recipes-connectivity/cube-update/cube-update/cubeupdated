@@ -1,0 +1,139 @@
+#!/bin/bash
+#
+# Copyright (C) 2015 Wind River Systems, Inc.
+#
+
+### BEGIN INIT INFO
+# Provides:             cube-update.sys
+# Required-Start:
+# Required-Stop:
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    automated system udpate service
+### END INIT INFO
+
+# set -e
+
+test -x /opt/overc-system-agent/overc || exit 0
+
+if [ -z "${SMARTPM_DIR}" ]; then
+    SMARTPM_DIR=/etc/cube-update
+fi
+
+test -x "${SMARTPM_DIR}/config.default" && source "${SMARTPM_DIR}/config.default"
+test -x "${SMARTPM_DIR}/config.local" && source "${SMARTPM_DIR}/config.local"
+
+function cube-update_service_is_running() {
+    if [ -f "${SERVER_DIR}/${SERVER_PID_FILE}" ]; then
+        PID=`cat "${SERVER_DIR}/${SERVER_PID_FILE}"`
+        if kill -0 "$PID" >/dev/null 2>&1 ; then
+            return 0
+        else
+            rm -f "${SERVER_DIR}/${SERVER_PID_FILE}"
+            return 1
+        fi
+    else
+        return 1
+    fi
+}
+
+function start_cube-update_service() {
+    if cube-update_service_is_running ; then
+        echo "system update server $PID already running"
+        exit 0
+    fi
+    touch "${SERVER_DIR}/${SERVER_PENDING}"
+    date '+%Y%m%d%H%M%S' > "${SERVER_DIR}/${SERVER_START_TIME_FILE}"
+    #
+    #  Note that using parenthesis to create a sub-shell does not work
+    #  in this context.  The child needs to save its pid for future
+    #  stop operations, but '$$' is not expanded appropriately when
+    #  using parenthesis.  So explicitly fork a sub-shell to handle it.
+    #
+    #  Note that the outer double quote allows variable expansion, and
+    #  because it is surrounded by the double quotes, single quotes inside
+    #  do not prevent variable expansion.  So any variables that should
+    #  not be expanded must be flagged by escaping the dollar sign with
+    #  a backslash as if they were only surrounded by double quotes.
+    #
+    bash -c "                                                                                   \
+        echo \$\$ > '${SERVER_DIR}/${SERVER_PID_FILE}' ;                                        \
+        rm '${SERVER_DIR}/${SERVER_PENDING}' ;                                                  \
+        while true ; do                                                                         \
+            test -x '${SMARTPM_DIR}/config.default' && source '${SMARTPM_DIR}/config.default' ; \
+            test -x '${SMARTPM_DIR}/config.local' && source '${SMARTPM_DIR}/config.local' ;     \
+            if ${SERVER_AUTO_UPDATE} ; then                                                     \
+                eval ${SERVER_UPDATE_COMMAND} ;                                                 \
+	    else                                                                                \
+		${SMARTPM_DIR}/cubepkgcheck ;                                                   \
+            fi ;                                                                                \
+            sleep ${POLLING_FREQUENCY} ;                                                        \
+        done                                                                                    \
+        " >> ${SERVER_DIR}/${SERVER_LOG_FILE} 2>&1 &
+
+    # Wait for the daemon to start
+    timeout=10
+    while [ -f "${SERVER_DIR}/${SERVER_PENDING}" ]; do
+        sleep 1
+	timeout=`expr $timeout - 1`
+	if [ "${timeout}" -le 0 ]; then
+	    break
+	fi
+    done
+}
+
+function stop_cube-update_service() {
+    if ! cube-update_service_is_running ; then
+        echo "system update server is not running"
+        exit 0
+    fi
+    PID=`cat "${SERVER_DIR}/${SERVER_PID_FILE}"`
+    if ! kill $PID ; then
+        if ! kill -3 $PID ; then
+            if ! kill -9 $PID ; then
+                echo "system update: Cannot stop service"
+            fi
+        fi
+    fi
+    rm -f "${SERVER_DIR}/${SERVER_PID_FILE}"
+    rm -f "${SERVER_DIR}/${SERVER_PENDING}"
+    rm -f "${SERVER_DIR}/${SERVER_START_TIME_FILE}"
+}
+
+function restart_cube-update_service() {
+    stop_cube-update_service
+    sleep 1
+    start_cube-update_service
+}
+
+function show_cube-update_service_status() {
+    if cube-update_service_is_running ; then
+        STARTED=0
+        if [ -f "${SERVER_DIR}/${SERVER_START_TIME_FILE}" ]; then
+            STARTED=`sed -e 's/\(....\)\(..\)\(..\)\(..\)\(..\)\(..\)/\1 \2 \3 \4:\5:\6/' "${SERVER_DIR}/${SERVER_START_TIME_FILE}"`
+        fi
+        echo "system update server $PID started at ${STARTED} with ${POLLING_FREQUENCY} frequency"
+    else
+        echo "system update server is not running" || true
+    fi
+}
+
+case "$1" in
+    start)
+        start_cube-update_service
+        ;;
+    stop)
+        stop_cube-update_service
+        ;;
+    reload|force-reload|restart|try-restart)
+        restart_cube-update_service
+        ;;
+    status)
+        show_cube-update_service_status
+        ;;
+    *)
+        echo "Usage: /etc/init.d/cube-update.sys {start|stop|restart|status}" || true
+        ;;
+esac
+
+exit 0

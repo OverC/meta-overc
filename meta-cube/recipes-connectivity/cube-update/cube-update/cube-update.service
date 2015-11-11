@@ -1,0 +1,17 @@
+[Unit]
+Description=SmartPM update daemon
+
+[Service]
+Type=forking
+PIDFile=/etc/cube-update/pid
+ExecStart=/etc/cube-update/cubeupdated start
+ExecReload=/etc/cube-update/cubeupdated restart
+ExecStop=/etc/cube-update/cubeupdated stop
+Restart=always
+RestartSec=600
+WatchdogSec=2419200
+StandardOutput=syslog
+DefaultDependencies=no
+
+[Install]
+WantedBy=multi-user.target
