@@ -133,7 +133,7 @@ Once the installer(s) have been modified to suit the target device, the
 following example command produces a bootable nbd USB device (assuming that a
 nbd has been created properly started):
 
- % sudo ./sbin/cubeit --config ~/.overc/config-usb-cube.sh `pwd` /dev/nbd0
+ % sudo ./sbin/cubeit --config ~/.overc/config-usb-cube.sh --artifacts `pwd` /dev/nbd0
 
 We now have a bootable device, with an embedded installer + installation payload.
 
