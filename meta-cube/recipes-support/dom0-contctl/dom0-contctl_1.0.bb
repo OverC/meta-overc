@@ -49,6 +49,14 @@ do_install() {
 
     install -d ${D}/${sysconfdir}
     install -m 0744 ${WORKDIR}/dom0-contctl.conf ${D}/${sysconfdir}
+
+    if ${@bb.utils.contains("MACHINE", "xilinx-zynq", "true", "false", d)} ; then
+        if [ -e ${D}/lib/systemd/system/dom0-contctl.service ]; then
+            sed -i 's/^StandardOutput=.*$/StandardOutput=tty/' ${D}/lib/systemd/system/dom0-contctl.service
+            sed -i 's/^StandardError=.*$/StandardError=tty/' ${D}/lib/systemd/system/dom0-contctl.service
+            sed -i '/^StandardError=/a TTYPath=/dev/ttyPS0' ${D}/lib/systemd/system/dom0-contctl.service
+        fi
+    fi
 }
 
 FILES_${PN} += "/opt \
