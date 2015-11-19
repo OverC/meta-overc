@@ -64,14 +64,40 @@ function do_essential_console
     umount /essential/dev/
 }
 
+function do_dom0_console()
+{
+    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
+	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to dom0"
+	exit 1
+    fi
+
+    echo "console" > /opt/container/local/cmd-pipe
+
+    for i in `seq 0 9`; do
+	if [ ! -e "/opt/container/local/console-dom0" ]; then
+	    sleep 1
+	fi
+    done
+
+    if [ ! -e "/opt/container/local/console-dom0" ]; then
+	echo "[ERROR]: /opt/container/local/console-dom0 was not created, cannot connect to dom0"
+	exit 1
+    fi
+
+    socat -,raw,echo=0 /opt/container/local/console-dom0
+}
+
 # Parms: $1 = filename
 function enter_console
 {
     local consolename=$1
 
     case $consolename in
-	*essential*)	   
+	*essential*)
 	    do_essential_console
+	    ;;
+	*dom0*)
+	    do_dom0_console
 	    ;;
 	*)
 	    echo "ERROR: Unknown cube, cannot enter console"
