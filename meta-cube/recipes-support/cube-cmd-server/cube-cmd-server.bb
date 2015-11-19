@@ -9,7 +9,7 @@ SRC_URI = "file://cube-cmd-server \
            file://cube-cmd-server.conf \
            file://cube-cmd-server-functions \
 "
-RDEPENDS_${PN} = "bash cube-cmd-server-functions"
+RDEPENDS_${PN} = "bash socat gawk cube-cmd-server-functions"
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
@@ -40,13 +40,9 @@ FILES_${PN}-functions = "${sysconfdir}/cube-cmd-server-functions"
 pkg_postinst_${PN}-host-conf () {
 #!/bin/sh -e
 mv etc/cube-cmd-server.conf-host etc/cube-cmd-server.conf
-# The host will monitor dom0
-sed -i 's/%cn%/dom0/' etc/cube-cmd-server.conf
 }
 
 pkg_postinst_${PN}-dom0-conf () {
 #!/bin/sh -e
 mv etc/cube-cmd-server.conf-dom0 etc/cube-cmd-server.conf
-# Dom0 will monitor domE
-sed -i 's/%cn%/domE/' etc/cube-cmd-server.conf
 }

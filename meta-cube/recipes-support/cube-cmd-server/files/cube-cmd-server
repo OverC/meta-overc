@@ -1,77 +1,268 @@
 #!/bin/bash
 
-function parse_conf_file() {
-	# Read tuples from the config file in form a:b
-	while read line; do
-		a=$( echo $line|cut -d':' -f 1 )
-		b=$( echo $line|cut -d':' -f 2 )
-		case "$a" in
-		shutdown)
-			SHUTDOWN_ACTION="$b"
-			;;
-		reboot)
-			REBOOT_ACTION="$b"
-			;;
-		monitor-container)
-			container_to_monitor="$b"
-			;;
-		*)
-			echo "Unknown $a:$b in ${CONF_FILE}"
-			;;
-		esac
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
 
-	# Describing the input:
-	# First take any lines containing a :
-	# Throw away any of those that start with # (with optional leading whitespace)
-	# Then compress out any whitespace surrounding any :
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
 
-	done < <( grep ":" ${CONF_FILE} | grep -v ^[[:space:]]*# | sed s/[[:space:]]*:[[:space:]]*/:/g )
-		
+## Set up trap handler
+## On exit, we kill our entire process group (socats, tail .. etc)
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
+# dump the values for a variable
+function get_values()
+{
+    var=$1
+    eval echo "\${$var[@]}"
+}
+
+# returns 1 if we are container, 0 otherwise
+function am_i_a_container()
+{
+    # the 3rd field is the hierarchy. If we are the host, the hierarchy
+    # is always "/". Otherwise, we are a container
+    local archy=`cat /proc/1/cgroup | cut -d: -f3 | head -1`
+    if [ "${archy}" = "/" ]; then
+	return 0
+    fi
+
+    return 1
+}
+
+## derived from https://gist.github.com/epiloque/8cf512c6d64641bde388
+## works for arrays of hashes, as long as the hashes do not have arrays
+function parse_yaml_conf_file() {
+    local prefix=$2
+    local s
+    local w
+    local fs
+    s='[[:space:]]*'
+    w='[a-zA-Z0-9_]*'
+    fs="$(echo @|tr @ '\034')"
+    sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s[:-]$s\(.*\)$s\$|\1$fs\2$fs\3|p" "$1" |
+    awk -F"$fs" '{
+      indent = length($1)/2;
+      if (length($2) == 0) { conj[indent]="+";} else {conj[indent]="";}
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+              vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+              printf("%s%s%s%s=(\"%s\")\n", "'"$prefix"'",vn, $2, conj[indent-1],$3);
+      }
+    }' | sed 's/_=/+=/g'
+}
+
+function create_console_listner() {
+    local listnername=$1
+    local connectorname=$2
+    local matches=""
+
+    # only lxc is currently supported
+    for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+	grep -q ${connectorname} $c
+	if [ $? -eq 0 ]; then
+	    matches="$matches $c"
+	fi
+    done
+
+    if [ -n "$matches" ]; then
+	for m in $matches; do
+	    cname=`echo "$m" | cut -d/ -f5`
+
+	    debug=""
+	    if [ -n "${verbose}" ]; then
+		debug="-d -d"
+	    fi
+	    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/console-${listnername} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty" &
+	done
+    else
+	echo "[ERROR]: no requestor matching ${connectorname} found, no console created"
+    fi
 }
 
 ##############  Mainline begins here ################################
 
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+        *) break
+            ;;
+    esac
+    shift
+done
+
 CONF_FILE=/etc/cube-cmd-server.conf
-container_to_monitor="none"
 
 . /etc/cube-cmd-server-functions
 
-parse_conf_file
-
-if [ "${container_to_monitor}" == "none" ]; then
-	echo "No container to monitor"
-	exit 2
+# create arrays of the values found in the yamle config file
+eval $(parse_yaml_conf_file $CONF_FILE)
+if [ -n "${verbose}" ]; then
+    # if verbose, this will just dump the variables and their values to stdout
+    parse_yaml_conf_file $CONF_FILE
 fi
 
-setup_listening_mechanism fifo
+if [ -z "${whoami}" ]; then
+    myname=`cat /etc/hostname`
+
+    if [ -d '/var/lib/lxc' ]; then
+	# find our name from the container information
+
+	for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+	    grep -q -E "^${myname}$" $c
+	    if [ $? -eq 0 ]; then
+		matches="$c"
+	    fi
+	done
+    fi
+
+    cname=`echo "$matches" | cut -d/ -f5`
+    if [ -n "${cname}" ]; then
+	whoami="${cname}"
+    else
+	whoami="${myname}"
+    fi
+fi
+
+# test .. are we a container ?
+am_i_a_container
+if [ $? -eq 1 ]; then
+    # construct the container name, and see what it is configured to monitor
+    eval monitor="$\{${whoami}_monitor[@]\}"
+    monitor_container=`eval echo ${monitor}`
+else
+    monitor_container="${host_monitor[@]}"
+fi
+
+if [ -z "${monitor_container}" ];then
+    echo "[ERROR]: nothing to monitor, exiting .."
+    exit 1
+fi
+
+if [ "${monitor_container}" = "'*'" ]; then
+    # only lxc is currently supported
+    myname=`cat /etc/hostname`
+    matches=""
+    for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+	# remove ourself from the list .. we can do that by checking
+	# the hostnames
+	grep -q -E "^${myname}$" $c
+	if [ $? -ne 0 ]; then
+	    matches="$matches $c"
+	fi
+    done
+
+    for c in $matches; do
+	cname=`echo "$c" | cut -d/ -f5`
+	m=`setup_listening_mechanism fifo ${cname}`
+	input_stream="$input_stream $m"
+    done
+else
+    input_stream=`setup_listening_mechanism fifo ${monitor_container}`
+    requestor="${monitor_container}"
+fi
+
+# create a single pipe that we can read for all commands
+consolidated_pipe="/tmp/consolidated_pipe"
+rm -f ${consolidated_pipe}
+mkfifo ${consolidated_pipe}
+
+# this makes the pipes unbuffered and redirected to the conslidated pipe
+tail -f ${input_stream} | awk "{print \$0 > \"${consolidated_pipe}\"; close(\"${consolidated_pipe}\"); fflush();}" &
+sleep 1
+
+# We need to prime the pipes
+for s in ${input_stream}; do
+    echo -n > ${s}
+done
+
+if [ -n "${verbose}" ]; then
+    echo "[INFO]: setup completed, waiting on commands from ${input_stream}"
+fi
 
 while (true) do
-	read line
+        read line
+
+	if [ -n "${verbose}" ]; then
+	    echo "[INFO]: cmd-server: $line"
+	fi
+
+	if [ -z "$requestor" ]; then
+	    requestor=`echo ${line} | cut -d':' -f2`
+	fi
 
 	case "${line}" in
-	poweroff)
-		case "${SHUTDOWN_ACTION}" in
-		ignore)
-			;;
-		shutdown)
-			shutdown -h now
-			;;
-		*)
-			echo "Unknown shutdown action ${SHUTDOWN_ACTION}, ignoring"
-			;;
-		esac
+	    \=\=\>*)
+		requestor=`echo ${line} | cut -d/ -f4`
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: switching requestor to ${requestor}"
+		fi
 		;;
-	reboot)
-		case "${REBOOT_ACTION}" in
-		ignore)
-			;;
-		reboot)
-			reboot
-			;;
-		*)
-			echo "Unknown reboot action ${REBOOT_ACTION}, ignoring"
-			;;
-		esac
+	    console*)
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: console creation request: $line"
+		fi
+		if [ -z "${requestor}" ]; then
+		    echo "[ERROR]: console command requires a requestor hostname"
+		fi
+		create_console_listner ${whoami} ${requestor}
+		;;
+	    poweroff)
+		if [ -z "${requestor}" ]; then
+		    echo "[ERROR]: shutdown command requires a requestor hostname"
+		fi
+
+		echo ${commands_shutdown_acl[@]} | grep -q ${requestor}
+		if [ $? -eq 0 ]; then
+		    if [ -n "${verbose}" ]; then
+			echo "[INFO]: issuing shutdown for $requestor"
+		    fi
+
+		    case "${commands_shutdown_action}" in
+			ignore)
+			    ;;
+			shutdown)
+			    shutdown -h now
+			    ;;
+			*)
+			    echo "Unknown shutdown action ${commands_shutdown_action}, ignoring"
+			    ;;
+		    esac
+		else
+		    echo "[INFO]: requestor ($requestor) is not allowed to issue shutown"
+		fi
+		;;
+	    reboot)
+		if [ -z "${requestor}" ]; then
+		    echo "[ERROR]: shutdown command requires a requestor hostname"
+		fi
+
+		echo ${commands_reboot_acl[@]} | grep -q ${requestor}
+		if [ $? -eq 0 ]; then
+		    if [ -n "${verbose}" ]; then
+			echo "[INFO]: issuing reboot for $requestor"
+		    fi
+
+		    case "${commands_reboot_action}" in
+			ignore)
+			    ;;
+			reboot)
+			    reboot
+			    ;;
+			*)
+			    echo "Unknown reboot action ${commands_reboot_action}, ignoring"
+			    ;;
+		    esac
+		else
+		    echo "[INFO]: requestor ($requestor) is not allowed to issue reboot"
+		fi
 		;;
 	esac
-done <${listening_mechanism_input_stream}
+
+done < <(tail -q -f ${consolidated_pipe})

@@ -1,10 +1,6 @@
 #!/bin/bash
 
-. /etc/cube-cmd-server-functions
-
-container_to_monitor="local"
-
-setup_sending_mechanism fifo
+sending_mechanism_output_stream="/opt/container/local/cmd-pipe"
 
 target_state=$( systemctl list-units --type=target )
 echo ${target_state} | grep -qi reboot
