@@ -1,8 +1,13 @@
 # Functions used for communications with cube-cmd-server
 
 function setup_cmd_pipe() {
-	CMD_PIPE="/opt/container/${container_to_monitor}/cmd-pipe"
-	#Make sure the command fifo exists
+	local target_container=$1
+
+	CMD_PIPE="/opt/container/${target_container}/cmd-pipe"
+
+	rm -f ${CMD_PIPE}
+
+	# Make sure the command fifo exists
 	mkfifo ${CMD_PIPE} >/dev/null 2>&1
 	if [ ! -p ${CMD_PIPE} ]; then
 		echo "Error, no cmd pipe ${CMD_PIPE}"
@@ -11,10 +16,14 @@ function setup_cmd_pipe() {
 }
 
 function setup_listening_mechanism() {
+	local type=$1
+	local target_container=$2
+	local listening_mechanism_input_stream
+
 	# Currently we only support a named pipe aka fifo
-	case "${1}" in
+	case "${type}" in
 	fifo)
-		setup_cmd_pipe
+		setup_cmd_pipe ${target_container}
 		listening_mechanism_input_stream=${CMD_PIPE}
 		;;
 	*)
@@ -22,13 +31,18 @@ function setup_listening_mechanism() {
 		exit 4
 		;;
 	esac
+
+	echo ${listening_mechanism_input_stream}
 }
 
 function setup_sending_mechanism() {
+	local type=$1
+	local target_container=$2
+
 	# Currently we only support a named pipe aka fifo
-	case "${1}" in
+	case "${type}" in
 	fifo)
-		setup_cmd_pipe
+		setup_cmd_pipe ${target_container}
 		sending_mechanism_output_stream=${CMD_PIPE}
 		;;
 	*)
