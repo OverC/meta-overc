@@ -23,7 +23,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
-IMAGE_FEATURES += "package-management doc-pkgs"
+IMAGE_FEATURES += "package-management"
 
 IMAGE_FSTYPES = "tar.bz2"
 
