@@ -20,6 +20,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-util-linux \
                   packagegroup-container \
 		  packagegroup-container-setup \
+		  cube-update \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
