@@ -13,11 +13,15 @@ usage()
 {
 cat << EOF
 
-  cube-console <console name>
+  cube-console [--ns] <console name>
+
+    --ns: connect via namespaces (versus pipes). 
+          Not supported for all console targets (currently only essential)
 
   example:
     
-      $  cubename cube-essential
+      $ cube-console cube-essential
+      $ cube-console dom0
  
 EOF
 }
@@ -31,6 +35,8 @@ while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
             ;;
+	--ns) namespace=t
+            ;;
         *) break
             ;;
     esac
@@ -38,10 +44,9 @@ while [ $# -gt 0 ]; do
 done
 
 
-# essential is only available from dom0, so we need to
-# check that first, and then deal with the specific
+# essential is only available from dom0, so we need to check that first, and then deal with the specific
 # mounts and information that make it work
-function do_essential_console
+function do_essential_console_via_namespace()
 {
     if [ ! -d "/host/proc" ]; then
 	echo "ERROR: essential console can only be entered via dom0"
@@ -53,15 +58,49 @@ function do_essential_console
 	exit 1
     fi
 
-    mount --bind /dev/ /essential/dev
-    mount --bind /host/proc/ /essential/proc
-    cd /essential
+    nsenter --mount --ipc --uts --net --target /host/proc/1 -- /bin/bash
+}
 
-    # once we chroot, we are fundamentally is the "essential OS"
-    chroot .
+# essential is only available from dom0, so we need extra checks
+function do_essential_console()
+{
+    if [ ! -d "/host/proc" ]; then
+	echo "ERROR: essential console can only be entered via dom0"
+	exit 1
+    fi
 
-    umount /essential/proc
-    umount /essential/dev/
+    if [ ! -d "/essential" ]; then
+	echo "ERROR: essential filesystem is not available on /essential"
+	exit 1
+    fi
+
+    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
+	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to essential"
+	exit 1
+    fi
+
+    # In the future, we can create more .. but for now, let's just allow one
+    console_pipe=`ls /opt/container/local/console-cube* 2> /dev/null`
+    if [ -n "${console_pipe}" ]; then
+    	echo "[INFO]: the essential console is already active, only one connection is allowed"
+    	exit 1
+    fi
+
+    echo "console" > /opt/container/local/cmd-pipe
+
+    for i in `seq 0 9`; do
+	console_pipe=`ls /opt/container/local/console-cube* 2> /dev/null`
+	if [ -z "${console_pipe}" ]; then
+	    sleep 1
+	fi
+    done
+
+    if [ -z "${console_pipe}" ]; then
+	echo "[ERROR]: /opt/container/local/console-cube was not created, cannot connect to essential"
+	exit 1
+    fi
+
+    socat -,raw,echo=0 ${console_pipe}
 }
 
 function do_dom0_console()
@@ -100,7 +139,11 @@ function enter_console
 
     case $consolename in
 	*essential*)
-	    do_essential_console
+	    if [ -n "${namespace}" ]; then
+		do_essential_console_via_namespace
+	    else
+		do_essential_console
+	    fi
 	    ;;
 	*dom0*)
 	    do_dom0_console
