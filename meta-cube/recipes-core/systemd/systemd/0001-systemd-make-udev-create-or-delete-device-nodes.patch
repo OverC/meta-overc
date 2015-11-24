@@ -1,0 +1,153 @@
+From 125efbbac9307afcd2fd974b6709da989dd48ce5 Mon Sep 17 00:00:00 2001
+From: fupan li <fupan.li@windriver.com>
+Date: Tue, 24 Nov 2015 16:53:46 +0800
+Subject: [PATCH] systemd: make udev create or delete device nodes
+
+Since udev 176, the 'devtmpfs' filesystem is required,
+and udev will not create or delete device nodes anymore,
+it only adjusts permissions and ownership of device nodes
+and maintains additional symlinks. But for linux containers,
+it usually mount tmpfs to its /dev/, thus the "create" and
+"delete" functions are still needed.
+
+Signed-off-by: fupan li <fupan.li@windriver.com>
+---
+ src/udev/udev-node.c | 101 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 98 insertions(+), 3 deletions(-)
+
+diff --git a/src/udev/udev-node.c b/src/udev/udev-node.c
+index d42af9a..4d45ddd 100644
+--- a/src/udev/udev-node.c
++++ b/src/udev/udev-node.c
+@@ -32,6 +32,59 @@
+ #include "udev.h"
+ #include "smack-util.h"
+ 
++#define TMP_FILE_EXT		".udev-tmp"
++
++/* Reset permissions on the device node, before unlinking it to make sure,
++ * that permissions of possible hard links will be removed too.
++ */
++int util_unlink_secure(struct udev *udev, const char *filename)
++{
++	int err;
++       
++	chown(filename, 0, 0);
++	chmod(filename, 0000);
++	err = unlink(filename);
++	if (errno == ENOENT)
++		err = 0;
++	if (err)
++		log_error("unlink(%s) failed: %m\n", filename);
++	return err;
++}
++
++int udev_node_mknod(struct udev_device *dev, const char *file, mode_t mode, uid_t uid, gid_t gid)
++{
++	struct udev *udev = udev_device_get_udev(dev);
++	dev_t devnum = udev_device_get_devnum(dev);
++	int err = 0;
++
++	if (strcmp(udev_device_get_subsystem(dev), "block") == 0)
++		mode |= S_IFBLK;
++	else
++		mode |= S_IFCHR;
++
++	if (file == NULL)
++		file = udev_device_get_devnode(dev);
++
++	log_info("mknod '%s' %u:%u %#o\n", file, major(devnum), minor(devnum), mode);
++	do {
++		err = mkdir_parents(file, 0755);
++		if (err != 0 && err != -ENOENT)
++			break;
++		label_context_set(file, mode);
++		err = mknod(file, mode, devnum);
++		if (err != 0)
++			err = -errno;
++		label_context_clear();
++	} while (err == -ENOENT);
++	if (err != 0 && err != -EEXIST)
++		log_error("mknod '%s' %u:%u %#o' failed: %m\n", file, major(devnum), minor(devnum), mode);
++	log_debug("set permissions '%s' %#o uid=%u gid=%u\n", file, mode, uid, gid);
++	chmod(file, mode);
++	chown(file, uid, gid);
++	
++	return err;
++}
++
+ static int node_symlink(struct udev_device *dev, const char *node, const char *slink) {
+         struct stat stats;
+         char target[UTIL_PATH_SIZE];
+@@ -264,9 +317,14 @@ static int node_permissions_apply(struct udev_device *dev, bool apply,
+                 mode |= S_IFCHR;
+ 
+         if (lstat(devnode, &stats) != 0) {
+-                err = -errno;
+-                log_debug("can not stat() node '%s' (%m)", devnode);
+-                goto out;
++                log_debug("creating device node '%s', devnum=%d:%d, mode=%#o, uid=%d, gid=%d\n",
++                    devnode, major(devnum), minor(devnum), mode, uid, gid);
++
++                if (udev_node_mknod(dev, NULL, mode, uid, gid) != 0) {
++                        err = -errno;
++                        log_debug("can not create node '%s' (%m)", devnode);
++                        goto out;
++                }
+         }
+ 
+         if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum)) {
+@@ -350,13 +408,50 @@ void udev_node_add(struct udev_device *dev, bool apply,
+ }
+ 
+ void udev_node_remove(struct udev_device *dev) {
++        struct udev *udev = udev_device_get_udev(dev);
+         struct udev_list_entry *list_entry;
++        struct udev_device *dev_check;
+         char filename[UTIL_PATH_SIZE];
++        const char *devnode;
++        struct stat stats;
++        int err = 0;
+ 
+         /* remove/update symlinks, remove symlinks from name index */
+         udev_list_entry_foreach(list_entry, udev_device_get_devlinks_list_entry(dev))
+                 link_update(dev, udev_list_entry_get_name(list_entry), false);
+ 
++        devnode = udev_device_get_devnode(dev);
++        if (devnode == NULL){
++            return;
++        }
++
++        if (stat(devnode, &stats) == 0) {
++            if (stats.st_rdev != udev_device_get_devnum(dev)) {
++                log_debug("device node '%s' points to a different device, skip removal\n", devnode);
++                return;
++            }
++
++            if (stats.st_mode & 01000) {
++                log_debug("device node '%s' has sticky bit set, skip removal\n", devnode);
++                return;
++            }
++        } else {
++            log_debug("device node '%s' not found\n", devnode);
++        }
++
++        dev_check = udev_device_new_from_syspath(udev, udev_device_get_syspath(dev));
++        if (dev_check != NULL) {
++            /* do not remove device node if the same sys-device is re-created in the meantime */
++            log_debug("keeping device node of existing device'%s'\n", devnode);
++            udev_device_unref(dev_check);
++            return;
++        }
++
++        log_debug("removing device node '%s'\n", devnode);
++        err = util_unlink_secure(udev, devnode);
++        if (err == 0)
++            util_delete_path(udev, devnode);
++
+         /* remove /dev/{block,char}/$major:$minor */
+         snprintf(filename, sizeof(filename), "/dev/%s/%u:%u",
+                  streq(udev_device_get_subsystem(dev), "block") ? "block" : "char",
+-- 
+2.4.5
+
