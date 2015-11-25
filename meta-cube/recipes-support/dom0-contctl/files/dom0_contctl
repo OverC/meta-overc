@@ -105,6 +105,21 @@ ${0##*/} remote-net [option]...
 EOF
 }
 
+# XXX: TODO: this really should be wrapped as a standalone command!
+function do_essential_cmd()
+{
+    local cmd=$@
+
+    if [ -e "/opt/container/local/cmd-pipe" ]; then
+	# the command
+	echo "${cmd}" > /opt/container/local/cmd-pipe
+	# the output
+	socat -u PIPE:/opt/container/local/cmd-output -
+    else
+	echo "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
+	exit 1
+    fi
+}
 
 # Global variables
 # What container type we support

@@ -32,8 +32,12 @@ function lxc_launch_prepare {
     # Save the original config files for restoring later
     cfg_file=$(get_lxc_default_config_file ${cn_name})
     save_orig_config_file ${cfg_file}
+
     # Setup networking
-    lxc_add_net_hook_info_cfg ${cfg_file}
+
+    ## temporarily removed until cube-essential networking is available
+    ## lxc_add_net_hook_info_cfg ${cfg_file}
+
     # It might be the case that the network options in cfg file
     # were modified during container is up.  This will mess up the
     # networking clean up process later.  So save it.
@@ -68,11 +72,19 @@ function launch_peer_container {
     [ $? -ne 0 ] && return 1
 
     if [ -d "${host_proc_path}/1" ]; then
-        save_bind_mount_proc_1 ${cn_name}
-        nsenter -b ${host_proc_path}/1:/proc/1 --net --target ${host_proc_path}/1 \
-                -- lxc-start -n ${cn_name} -d
-        umount ${ctl_dom_proc_1_bind_mount_path}
-        [ $? -ne 0 ] && lxc_log "Warning, cannot unmount ${ctl_dom_proc_1_bind_mount_path}." && return 1
+	exec_lxc_cmd_cn host lxc-start -n "${cn_name}" -d
+
+	#if [ -e "/opt/container/local/cmd-pipe" ]; then
+	#    echo "lxc-start -n ${cn_name} -d" > /opt/container/local/cmd-pipe
+	#else
+	#    lxc_log "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
+	#fi
+
+        # save_bind_mount_proc_1 ${cn_name}
+        # nsenter -b ${host_proc_path}/1:/proc/1 --net --target ${host_proc_path}/1 \
+        #         -- lxc-start -n ${cn_name} -d
+        # umount ${ctl_dom_proc_1_bind_mount_path}
+        # [ $? -ne 0 ] && lxc_log "Warning, cannot unmount ${ctl_dom_proc_1_bind_mount_path}." && return 1
     else
         lxc_log "ERROR: host proc path ${host_proc_path} does not exist."
         return 1
@@ -152,8 +164,10 @@ function enter_container_ns {
         nsenter ${nsenter_opts} --mount --uts --ipc --net --pid --target ${lxc_init_pid}
         return 0
     else
-        lxc_log "Error, cannot enter container ${cn_name}. Please make sure its active?"
-        return 1
+	# the container is a peer, we need to go through essential for the
+	# namespace. This only works on dom0.
+	cube-console --ns ${cn_name}
+        return 0
     fi
 }
 
@@ -238,10 +252,14 @@ function display_info_container {
         parent_cn_name=$(get_parent_cn_name_from_cn_name ${cn_name})
         lxc_init_pid=$(get_lxc_init_pid_from_cn_name ${cn_name})
         lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
-        echo -e "Lxc mgr pid:\t${lxc_mgr_pid} ($(cat /proc/${lxc_mgr_pid}/comm))"
-        echo -e "Parent:\t\t${parent_cn_name}"
-        echo -e "Uid map:$(cat /proc/${lxc_init_pid}/uid_map)"
-        echo -e "Gid map:$(cat /proc/${lxc_init_pid}/gid_map)"
+	# we only get a init or mgr pid for a nested container. Consider proxying
+	# this to essential if we really need the info
+	if [ -n "${lxc_mgr_pid}" ]; then
+            echo -e "Lxc mgr pid:\t${lxc_mgr_pid} ($(cat /proc/${lxc_mgr_pid}/comm))"
+            echo -e "Parent:\t\t${parent_cn_name}"
+            echo -e "Uid map:$(cat /proc/${lxc_init_pid}/uid_map)"
+            echo -e "Gid map:$(cat /proc/${lxc_init_pid}/gid_map)"
+	fi
     else
         echo -e "Name:\t\t${cn_name}"
         echo -e "State:\t\tSTOPPED"

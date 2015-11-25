@@ -57,9 +57,11 @@ function parse_yaml_conf_file() {
     }' | sed 's/_=/+=/g'
 }
 
-function create_console_listner() {
-    local listnername=$1
+function create_console_listener() {
+    local listenername=$1
     local connectorname=$2
+    local type=$3 # console or namespace
+    local target=$4
     local matches=""
 
     # only lxc is currently supported
@@ -78,11 +80,39 @@ function create_console_listner() {
 	    if [ -n "${verbose}" ]; then
 		debug="-d -d"
 	    fi
-	    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/console-${listnername} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty" &
+
+	    if [ -z "$type" ]; then
+		type=console
+	    fi
+
+	    if [ "${type}" = "console" ]; then
+		socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/console-${listenername} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty" &
+	    fi
+	    if [ "${type}" = "namespace" ]; then
+		# namespace enter!
+		if [ -n "$target" ]; then
+		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/namespace-${target} "exec:lxc-attach -n ${target} /bin/bash,pty,setsid,stderr,ctty"
+		else
+		    echo "[ERROR]: namespace consoles require a target container"
+		fi
+	    fi
 	done
     else
 	echo "[ERROR]: no requestor matching ${connectorname} found, no console created"
     fi
+}
+
+function do_lxc_command()
+{
+    local cname=$1
+    shift
+    local command=$@
+
+    # We run this within socat to allow for ptys, pipes, etc, to be used
+    # in the future. For now, we just dump the output to the waiting pipe.
+    # if no one is there, the output is lost.
+    # TODO: see if a timeout is required
+    socat -u EXEC:"${command}" PIPE:/opt/container/${cname}/cmd-output
 }
 
 ##############  Mainline begins here ################################
@@ -204,6 +234,32 @@ while (true) do
 		    echo "[INFO]: switching requestor to ${requestor}"
 		fi
 		;;
+	    lxc*)
+		echo ${commands_lxc_acl[@]} | grep -q ${requestor}
+		if [ $? -eq 0 ]; then
+		    if [ -n "${verbose}" ]; then
+			echo "[INFO]: lxc command: $line"
+		    fi
+		    do_lxc_command ${requestor} $line
+		else
+		    echo "[INFO]: requestor ($requestor) is not allowed to issue lxc commands"
+		fi
+		;;
+	    nsenter*)
+		# only available to dom0
+		echo ${commands_nsenter_acl[@]} | grep -q ${requestor}
+		if [ $? -eq 0 ]; then
+		    echo "[INFO]: entering namespace: $line"
+		    target=`echo $line | cut -d' ' -f2`
+		    if [ -n "${target}" ]; then
+			create_console_listener ${whoami} ${requestor} namespace ${target}
+		    else
+			cho "[INFO]: a valid target container is required"
+		    fi
+		else
+		    echo "[INFO]: requestor ($requestor) is not allowed to issue nsenter"
+		fi
+		;;
 	    console*)
 		if [ -n "${verbose}" ]; then
 		    echo "[INFO]: console creation request: $line"
@@ -211,7 +267,7 @@ while (true) do
 		if [ -z "${requestor}" ]; then
 		    echo "[ERROR]: console command requires a requestor hostname"
 		fi
-		create_console_listner ${whoami} ${requestor}
+		create_console_listener ${whoami} ${requestor}
 		;;
 	    poweroff)
 		if [ -z "${requestor}" ]; then

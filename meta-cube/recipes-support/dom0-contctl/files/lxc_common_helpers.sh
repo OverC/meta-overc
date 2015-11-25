@@ -124,8 +124,9 @@ function exec_cmd_container {
             [ $? -ne 1 ] && nsenter_opts="-U"
             nsenter ${nsenter_opts} -u -i -m -n -p -t ${lxc_init_pid} -- $@
         else
-            lxc_log "Error, exec_lxc_cmd_cn, container ${cn_name} is not running or started from host."
-            return 1
+	    # if we can't find the init process, we hed to the host, since this
+	    # is a peer container
+	    do_essential_cmd lxc-attach -n ${cn_name} $@
         fi
     fi
 }
@@ -145,13 +146,17 @@ function exec_lxc_cmd_cn {
     if [ $? -eq 1 ] ; then
         $@
     elif [ "${cn_name}" == "${HOST_CN_NAME}" ]; then
-        nsenter -n -t ${host_proc_path}/1 -- $@
+        # nsenter -n -t ${host_proc_path}/1 -- $@
+	do_essential_cmd $@
+	return $?
     else
+	# if there's no init process, we head down to essential
         lxc_mgr_pid=$(get_lxc_mgr_pid_from_cn_name ${cn_name})
         if [ -n "${lxc_mgr_pid}" ]; then
             nsenter --net --target ${lxc_mgr_pid} -- $@
         else
-            return 1
+	    do_essential_cmd $@
+            return $?
         fi
     fi
 }
