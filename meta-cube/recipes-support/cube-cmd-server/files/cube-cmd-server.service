@@ -4,7 +4,7 @@ After=local-fs.target
 
 [Service]
 Type=simple
-ExecStart=/sbin/cube-cmd-server
+ExecStart=/sbin/cube-cmd-server -l /var/log/cube-cmd-server.log
 ExecStop=/bin/true
 RemainAfterExit=yes
 

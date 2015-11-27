@@ -126,7 +126,7 @@ function exec_cmd_container {
         else
 	    # if we can't find the init process, we hed to the host, since this
 	    # is a peer container
-	    do_essential_cmd lxc-attach -n ${cn_name} $@
+	    do_essential_cmd lxc-attach -n ${cn_name} -- $@
         fi
     fi
 }
@@ -146,7 +146,6 @@ function exec_lxc_cmd_cn {
     if [ $? -eq 1 ] ; then
         $@
     elif [ "${cn_name}" == "${HOST_CN_NAME}" ]; then
-        # nsenter -n -t ${host_proc_path}/1 -- $@
 	do_essential_cmd $@
 	return $?
     else

@@ -1,0 +1,204 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+usage()
+{
+cat << EOF
+
+  cube-ctl <options> <cmd>
+
+commands (and options):
+
+ ${0##*/} start [--peer] [--nested] <name>
+
+    start (launch) a container:
+
+       --peer (default)
+       --nested
+       <name>: name of the container to be launched
+
+ ${0##*/} stop <name>
+
+    stop a container:
+
+       <name>: name of the container to be stoped
+
+ ${0##*/} status
+ ${0##*/} list
+
+    show the status (list) of known containers
+
+ ${0##*/} <target>:<command>
+
+    execute command <command> against a named target. Either a container
+    name should be specified, or "host" for a native command.
+
+ ${0##*/} info <name>
+
+    display detailed information about container <name>
+
+ ${0##*/} restart <name>
+
+    restart container <name>. A graceful shutdown and relaunch will be
+    performed.
+
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+# take the entire command into an array
+raw_command=($@)
+
+peer=t
+non_dashed=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+        --peer)
+	    peer=t
+	    nested=
+	    ;;
+	--nested)
+	    nested=t
+	    peer=
+	    ;;
+	--parent)
+	    parent=${2}
+	    shift
+	    ;;
+        --n|-n)
+	    name=${2}
+	    shift
+	    ;;
+	--*)
+	    dashed="${dashed} $1"
+	    ;;
+	*:*)
+	    # once we see something of the format <foo>:<var>, we are done processing,
+	    # since all other options are for the embedded command
+	    cmd=exec
+	    exec_cmd=$@
+	    shift $#
+	    ;;
+        *) non_dashed="${non_dashed} $1"
+            ;;
+    esac
+    shift
+done
+
+dom0ctl="/opt/dom0-contctl/dom0_contctl"
+
+# make an array from whatever was non-dashed
+cmd_options_non_dashed=(${non_dashed})
+
+if [ -z "${cmd}" ]; then
+    # the first element is the command
+    cmd=${cmd_options_non_dashed[0]}
+fi
+
+check_required()
+{
+    if [ ! -e "${1}" ]; then
+	echo "[ERROR]: required command ${1} not found, exiting"
+	exit 1
+    fi
+}
+
+check_if_present()
+{
+    if [ -e "${1}" ]; then
+	return 0
+    fi
+    return 1
+}
+
+case "${cmd}" in
+    start)
+	check_required ${dom0ctl}
+
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+	if [ -n "${peer}" ]; then
+	    ${dom0ctl} launch-peer -n ${container_name}
+	else
+	    if [ -n "${parent}" ]; then
+		opts="-p ${parent}"
+	    fi
+	    ${dom0ctl} launch-nested ${opts} -n ${container_name}
+	fi
+	;;
+    status|list)
+	check_if_present ${dom0ctl}
+	if [ $? -eq 0 ]; then
+	    ${dom0ctl} list
+	else
+	    cube-cmd lxc-ls
+	fi
+	;;
+    info)
+	check_required ${dom0ctl}
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+	${dom0ctl} info -n ${container_name}
+	;;
+    restart)
+	check_required ${dom0ctl}
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+	${dom0ctl} relaunch -n ${container_name}
+	;;
+    stop)
+	check_required ${dom0ctl}
+
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+	${dom0ctl} stop -n ${container_name}
+	;;
+    exec)
+	# this is execute: <target>:<command>
+
+	# remove the : separator
+	non_dashed_no_colon=`echo ${exec_cmd[@]} | sed 's/:/ /g'`
+	# make an array so we can yank out the name and command
+	cmd_options_non_dashed=(${non_dashed_no_colon})
+
+	# the container name is the first element
+	container_name=${cmd_options_non_dashed[0]}
+
+	# remove the first option from the command, we'll be passing it along, unprocessed
+	cmd_to_exec=("${cmd_options_non_dashed[@]:1}")
+
+	if [ "${container_name}" = "host" ] || [ "${container_name}" = "essential" ]; then
+	    if [ -n "${verbose}" ]; then
+		echo "running: cube-cmd ${cmd_to_exec[@]}"
+	    fi
+
+	    cube-cmd cmd ${cmd_to_exec[@]}
+	else
+	    check_required ${dom0ctl}
+
+	    if [ -n "${verbose}" ]; then
+		echo "running: ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}"
+	    fi
+
+	    ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}
+	fi
+	;;
+    *)
+	echo "Unknown command ..."
+	usage
+	;;
+esac

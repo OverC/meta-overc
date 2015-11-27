@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 sysconfdir="/etc"
 distrosysconfdir="/etc/default"
@@ -60,7 +60,7 @@ case "$1" in
         fi
 
         # Start autoboot containers first then the NULL group "peer".
-        "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
+        exec "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
         touch "$lockdir"/dom0
     ;;
 

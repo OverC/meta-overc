@@ -36,12 +36,14 @@ function lxc_launch_prepare {
     # Setup networking
 
     ## temporarily removed until cube-essential networking is available
-    ## lxc_add_net_hook_info_cfg ${cfg_file}
+    save_mod_config_file ${cfg_file}
+    return 0
+
+    lxc_add_net_hook_info_cfg ${cfg_file}
 
     # It might be the case that the network options in cfg file
     # were modified during container is up.  This will mess up the
     # networking clean up process later.  So save it.
-    save_mod_config_file ${cfg_file}
     lxc_setup_net_remote_end ${cfg_file} ${cn_name}
     if [ $? -ne 0 ]; then
         lxc_log "Error, cannot start ${cn_name} container."
@@ -73,18 +75,6 @@ function launch_peer_container {
 
     if [ -d "${host_proc_path}/1" ]; then
 	exec_lxc_cmd_cn host lxc-start -n "${cn_name}" -d
-
-	#if [ -e "/opt/container/local/cmd-pipe" ]; then
-	#    echo "lxc-start -n ${cn_name} -d" > /opt/container/local/cmd-pipe
-	#else
-	#    lxc_log "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
-	#fi
-
-        # save_bind_mount_proc_1 ${cn_name}
-        # nsenter -b ${host_proc_path}/1:/proc/1 --net --target ${host_proc_path}/1 \
-        #         -- lxc-start -n ${cn_name} -d
-        # umount ${ctl_dom_proc_1_bind_mount_path}
-        # [ $? -ne 0 ] && lxc_log "Warning, cannot unmount ${ctl_dom_proc_1_bind_mount_path}." && return 1
     else
         lxc_log "ERROR: host proc path ${host_proc_path} does not exist."
         return 1

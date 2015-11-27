@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+BASEDIR=$(dirname $BASH_SOURCE)
+
+usage()
+{
+cat << EOF
+
+  cube <command> <args>
+
+  example:
+    
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+command=$1
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+        *) break
+            ;;
+    esac
+    shift
+done
+
+PATH=${PATH}:${BASEDIR}
+
+case ${command} in
+    ctl)
+	# yank the "ctl" off
+	shift
+	cube-ctl $@
+	;;
+    console)
+	# yank the "console" off
+	shift
+	cube-console $@
+	;;
+    cmd)
+	shift
+	cube-cmd $@
+	;;
+    *)
+	echo "[ERROR]: unknown command ${command}"
+	;;
+esac

@@ -4,7 +4,7 @@ do_install_append () {
     echo '' >> $securetty_file
     echo '# Allow inter-container login' >> $securetty_file
 
-    for i in `seq 5 20`; do 
+    for i in `seq 1 20`; do 
 	echo "pts/$i" >> $securetty_file
     done
 }

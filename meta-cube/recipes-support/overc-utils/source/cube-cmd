@@ -1,0 +1,100 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+function wait_for_files()
+{
+    local wait_count=${1:-200} # 200 is the default
+    shift
+    local files=$@ # files to wait for
+    local wait_increment=1 # second sleeps
+
+    while [ ${wait_count} -gt 0 ]; do
+	for f in ${files}; do
+	    ls -alF ${f} > /dev/null 2>&1
+	    if [ -e "${f}" ]; then
+		echo "${f}"
+		return 0
+	    fi
+	done
+	sleep ${wait_increment}
+	wait_count=$((wait_count - 1))
+    done
+
+    return 1
+}
+
+function do_essential_cmd()
+{
+    local cmd=$@
+
+    if [ -e "/opt/container/local/cmd-pipe" ]; then
+
+	# the command
+	echo "${cmd}" > /opt/container/local/cmd-pipe
+	file=`wait_for_files 200 /opt/container/local/cmd-output /opt/container/local/cmd-error`
+	if [ -n "${file}" ]; then
+	    # The output
+	    # TBD: 2>&1 for stderr messages in env's that try and eat it! (systemd)
+	    # TBD: -t5 only when running in systemd, or other slower envs
+	    socat -t5 - ${file}
+	    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+		exit 0
+	    else
+		exit 1
+	    fi
+	else
+	    echo "ERROR: no response recv'd on: /opt/container/local/cmd-pipe"
+	    exit 2
+	fi
+    else
+	echo "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
+	exit 1
+    fi
+}
+
+usage()
+{
+cat << EOF
+
+  cube-cmd <cmd>
+
+  Execute <cmd> against a monitoring layer of the system. Note that
+  this command does no sanity checking or other processing. It is
+  the responsibility of the caller to ensure that the commands are
+  valid at the essential layer.
+
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+# take the entire command into an array
+raw_command=($@)
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+    esac
+    shift
+done
+
+check_required()
+{
+    if [ ! -e "${1}" ]; then
+	echo "[ERROR]: required command ${1} not found, exiting"
+	exit 1
+    fi
+}
+
+do_essential_cmd ${raw_command[@]}

@@ -7,7 +7,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 SRCREV = "${AUTOREV}"
 SRC_URI = " \
     git://github.com/WindRiver-OpenSourceLabs/overc-installer.git;branch=master \
-    file://source/cube-essential \
+    file://source/cube-cmd \
     file://source/cube-ctl \
     file://source/cube \
     file://source/cube-console \
@@ -20,11 +20,18 @@ do_install() {
     # TODO: add overc-cctl here, instead of overc-installer package
 
     install -d ${D}${bindir}
+    install -d ${D}${sbindir}
+
+    # cubename comes from overc-installer.git
     install -m755 ${S}/sbin/cubename ${D}${bindir}
 
-    install -m755 ${WORKDIR}/source/cube-console ${D}${bindir}
+    # The rest are local utilities
+    install -m755 ${WORKDIR}/source/cube-console ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/cube-ctl ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/cube-cmd ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
 }
 
 FILES_${PN} += "/opt/${BPN} \
-               ${bindir}"
+               ${bindir} ${sbindir}"
 RDEPENDS_${PN} += "bash socat"

@@ -1,5 +1,6 @@
 #! /bin/bash
 
+trap '' SIGHUP
 
 function usage {
     cat << EOF
@@ -105,20 +106,12 @@ ${0##*/} remote-net [option]...
 EOF
 }
 
-# XXX: TODO: this really should be wrapped as a standalone command!
 function do_essential_cmd()
 {
     local cmd=$@
 
-    if [ -e "/opt/container/local/cmd-pipe" ]; then
-	# the command
-	echo "${cmd}" > /opt/container/local/cmd-pipe
-	# the output
-	socat -u PIPE:/opt/container/local/cmd-output -
-    else
-	echo "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
-	exit 1
-    fi
+    # the external utility cube-cmd takes care of this for us
+    cube-cmd ${cmd} | sed 's/\r//g'
 }
 
 # Global variables

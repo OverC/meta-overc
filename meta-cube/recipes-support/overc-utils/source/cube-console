@@ -13,10 +13,7 @@ usage()
 {
 cat << EOF
 
-  cube-console [--ns] <console name>
-
-    --ns: connect via namespaces (versus pipes). 
-          Not supported for all console targets (currently only essential)
+  cube-console <console name>
 
   example:
     
@@ -43,22 +40,26 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-
-# essential is only available from dom0, so we need to check that first, and then deal with the specific
-# mounts and information that make it work
-function do_essential_console_via_namespace()
+function wait_for_files()
 {
-    if [ ! -d "/host/proc" ]; then
-	echo "ERROR: essential console can only be entered via dom0"
-	exit 1
-    fi
+    local wait_count=${1:-200} # 200 is the default
+    shift
+    local files=$@ # files to wait for
+    local wait_increment=1 # second sleeps
 
-    if [ ! -d "/essential" ]; then
-	echo "ERROR: essential filesystem is not available on /essential"
-	exit 1
-    fi
+    while [ ${wait_count} -gt 0 ]; do
+	for f in ${files}; do
+	    ls -alF ${f} > /dev/null 2>&1
+	    if [ -e "${f}" ]; then
+		echo "${f}"
+		return 0
+	    fi
+	done
+	sleep ${wait_increment}
+	wait_count=$((wait_count - 1))
+    done
 
-    nsenter --mount --ipc --uts --net --target /host/proc/1 -- /bin/bash
+    return 1
 }
 
 # essential is only available from dom0, so we need extra checks
@@ -80,91 +81,32 @@ function do_essential_console()
     fi
 
     # In the future, we can create more .. but for now, let's just allow one
-    console_pipe=`ls /opt/container/local/console-cube* 2> /dev/null`
+    console_pipe=`ls /opt/container/local/console-essential 2> /dev/null`
     if [ -n "${console_pipe}" ]; then
     	echo "[INFO]: the essential console is already active, only one connection is allowed"
     	exit 1
     fi
 
-    echo "console" > /opt/container/local/cmd-pipe
+    echo "console essential" > /opt/container/local/cmd-pipe
 
-    for i in `seq 0 9`; do
-	console_pipe=`ls /opt/container/local/console-cube* 2> /dev/null`
-	if [ -z "${console_pipe}" ]; then
-	    sleep 1
-	fi
-    done
-
-    if [ -z "${console_pipe}" ]; then
-	echo "[ERROR]: /opt/container/local/console-cube was not created, cannot connect to essential"
+    file=`wait_for_files 10 /opt/container/local/console-essential /opt/container/local/cmd-error`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
+    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
+	socat -,raw,echo=0 ${file}
 	exit 1
     fi
 
-    socat -,raw,echo=0 ${console_pipe}
+    socat -,raw,echo=0 ${file}
 }
 
-function do_dom0_console()
-{
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to dom0"
-	exit 1
-    fi
 
-    # In the future, we can create more .. but for now, let's just allow one
-    if [ -e "/opt/container/local/console-dom0" ]; then
-	echo "[INFO]: the dom0 console is already active, only one connection is allowed"
-	exit 1
-    fi
-
-    echo "console" > /opt/container/local/cmd-pipe
-
-    for i in `seq 0 9`; do
-	if [ ! -e "/opt/container/local/console-dom0" ]; then
-	    sleep 1
-	fi
-    done
-
-    if [ ! -e "/opt/container/local/console-dom0" ]; then
-	echo "[ERROR]: /opt/container/local/console-dom0 was not created, cannot connect to dom0"
-	exit 1
-    fi
-
-    socat -,raw,echo=0 /opt/container/local/console-dom0
-}
-
-function do_dom0_console()
-{
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to dom0"
-	exit 1
-    fi
-
-    # In the future, we can create more .. but for now, let's just allow one
-    if [ -e "/opt/container/local/console-dom0" ]; then
-	echo "[INFO]: the dom0 console is already active, only one connection is allowed"
-	exit 1
-    fi
-
-    echo "console" > /opt/container/local/cmd-pipe
-
-    for i in `seq 0 9`; do
-	if [ ! -e "/opt/container/local/console-dom0" ]; then
-	    sleep 1
-	fi
-    done
-
-    if [ ! -e "/opt/container/local/console-dom0" ]; then
-	echo "[ERROR]: /opt/container/local/console-dom0 was not created, cannot connect to dom0"
-	exit 1
-    fi
-
-    socat -,raw,echo=0 /opt/container/local/console-dom0
-}
-
-# Note: this can be unified with the dom0 console.
-function do_namespace_console()
+function do_console()
 {
     local target=$1
+    local type=$2 # namspace or login
 
     if [ ! -e "/opt/container/local/cmd-pipe" ]; then
 	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console"
@@ -172,47 +114,49 @@ function do_namespace_console()
     fi
 
     # In the future, we can create more .. but for now, let's just allow one
-    if [ -e "/opt/container/local/namespace-${target}" ]; then
-	echo "[INFO]: the namespace is already active, only one connection is allowed"
+    if [ -e "/opt/container/local/console-${target}" ]; then
+	echo "[INFO]: the console to ${target} is already active, only one connection is allowed"
 	exit 1
     fi
 
-    echo "nsenter ${target}" > /opt/container/local/cmd-pipe
+    if [ -z "${type}" ]; then
+	type=login
+    fi
 
-    for i in `seq 0 9`; do
-	if [ ! -e "/opt/container/local/namespace-${target}" ]; then
-	    sleep 1
-	fi
-    done
+    if [ "${type}" = "namespace" ]; then
+	echo "nsenter ${target}" > /opt/container/local/cmd-pipe
+    else
+	echo "console ${target}" > /opt/container/local/cmd-pipe
+    fi
 
-    if [ ! -e "/opt/container/local/namespace-${target}" ]; then
-	echo "[ERROR]: /opt/container/local/namespace-${target} was not created, cannot connect to namespace"
+    file=`wait_for_files 10 /opt/container/local/console-${target} /opt/container/local/cmd-error`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
+    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
+	socat -,raw,echo=0 ${file}
 	exit 1
     fi
 
-    socat -,raw,echo=0 /opt/container/local/namespace-${target}
+    socat -,raw,echo=0 /opt/container/local/console-${target}
 }
 
-# Parms: $1 = filename
+# Parms: $1: target container/console
 function enter_console
 {
     local consolename=$1
 
     case $consolename in
 	*essential*)
-	    if [ -n "${namespace}" ]; then
-		do_essential_console_via_namespace
-	    else
-		do_essential_console
-	    fi
+	    do_essential_console
 	    ;;
 	*dom0*)
-	    do_dom0_console
+	    do_console dom0 login
 	    ;;
 	*)
-	    # only works if you are on dom0, since these are unauthenticated
-	    # consoles
-	    do_namespace_console ${consolename}
+	    # only works if you are on dom0, since these are unauthenticated consoles
+	    do_console ${consolename} namespace
 	    ;;
     esac
 }
