@@ -4,7 +4,7 @@
 
 container_to_monitor="local"
 
-setup_sending_mechanism fifo ${container_to_monitor}
+setup_sending_mechanism fifo
 
 target_state=$( systemctl list-units --type=target )
 echo ${target_state} | grep -qi reboot
@@ -17,6 +17,4 @@ else
 	fi
 fi
 
-whoami=`cat /etc/hostname`
-
-timeout 5s bash -c "echo ${command}:${whoami} >${sending_mechanism_output_stream}"
+timeout 5s bash -c "echo ${command} >${sending_mechanism_output_stream}"
