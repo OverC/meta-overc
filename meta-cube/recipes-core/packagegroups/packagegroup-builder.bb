@@ -122,7 +122,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     gettext-runtime \
     grep \
     groff \
-    grub \
     gzip \
     hicolor-icon-theme \
     ifupdown \
