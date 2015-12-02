@@ -15,8 +15,6 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-core-full-cmdline \
 		  packagegroup-util-linux \
 		  packagegroup-builder \
-		  packagegroup-container \
-		  packagegroup-container-setup \
 		  packagegroup-graphical-builder \
 		  ${CUBE_BUILDER_EXTRA_INSTALL} \
 		 "
