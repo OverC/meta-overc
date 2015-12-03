@@ -7,7 +7,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 SRCREV = "${AUTOREV}"
 SRC_URI = " \
     git://github.com/WindRiver-OpenSourceLabs/overc-installer.git;branch=master \
-    file://source/* \
+    file://source/cube-essential \
+    file://source/cube-ctl \
+    file://source/cube \
+    file://source/cube-console \
     file://source/COPYING \
 "
 
