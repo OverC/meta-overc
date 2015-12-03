@@ -1,0 +1,195 @@
+OverC runtime
+=============
+
+Depending on the selected cubes, the user/application developer runtime varies.
+
+Generally speaking, if either domE or cube-server have been selected the user
+is presented with a enterprise-like, fully featured runtime that is suitable
+for development or application deployment.
+
+This includes common tasks such as: package additions, upgrades, local 
+development, desktop + utilities, etc. 
+
+cube management
+===============
+
+As described by the system overview in the README documentation, an OverC
+platform is composed of multiple cubes. These cubes can be collectively, 
+or individually, managed and updated.
+
+console
+-------
+
+Console access is available through several mechanisms:
+
+ - ssh: when installing a cube, the extraction utilities tests for avahi
+	capabilities. If present, the cube is configured to broadcast
+	its services though avahi. Standard ssh login restrictions apply,
+	and there are no restrictions on inter-cube logins (outside of
+	a working network).
+
+	Notes:
+
+	  - avahi can be used to browse and locate active cubes.
+	  - the hostname of each cube is used + the cube name in the
+	    format of: cube-<build date>-<cube name>. If the hostname
+	    or avahi configuration is changed, these defaults no longer
+	    apply.
+
+ - vt: The assignents of VTs to cubes are specified in the configuration files
+       described in the README documentation. For example:
+
+       HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2 \
+			     ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:vty=3 \
+			     ${ARTIFACTS_DIR}/cube-domE-genericx86-64.tar.bz2:vty=4"
+
+       Once booted, this system would have dom0 on VT2, cube-server on VT3 and domE
+       on VT4.
+
+ - inter-cube pipes: For situations where a network is not available, and physical
+		     access to VTs is not possible, OverC provides inter-cube pipe
+		     based console access.
+
+		     Since this capbility requires a cube-cmd-server running on the
+		     target cube, it is only available from user/application cubes
+		     to dom0.
+
+		     Standard authentication through 'login' is used to authenticate
+		     access to dom0.
+
+		     Once on dom0, console access can then be granted to any running
+		     cube in the system by entering the proper namespace.
+
+                     Access to both types of consoles is provided via the 'cube-console'
+                     utility.
+
+access examples:
+----------------
+
+ssh:
+
+ # domE terminal:
+ % uname -a | cut -d' ' -f2
+cube-01-12-15-domE
+
+ # connect to dom0
+ % ssh root@cube-01-12-15-dom0.local
+
+ # connect to cube-server
+ % ssh root@cube-01-12-14-cube-server.local
+
+console:
+
+ Consoles are accessed through standard VT switching mechanisms, such as
+ <ctrl>-<alt>-f1 (for cube-essentia), <ctrl>-<alt>-f2 (for dom0), etc, depending
+ on the configuration (as described above).
+
+inter-container pipes:
+
+ # find the valid console tarets:
+ % cube-ctl list
+
+ # domE -> dom0
+ % cube-console dom0
+
+<login with dom0 credentials>
+
+ # domE -> cube-server, fails with an [ERROR] message, since cube-server is
+ # not a valid inter-container target
+ % cube-console cube-server
+ERROR: cube is not allowed direct console access. log into dom0 first.
+
+ # dom0 -> cube-server (after logging into dom0), no prompt, since this is
+ # an admin -> namespace entry
+ % cube-console cube-server 
+bash-4.3#
+
+
+utilities
+========
+
+OverC provides utilities for manipulating, querying and managing cubes.
+Administrative commands are only allowed on dom0, and if issues from
+a non-control cube, an error is returned.
+
+cube-console:
+-------------
+
+Provides authenticated console access from user/application cubes to
+dom0, and namespace based consoles from dom0 to application cubes.
+
+Available targets can be found via: cube-ctl list
+
+cube-ctl:
+---------
+
+  cube-ctl <options> <cmd>
+
+commands (and options):
+
+ cube-ctl start [--peer] [--nested] <name>
+
+    start (launch) a container (dom0 only):
+
+       --peer (default)
+       --nested
+       <name>: name of the container to be launched
+
+ cube-ctl stop <name>
+
+    stop a container (dom0 only):
+
+       <name>: name of the container to be stoped
+
+ cube-ctl status
+ cube-ctl list
+
+    show the status (list) of known containers
+
+ cube-ctl <target>:<command> # (dom0 only):
+
+    execute command <command> against a named target. Either a container
+    name should be specified, or "host" for a native command.
+
+ cube-ctl info <name> # (dom0 only):
+
+    display detailed information about container <name>
+
+ cube-ctl restart <name> # (dom0 only):
+
+    restart container <name>. A graceful shutdown and relaunch will be
+    performed.
+
+Examples:
+
+ % cube-ctl cube-server:cat /etc/hostname
+cube-02-12-15-cube-server
+
+ % cube-ctl info cube-server
+Name:           cube-server
+State:          RUNNING
+PID:            3896
+IP:             10.0.2.18
+CPU use:        0.50 seconds
+Memory use:     7.71 MiB
+KMem use:       0 bytes
+Link:           vethO5HPB1
+ TX bytes:      243.02 KiB
+ RX bytes:      423.81 KiB
+ Total bytes:   666.83 KiB
+
+ % cube-ctl host:uname -a
+Linux cube-02-12-15 4.2.0-cube #1 SMP Thu Nov 26 00:48:14 EST 2015 x86_64 GNU/Linux
+
+ % cube-ctl cube-invalid:ls /etc
+Error, container cube-invalid does not exist.
+
+ % cube-ctl stop cube-server
+ % cube-ctl info cube-server
+Name:           cube-server
+State:          STOPPED
+
+ % cube-ctl start cube-server
+ % cube-ctl cube-server:uptime
+ 21:38:29 up  3:21,  0 users,  load average: 0.00, 0.01, 0.05
+
