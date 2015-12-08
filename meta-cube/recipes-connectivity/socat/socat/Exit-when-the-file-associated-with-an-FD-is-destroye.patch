@@ -1,0 +1,60 @@
+From 784956b3dacf18887c1433e6e6f87b736788404a Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <asselsm@gmail.com>
+Date: Mon, 7 Dec 2015 21:27:35 -0500
+Subject: [PATCH] Exit when the file associated with an FD is destroyed
+
+In many scenarios the receipt of an EOF will coincide with the
+teardown of the file which the FD is associated with by the
+application on the other side of the file pipe. If a timeout (-t) is
+used socat continues to poll for new data (read) and send any new data
+(write) until the timeout. This can lead to input/output errors as the
+FD exists still but the file it was openned on is gone, and no check
+is done on writes.
+
+To get around this a check is added after the EOF is received that the
+file still exists, and if not we proceed to exit immediately. This
+will avoid i/o errors and will also cause a quicker return as we don't
+have to wait for the timeout.
+
+Signed-off-by: Mark Asselstine <asselsm@gmail.com>
+---
+ socat.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/socat.c b/socat.c
+index 8cb6767..39fa074 100644
+--- a/socat.c
++++ b/socat.c
+@@ -723,6 +723,7 @@ int _socat(void) {
+    int polling = 0;	/* handling ignoreeof */
+    int wasaction = 1;	/* last poll was active, do NOT sleep before next */
+    struct timeval total_timeout;	/* the actual total timeout timer */
++   struct stat file_stat;
+ 
+ #if WITH_FILAN
+    if (socat_opts.debug) {
+@@ -1056,6 +1057,10 @@ int _socat(void) {
+ 	    xioshutdown(sock2, SHUT_WR);
+ 	    XIO_RDSTREAM(sock1)->eof = 2;
+ 	    XIO_RDSTREAM(sock1)->ignoreeof = false;
++	    if (fstat(XIO_GETRDFD(sock1), &file_stat) == -1 || file_stat.st_nlink == 0) {
++	       Notice1("socket 1 (fd %d) is gone", XIO_GETRDFD(sock1));
++	       break;
++	    }
+ 	 }
+       } else if (polling && XIO_RDSTREAM(sock1)->ignoreeof) {
+ 	 polling = 0;
+@@ -1079,6 +1084,10 @@ int _socat(void) {
+ 	    xioshutdown(sock1, SHUT_WR);
+ 	    XIO_RDSTREAM(sock2)->eof = 2;
+ 	    XIO_RDSTREAM(sock2)->ignoreeof = false;
++	    if (fstat(XIO_GETRDFD(sock2), &file_stat) == -1 || file_stat.st_nlink == 0) {
++	       Notice1("socket 2 (fd %d) is gone", XIO_GETRDFD(sock2));
++	       break;
++	    }
+ 	 }
+       } else if (polling && XIO_RDSTREAM(sock2)->ignoreeof) {
+ 	 polling = 0;
+-- 
+2.5.0
+
