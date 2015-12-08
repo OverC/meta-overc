@@ -2,7 +2,9 @@ import sys, os
 import subprocess
 from Overc.package import Package
 from Overc.container import Container
+from Overc.utils import Utils
 from Overc.utils import ROOTMOUNT
+from Overc.utils import HOSTPID
 
 def Is_btrfs():
     return not os.system('btrfs subvolume show %s >/dev/null 2>&1' % ROOTMOUNT)
@@ -28,6 +30,7 @@ class Overc(object):
         self.agency = Host_update()
         self.package = Package()
         self.container = Container()
+        self.utils = Utils()
         self.message = ""
         
         if not self.agency:
@@ -59,17 +62,13 @@ class Overc(object):
         print "host status"
 
     def host_newer(self):
-        lxcdevdir = "%s/dev/" % ROOTMOUNT
-        os.system('cp -ua /dev/urandom  %s' % lxcdevdir)
-        rc = self.package._smartpm('newer', chroot=ROOTMOUNT)
-        self.message += self.package.message
+        rc = self.utils._nsenter(HOSTPID,'smart newer')
+        self.message += self.utils.message
         return rc
 
     def host_update(self):
-        lxcdevdir = "%s/dev/" % ROOTMOUNT
-        os.system('cp -ua /dev/urandom  %s' % lxcdevdir)
-        rc = self.package._smartpm('update', chroot=ROOTMOUNT)
-        self.message += self.package.message
+        rc = self.utils._nsenter(HOSTPID, 'smart update')
+        self.message += self.utils.message
         return rc
 
     def host_upgrade(self):

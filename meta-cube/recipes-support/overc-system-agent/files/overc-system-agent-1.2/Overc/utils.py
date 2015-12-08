@@ -3,6 +3,7 @@ import subprocess
 import select
 
 ROOTMOUNT = "/essential"
+HOSTPID = "/host/proc/1"
 
 class Utils(object):
     def __init__(self):
@@ -25,6 +26,17 @@ class Utils(object):
         """
         cmd = 'md5sum ' + filename
         return self._pipe(cmd)[0].split()[0].strip()
+
+    def _nsenter(self, pid, args):
+        cmd = []
+        cmd.append("nsenter -t %s" % pid)
+        cmd.append("-n -m -i --")
+        cmd.append(args)
+        cmd_s = ' '.join(cmd)
+        process = Process()
+        retval = process.run(cmd_s)
+        self.message = process.message
+        return retval
 
 class Process(object):
     def __init__(self):

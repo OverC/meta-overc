@@ -19,7 +19,7 @@ class Package(object):
         if retval is not 0:
             print "Error!: %s" % cmd_s
         return retval
- 
+
     def _get_kernel(self, path):
         if path == "/":
             subp=subprocess.Popen("rpm -qa | grep kernel-image | xargs rpm -ql | grep bzImage | awk -F'/' '{print $3}'", shell=True,stdout=subprocess.PIPE)
