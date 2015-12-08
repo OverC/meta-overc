@@ -8,7 +8,6 @@ OVERC_COMMON_DISK = " \
      dosfstools \
      hdparm \
      mdadm \
-     mktemp \
      parted \
     "
 
