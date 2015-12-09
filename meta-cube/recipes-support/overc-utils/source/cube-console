@@ -80,16 +80,9 @@ function do_essential_console()
 	exit 1
     fi
 
-    # In the future, we can create more .. but for now, let's just allow one
-    console_pipe=`ls /opt/container/local/console-essential 2> /dev/null`
-    if [ -n "${console_pipe}" ]; then
-    	echo "[INFO]: the essential console is already active, only one connection is allowed"
-    	exit 1
-    fi
-
     echo "console essential" > /opt/container/local/cmd-pipe
 
-    file=`wait_for_files 10 /opt/container/local/console-essential /opt/container/local/cmd-error`
+    file=`wait_for_files 10 /opt/container/local/cmd-output /opt/container/local/cmd-error`
     if [ -z "${file}" ]; then
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
@@ -98,7 +91,15 @@ function do_essential_console()
 	socat -,raw,echo=0 ${file}
 	exit 1
     fi
+    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+	console_device=`cat ${file} | sed 's/\r//g'`
+    fi
 
+    file=`wait_for_files 10 /opt/container/local/${console_device}`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
     socat -,raw,echo=0 ${file}
 }
 
@@ -129,7 +130,7 @@ function do_console()
 	echo "console ${target}" > /opt/container/local/cmd-pipe
     fi
 
-    file=`wait_for_files 10 /opt/container/local/console-${target} /opt/container/local/cmd-error`
+    file=`wait_for_files 10 /opt/container/local/cmd-output /opt/container/local/cmd-error`
     if [ -z "${file}" ]; then
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
@@ -138,8 +139,16 @@ function do_console()
 	socat -,raw,echo=0 ${file}
 	exit 1
     fi
+    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+	console_device=`cat ${file} | sed 's/\r//g'`
+    fi
 
-    socat -,raw,echo=0 /opt/container/local/console-${target}
+    file=`wait_for_files 10 /opt/container/local/${console_device}`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
+    socat -,raw,echo=0 ${file}
 }
 
 # Parms: $1: target container/console

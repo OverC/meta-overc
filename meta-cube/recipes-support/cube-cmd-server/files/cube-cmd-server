@@ -57,12 +57,31 @@ function parse_yaml_conf_file() {
     }' | sed 's/_=/+=/g'
 }
 
+generate_console_name() {
+    local max=${1} # max number we'll generate
+    local dir=${2} # directory to check for existing files
+    local prefix=${3} # optional
+
+    local number=$RANDOM
+
+    let "number %= ${max}"
+    console_name="console-$prefix-$number"
+    while [ -e ${dir}/${console_name} ]; do
+	number=$RANDOM
+	let "number %= ${max}"
+	console_name="console-$prefix-$number"
+    done
+
+    echo ${console_name}
+}
+
 function console_listener() {
     local listenername=$1
     local connectorname=$2
     local type=$3 # console or namespace
     local target=$4
     local matches=""
+    local console_file=""
 
     # only lxc is currently supported
     for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
@@ -85,18 +104,23 @@ function console_listener() {
 		type=console
 	    fi
 
-	    if [ "${type}" = "console" ]; then
-		socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/console-${target} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty" &
-	    fi
-	    if [ "${type}" = "namespace" ]; then
-		# namespace enter!
-		if [ -n "$target" ]; then
-		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/console-${target} "exec:lxc-attach -n ${target} /bin/bash,pty,setsid,stderr,ctty"
-		else
-		    do_error "[ERROR]: namespace consoles require a target container"
-		    output_and_log_msg "[ERROR]: namespace consoles require a target container"
+	    console_file=`generate_console_name 200 /opt/container/${cname}/`
+            (
+		if [ "${type}" = "console" ]; then
+		    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty"
 		fi
-	    fi
+		if [ "${type}" = "namespace" ]; then
+		    # namespace enter!
+		    if [ -n "$target" ]; then
+			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/${console_file} "exec:lxc-attach -n ${target} /bin/bash,pty,setsid,stderr,ctty"
+		    else
+			do_error "[ERROR]: namespace consoles require a target container"
+			output_and_log_msg "[ERROR]: namespace consoles require a target container"
+		    fi
+		fi
+            ) &
 	done
     else
 	do_error "[ERROR]: no requestor matching ${connectorname} found, no console created"
