@@ -13,10 +13,10 @@ support this, the following is added:
 
 Signed-off-by: Vu Tran <vu.tran@windriver.com>
 
-Index: util-linux-2.26.2/sys-utils/nsenter.c
+Index: util-linux-2.27.1/sys-utils/nsenter.c
 ===================================================================
---- util-linux-2.26.2.orig/sys-utils/nsenter.c
-+++ util-linux-2.26.2/sys-utils/nsenter.c
+--- util-linux-2.27.1/sys-utils/nsenter.c.orig	2015-12-16 12:13:04.740054834 -0500
++++ util-linux-2.27.1/sys-utils/nsenter.c	2015-12-16 12:28:53.066379683 -0500
 @@ -28,6 +28,7 @@
  #include <assert.h>
  #include <sys/types.h>
@@ -24,8 +24,8 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
 +#include <sys/mount.h>
  #include <grp.h>
  
- #include "strutils.h"
-@@ -37,6 +38,8 @@
+ #ifdef HAVE_LIBSELINUX
+@@ -41,6 +42,8 @@
  #include "namespace.h"
  #include "exec_shell.h"
  
@@ -34,7 +34,7 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  static struct namespace_file {
  	int nstype;
  	const char *name;
-@@ -69,7 +72,9 @@
+@@ -73,7 +76,9 @@
  	fputs(_("Run a program with namespaces of other processes.\n"), out);
  
  	fputs(USAGE_OPTIONS, out);
@@ -45,16 +45,16 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  	fputs(_(" -m, --mount[=<file>]   enter mount namespace\n"), out);
  	fputs(_(" -u, --uts[=<file>]     enter UTS namespace (hostname etc)\n"), out);
  	fputs(_(" -i, --ipc[=<file>]     enter System V IPC namespace\n"), out);
-@@ -82,6 +87,8 @@
- 	fputs(_(" -r, --root[=<dir>]     set the root directory\n"), out);
- 	fputs(_(" -w, --wd[=<dir>]       set the working directory\n"), out);
- 	fputs(_(" -F, --no-fork          do not fork before exec'ing <program>\n"), out);
+@@ -89,6 +94,8 @@
+ #ifdef HAVE_LIBSELINUX
+ 	fputs(_(" -Z, --follow-context   set SELinux context according to --target PID\n"), out);
+ #endif
 +	fputs(_(" -b,     <src>:<dest>   bind mount src to dest.\n"), out);
 +	fprintf(out, _("                        This option can be invoked %d times\n"), BIND_MOUNT_MAPS_SIZE);
  
  	fputs(USAGE_SEPARATOR, out);
  	fputs(USAGE_HELP, out);
-@@ -91,7 +98,9 @@
+@@ -98,7 +105,9 @@
  	exit(status);
  }
  
@@ -65,7 +65,7 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  static int root_fd = -1;
  static int wd_fd = -1;
  
-@@ -99,9 +108,9 @@
+@@ -106,9 +115,9 @@
  {
  	char pathbuf[PATH_MAX];
  
@@ -78,7 +78,7 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  		path = pathbuf;
  	}
  	if (!path)
-@@ -189,19 +198,21 @@
+@@ -199,7 +208,7 @@
  	};
  
  	struct namespace_file *nsfile;
@@ -87,7 +87,10 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  	bool do_rd = false, do_wd = false, force_uid = false, force_gid = false;
  	int do_fork = -1; /* unknown yet */
  	uid_t uid = 0;
- 	gid_t gid = 0;
+@@ -207,14 +216,16 @@
+ #ifdef HAVE_LIBSELINUX
+ 	bool selinux = 0;
+ #endif
 +	char *token, *saveptr, *str, *end = NULL;
  
  	setlocale(LC_ALL, "");
@@ -97,12 +100,12 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
 +	memset(bind_mount_maps, 0, sizeof(bind_mount_maps));
  
  	while ((c =
--		getopt_long(argc, argv, "+hVt:m::u::i::n::p::U::S:G:r::w::F",
-+		getopt_long(argc, argv, "+hVt:m::u::i::n::p::U::S:G:r::w::Fb:",
+-		getopt_long(argc, argv, "+hVt:m::u::i::n::p::U::S:G:r::w::FZ",
++		getopt_long(argc, argv, "+hVt:m::u::i::n::p::U::S:G:r::w::FZb:",
  			    longopts, NULL)) != -1) {
  		switch (c) {
  		case 'h':
-@@ -210,8 +221,17 @@
+@@ -223,8 +234,17 @@
  			printf(UTIL_LINUX_VERSION);
  			return EXIT_SUCCESS;
  		case 't':
@@ -122,10 +125,10 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  			break;
  		case 'm':
  			if (optarg)
-@@ -275,6 +295,18 @@
- 		case OPT_PRESERVE_CRED:
- 			preserve_cred = 1;
+@@ -293,6 +313,18 @@
+ 			selinux = 1;
  			break;
+ #endif
 +		case 'b':
 +			if (bind_mount_maps_free_slot_index >= BIND_MOUNT_MAPS_SIZE)
 +				break;
@@ -141,7 +144,7 @@ Index: util-linux-2.26.2/sys-utils/nsenter.c
  		default:
  			usage(EXIT_FAILURE);
  		}
-@@ -358,6 +390,20 @@
+@@ -390,6 +422,20 @@
  		wd_fd = -1;
  	}
  
