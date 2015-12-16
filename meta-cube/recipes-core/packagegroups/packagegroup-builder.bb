@@ -167,7 +167,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     rpm \
     sato-icon-theme \
     setserial \
-    settings-daemon \
     smartmontools \
     socat \
     sudo \
