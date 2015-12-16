@@ -3,6 +3,7 @@
 LAYERS="meta-openembedded \
 	meta-virtualization \
 	meta-overc \
+	meta-cloud-services \
 	"
 	 
 if [ ! -d meta-overc ]; then
