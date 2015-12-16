@@ -66,6 +66,7 @@ OVERC_COMMON_NETWORKING = "\
      net-tools \
      netcat \
      openssh-ssh \
+     openvswitch \
     "
 
 OVERC_EXTRA_NETWORKING = "\
