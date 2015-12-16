@@ -19,8 +19,8 @@ SRC_URI = "https://bitbucket.org/mutt/mutt/downloads/mutt-${PV}.tar.gz \
 
 LIC_FILES_CHKSUM = "file://GPL;md5=ebf4e8b49780ab187d51bd26aaa022c6"
 
-SRC_URI[md5sum] = "11f5b6a3eeba1afa1257fe93c9f26bff"
-SRC_URI[sha256sum] = "3af0701e57b9e1880ed3a0dee34498a228939e854a16cdccd24e5e502626fd37"
+SRC_URI[md5sum] = "7f25d27f3c7c82285ac07aac35f5f0f2"
+SRC_URI[sha256sum] = "a292ca765ed7b19db4ac495938a3ef808a16193b7d623d65562bb8feb2b42200"
 
 S = "${WORKDIR}/${PN}-${PV}"
 
