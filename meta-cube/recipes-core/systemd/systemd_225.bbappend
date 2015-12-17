@@ -1,5 +1,3 @@
-PACKAGECONFIG_append = " resolved networkd manpages"
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}-225:"
 
 SRC_URI += " \
