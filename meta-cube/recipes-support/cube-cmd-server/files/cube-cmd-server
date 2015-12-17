@@ -24,9 +24,9 @@ function get_values()
 function am_i_a_container()
 {
     # the 3rd field is the hierarchy. If we are the host, the hierarchy
-    # is always "/". Otherwise, we are a container
+    # is always "/" or "/init.scope". Otherwise, we are a container.
     local archy=`cat /proc/1/cgroup | cut -d: -f3 | head -1`
-    if [ "${archy}" = "/" ]; then
+    if [ "${archy}" = "/" ] || [ "${archy}" = "/init.scope" ]; then
 	return 0
     fi
 
