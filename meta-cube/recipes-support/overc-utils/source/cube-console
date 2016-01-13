@@ -15,8 +15,12 @@ cat << EOF
 
   cube-console <console name>
 
+  console name: a valid console name. If "list" is passed, then the
+                options are displayed.
+
   example:
-    
+
+      $ cube-console list    
       $ cube-console cube-essential
       $ cube-console dom0
  
@@ -151,6 +155,9 @@ function enter_console
     local consolename=$1
 
     case $consolename in
+        list)
+	    cube-cmd lxc-ls
+	    ;;
 	*essential*)
 	    do_essential_console
 	    ;;
