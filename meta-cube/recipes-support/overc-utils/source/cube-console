@@ -122,7 +122,7 @@ function do_console()
 	type=login
     fi
 
-    if [ "${type}" = "namespace" ]; then
+    if [ -n "${namespace}" ]; then
 	echo "nsenter ${target}" > /opt/container/local/cmd-pipe
     else
 	echo "console ${target}" > /opt/container/local/cmd-pipe
@@ -166,7 +166,7 @@ function enter_console
 	    ;;
 	*)
 	    # only works if you are on dom0, since these are unauthenticated consoles
-	    do_console ${consolename} namespace
+	    do_console ${consolename} login
 	    ;;
     esac
 }
