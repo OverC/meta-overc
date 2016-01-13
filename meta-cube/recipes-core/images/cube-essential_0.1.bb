@@ -21,6 +21,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-container \
 		  packagegroup-container-setup \
 		  cube-update \
+		  puppet \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
