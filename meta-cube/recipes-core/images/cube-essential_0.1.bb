@@ -14,6 +14,8 @@ USE_DEPMOD = "1"
 CUBE_ESSENTIAL_EXTRA_INSTALL ?= "kernel-modules"
 
 PACKAGE_EXCLUDE = "busybox*"
+# Exclude documention packages, which can be installed later
+PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-essential \

@@ -16,6 +16,8 @@ IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES = "tar.bz2"
 
 PACKAGE_EXCLUDE = "busybox*"
+# Exclude documention packages, which can be installed later
+PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-core-ssh-openssh \

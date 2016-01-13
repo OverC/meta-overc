@@ -11,6 +11,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 CUBE_DOM0_EXTRA_INSTALL ?= " "
 
 PACKAGE_EXCLUDE = "busybox* "
+# Exclude documention packages, which can be installed later
+PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 PV = "0.5"
 

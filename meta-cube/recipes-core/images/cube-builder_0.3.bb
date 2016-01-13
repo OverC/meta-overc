@@ -10,6 +10,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 CUBE_BUILDER_EXTRA_INSTALL ?= ""
 
 PACKAGE_EXCLUDE = "busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog"
+# Exclude documention packages, which can be installed later
+PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \

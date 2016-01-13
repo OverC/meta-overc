@@ -13,6 +13,8 @@ IMAGE_FEATURES += "package-management doc-pkgs x11-base"
 IMAGE_FSTYPES = "tar.bz2"
 
 PACKAGE_EXCLUDE = "busybox*"
+# Exclude documention packages, which can be installed later
+PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 CUBE_DOM_E_EXTRA_INSTALL ?= ""
 
