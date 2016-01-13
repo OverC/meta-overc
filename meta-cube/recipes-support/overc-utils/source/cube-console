@@ -114,12 +114,6 @@ function do_console()
 	exit 1
     fi
 
-    # In the future, we can create more .. but for now, let's just allow one
-    if [ -e "/opt/container/local/console-${target}" ]; then
-	echo "[INFO]: the console to ${target} is already active, only one connection is allowed"
-	exit 1
-    fi
-
     if [ -z "${type}" ]; then
 	type=login
     fi
