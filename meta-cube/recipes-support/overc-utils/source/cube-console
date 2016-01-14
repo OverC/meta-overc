@@ -110,7 +110,7 @@ function do_essential_console()
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
     fi
-    socat -,raw,echo=0 ${file}
+    socat -,raw,echo=0,escape=0x1C ${file}
 }
 
 
@@ -164,7 +164,12 @@ function enter_console
 
     case $consolename in
         list)
-	    cube-cmd lxc-ls
+	    x=`cube-cmd lxc-ls`
+	    # if /host/proc is mounted, we are dom0, so add "essential" to targets
+	    if [ -d "/host/proc" ]; then
+		x="essential $x"
+	    fi
+	    echo "$x"
 	    ;;
 	*essential*)
 	    do_essential_console
