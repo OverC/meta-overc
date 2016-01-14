@@ -13,7 +13,7 @@ usage()
 {
 cat << EOF
 
-  cube-console [--ns] <console name>
+  cube-console [--ns] [--notraps] <console name>
 
   console name: a valid console name.
 
@@ -22,7 +22,8 @@ cat << EOF
   --ns: enter a namespace shell. Only available from priviledged control
         domains.
 
-  'ctrl-\': force exits a shell immediately (no clean logout).
+  --notraps: do not monitor for an exit sequence. If this option is not
+             specified.  'ctrl-\': force exits the shell immediately (no clean logout).
 
   example:
 
@@ -43,6 +44,8 @@ while [ $# -gt 0 ]; do
 	-v) verbose=t
             ;;
 	--force) force=t
+            ;;
+	--notraps) notraps=t
             ;;
 	--ns) namespace=t
             ;;
@@ -116,7 +119,12 @@ function do_essential_console()
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
     fi
-    socat -,raw,echo=0,escape=0x1C ${file}
+
+    if [ -z "${notraps}" ]; then
+	escape=",escape=0x1C"
+    fi
+
+    eval socat -,raw,echo=0${escape} ${file}
     ret=$?
     if [ -n "${verbose}" ]; then
 	echo "console connection exited with: $ret"
@@ -163,8 +171,12 @@ function do_console()
 	exit 2
     fi
 
+    if [ -z "${notraps}" ]; then
+	escape=",escape=0x1C"
+    fi
+
     # for escape codes, see: http://www.nthelp.com/ascii.htm
-    socat -,raw,echo=0,escape=0x1C ${file}
+    eval socat -,raw,echo=0${escape} ${file}
     ret=$?
     if [ -n "${verbose}" ]; then
 	echo "console connection exited with: $ret"
