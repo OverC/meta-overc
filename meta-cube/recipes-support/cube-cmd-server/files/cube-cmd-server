@@ -33,6 +33,10 @@ function am_i_a_container()
     return 1
 }
 
+if [ -d "/host/proc" ]; then
+    we_are_dom0=t
+fi
+
 ## derived from https://gist.github.com/epiloque/8cf512c6d64641bde388
 ## works for arrays of hashes, as long as the hashes do not have arrays
 function parse_yaml_conf_file() {
@@ -105,10 +109,43 @@ function console_listener() {
 	    fi
 
 	    console_file=`generate_console_name 200 /opt/container/${cname}/`
-            (
+	    (
 		if [ "${type}" = "console" ]; then
+		    # The target of the console matters. If it is "us", then we start agetty. If it is another
+		    # container, we proxy the appropriate mechanism (cube-console or lxc-console)
+
+		    if [ -n "${we_are_dom0}" ]; then
+			if [ "${target}" == "dom0" ]; then
+			    cmd="/sbin/agetty -J"
+			else
+			    # we need to go down to essential to get a console to another container so
+			    # we'll call cube-console again .. which goes to the command server that helps
+			    # us out .. aka "cube-essential"
+			    cmd="cube-console ${target}"
+			fi
+		    else # we are essential
+			if [ "${target}" == "essential" ]; then
+			    cmd="/sbin/agetty -J"
+			else
+			    # if the target is another container, we need to run a getty in the console
+			    # and connect to it. We do this to avoid lxc-console, which cannot be exited
+			    # without a control character, and can have only one active at time. To avoid
+			    # the complications of embedding this command into the one liner below, we just
+			    # create a helper script and run that.
+			    rm -f /tmp/console-helper
+cat <<EOF > /tmp/console-helper
+#/bin/bash
+lxc-attach -n ${target} -- socat -,raw,echo=0 "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty"
+EOF
+                            chmod +x /tmp/console-helper
+			    cmd="/tmp/console-helper"
+			fi
+		    fi
+
+		    # send the number of the console to the caller
 		    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
-		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty"
+		    # exec the console command .. or proxy
+		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:${cmd} - linux,pty,setsid,stderr,ctty"
 		fi
 		if [ "${type}" = "namespace" ]; then
 		    # namespace enter!
@@ -120,7 +157,7 @@ function console_listener() {
 			output_and_log_msg "[ERROR]: namespace consoles require a target container"
 		    fi
 		fi
-            ) &
+	    ) &
 	done
     else
 	do_error "[ERROR]: no requestor matching ${connectorname} found, no console created"

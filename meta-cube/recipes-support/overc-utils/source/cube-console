@@ -42,6 +42,8 @@ while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
             ;;
+	--force) force=t
+            ;;
 	--ns) namespace=t
             ;;
         *) break
@@ -49,6 +51,10 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+if [ -d "/host/proc" ]; then
+    we_are_dom0=t
+fi
 
 function wait_for_files()
 {
@@ -111,6 +117,10 @@ function do_essential_console()
 	exit 2
     fi
     socat -,raw,echo=0,escape=0x1C ${file}
+    ret=$?
+    if [ -n "${verbose}" ]; then
+	echo "console connection exited with: $ret"
+    fi
 }
 
 
@@ -155,6 +165,10 @@ function do_console()
 
     # for escape codes, see: http://www.nthelp.com/ascii.htm
     socat -,raw,echo=0,escape=0x1C ${file}
+    ret=$?
+    if [ -n "${verbose}" ]; then
+	echo "console connection exited with: $ret"
+    fi
 }
 
 # Parms: $1: target container/console
@@ -164,9 +178,7 @@ function enter_console
 
     case $consolename in
         list)
-
-	    # if /host/proc is mounted, we are dom0, so add "essential" to targets
-	    if [ -d "/host/proc" ]; then
+	    if [ -n "${we_are_dom0}" ]; then
 		x=`cube-cmd lxc-ls`
 		x="essential $x"
 	    else
@@ -175,14 +187,23 @@ function enter_console
 	    echo "$x"
 	    ;;
 	*essential*)
-	    do_essential_console
+	    if [ -n "${we_are_dom0}" ]; then
+		do_essential_console
+	    else
+		echo "ERROR: essential console is only available to dom0"
+		exit 1
+	    fi
 	    ;;
 	*dom0*)
 	    do_console dom0 login
 	    ;;
 	*)
-	    # only works if you are on dom0, since these are unauthenticated consoles
-	    do_console ${consolename} login
+	    if [ -n "${we_are_dom0}" ] || [ -n "${force}" ]; then
+		do_console ${consolename} login
+	    else
+		echo "ERROR: only connections to dom0 are supported from non-system containers"
+		exit 1
+	    fi
 	    ;;
     esac
 }
