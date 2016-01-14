@@ -13,10 +13,16 @@ usage()
 {
 cat << EOF
 
-  cube-console <console name>
+  cube-console [--ns] <console name>
 
-  console name: a valid console name. If "list" is passed, then the
-                options are displayed.
+  console name: a valid console name.
+
+                If "list" is passed, available consoles are displayed.
+
+  --ns: enter a namespace shell. Only available from priviledged control
+        domains.
+
+  'ctrl-\': force exits a shell immediately (no clean logout).
 
   example:
 
@@ -146,7 +152,9 @@ function do_console()
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
     fi
-    socat -,raw,echo=0 ${file}
+
+    # for escape codes, see: http://www.nthelp.com/ascii.htm
+    socat -,raw,echo=0,escape=0x1C ${file}
 }
 
 # Parms: $1: target container/console
