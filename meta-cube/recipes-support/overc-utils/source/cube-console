@@ -164,10 +164,13 @@ function enter_console
 
     case $consolename in
         list)
-	    x=`cube-cmd lxc-ls`
+
 	    # if /host/proc is mounted, we are dom0, so add "essential" to targets
 	    if [ -d "/host/proc" ]; then
+		x=`cube-cmd lxc-ls`
 		x="essential $x"
+	    else
+		x="dom0"
 	    fi
 	    echo "$x"
 	    ;;
