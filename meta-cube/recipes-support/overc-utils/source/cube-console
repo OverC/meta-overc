@@ -125,7 +125,7 @@ function do_essential_console()
 	exit 1
     fi
     if [ "${file}" = "/opt/container/local/cmd-output" ]; then
-	console_device=`cat ${file} | sed 's/\r//g'`
+	console_device=`socat open:${file} - | sed 's/\r//g'`
     fi
 
     file=`wait_for_files 10 /opt/container/local/${console_device}`
@@ -176,7 +176,7 @@ function do_console()
 	exit 1
     fi
     if [ "${file}" = "/opt/container/local/cmd-output" ]; then
-	console_device=`cat ${file} | sed 's/\r//g'`
+	console_device=`socat open:${file} - | sed 's/\r//g'`
     fi
 
     file=`wait_for_files 10 /opt/container/local/${console_device}`
