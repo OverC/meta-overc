@@ -59,6 +59,20 @@ if [ -d "/host/proc" ]; then
     we_are_dom0=t
 fi
 
+# returns 1 if we are container, 0 otherwise                                                                                                                                 
+function am_i_a_container()
+{   
+    # the 3rd field is the hierarchy. If we are the host, the hierarchy                                                                                                      
+    # is always "/" or "/init.scope". Otherwise, we are a container.                                                                                                         
+    local archy=`cat /proc/1/cgroup | cut -d: -f3 | head -1`
+    if [ "${archy}" = "/" ] || [ "${archy}" = "/init.scope" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+
 function wait_for_files()
 {
     local wait_count=${1:-200} # 200 is the default
@@ -219,5 +233,13 @@ function enter_console
 	    ;;
     esac
 }
+
+am_i_a_container
+if [ $? -eq 0 ]; then
+    echo "ERROR: host detected, cube-console only works in a monitored container."
+    echo "       Commands must be directly invoked in essential, control functions"
+    echo "       via the control domain."
+    exit 1
+fi
 
 enter_console $1
