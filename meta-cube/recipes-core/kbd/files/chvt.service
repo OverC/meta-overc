@@ -1,0 +1,13 @@
+[Unit]
+Description=Change the tty3 to be the active vt
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/chvt 3
+StandardInput=tty
+TTYPath=/dev/tty3
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=default.target
