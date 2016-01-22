@@ -42,6 +42,7 @@ OVERC_COMMON_EXTENDED = " \
      sed \
      coreutils \
      e2fsprogs \
+     kbd \
     "
 
 OVERC_EXTRA_EXTENDED = "\
