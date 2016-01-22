@@ -5,9 +5,7 @@ SRC_URI = "file://init-server.sh"
 
 PR = "r9"
 
-RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
-RDEPENDS_${PN}_append_x86 = " grub"
-RDEPENDS_${PN}_append_x86-64 = " grub"
+RDEPENDS_${PN} = "grub parted e2fsprogs-mke2fs"
 
 do_install() {
         install -m 0755 ${WORKDIR}/init-server.sh ${D}/init
