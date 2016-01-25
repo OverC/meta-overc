@@ -107,9 +107,7 @@ class Btrfs(Utils):
             self._btrfs(argv)
 
             #do upgrade
-            os.system('rm -rf /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
-            os.system('cp /proc/mounts /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
-            os.system('mkdir /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
+            os.system('mount -t proc proc /sysroot/%s/proc' % upgrade_rootfs[self.rootfs])
             os.system('mount -o bind /dev /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
             result = os.system('chroot /sysroot/%s smart upgrade -y' % upgrade_rootfs[self.rootfs])
 
@@ -121,10 +119,8 @@ class Btrfs(Utils):
                 return False
                 # sys.exit(2)
 
-            os.system('rm -rf /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
-            os.system('ln -s /proc/mounts /sysroot/%s/etc/mtab' % upgrade_rootfs[self.rootfs])
-            os.system('rm -rf /sysroot/%s/var/volatile/tmp' % upgrade_rootfs[self.rootfs])
             os.system('umount /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
+            os.system('umount /sysroot/%s/proc' % upgrade_rootfs[self.rootfs])
 
             upgrade_bzImage = '/sysroot/%s/%s' % (upgrade_rootfs[self.rootfs], self.kernel)
             if os.path.islink(upgrade_bzImage):
