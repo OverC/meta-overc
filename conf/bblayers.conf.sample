@@ -19,6 +19,9 @@ BBLAYERS ?= " \
   /home/paul/poky/meta-openembedded/meta-networking \
   /home/paul/poky/meta-openembedded/meta-multimedia \
   /home/paul/poky/meta-cloud-services \
+  /home/paul/poky/meta-qt4 \
+  /home/paul/poky/oe-meta-go \
+  /home/paul/poky/meta-openembedded/meta-filesystems \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   /home/paul/poky/meta \
