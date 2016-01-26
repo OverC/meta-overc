@@ -1,0 +1,6 @@
+[NetDev]
+Name=veth-int
+Kind=veth
+
+[Peer]
+Name=veth-ext

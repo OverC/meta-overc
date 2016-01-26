@@ -1,0 +1,12 @@
+[Unit]
+Description=Clone the physical ethernet MAC to br0
+Wants=network.target
+After=openvswitch-switch.service overc-network-prime.service
+Before=systemd-networkd.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "/sbin/ip link set dev br-ext address $(/sbin/ip link show <%= @network_device %> | grep ether | tr -s ' ' | cut -d' ' -f3)"
+
+[Install]
+WantedBy=multi-user.target

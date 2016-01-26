@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# Configure container as the "network prime". That is
+# the physical interface will be a port on a bridge, named
+# br-ext. br-ext will clone the physical interface MAC address
+# (see mac-clone-phys-to-br-ext.service) and will receive the
+# externally facing IP address.
+#
+# A second bridge, named br-int, will host a second 'virtual' interface
+# which will receive an 'internal' IP address and be connected to other
+# containers hosted on the system. Traffic arriving on br-int which is
+# to an external address will be routed via br-ext and will be NATed.
+#
+
+# Create br-ext and br-int bridges
+ovs-vsctl --may-exist add-br br-ext
+ovs-vsctl --may-exist add-br br-int
+
+# Link br-ext and br-int using a 'patch'
+#ovs-vsctl \
+#    -- --may-exist add-port br-ext patch-ext \
+#    -- set interface patch-ext type=patch options:peer=patch-int \
+#    -- --may-exist add-port br-int patch-int \
+#    -- set interface patch-int type=patch options:peer=patch-ext
+
+# Add the physical eth to br-ext
+ovs-vsctl --may-exist add-port br-ext <%= @network_device %>
+
+# Add the virtual eth to the br-int
+ovs-vsctl --may-exist add-port br-int eth0
