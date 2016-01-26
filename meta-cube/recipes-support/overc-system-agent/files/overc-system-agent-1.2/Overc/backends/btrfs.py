@@ -1,4 +1,5 @@
 import sys, os
+import tempfile
 import subprocess
 from Overc.utils  import Utils
 from Overc.utils  import ROOTMOUNT
@@ -109,7 +110,18 @@ class Btrfs(Utils):
             #do upgrade
             os.system('mount -t proc proc /sysroot/%s/proc' % upgrade_rootfs[self.rootfs])
             os.system('mount -o bind /dev /sysroot/%s/dev' % upgrade_rootfs[self.rootfs])
+
+            tempd = tempfile.mkdtemp(dir='/sysroot/%s/tmp' % upgrade_rootfs[self.rootfs])
+            os.system('cp -r /sysroot/%s/var/lib/rpm/* %s' % (upgrade_rootfs[self.rootfs], tempd))
+            os.system('mount -t tmpfs tmpfs /sysroot/%s/var/lib/rpm' % upgrade_rootfs[self.rootfs])
+            os.system('cp -r %s/* /sysroot/%s/var/lib/rpm/' % (tempd, upgrade_rootfs[self.rootfs]))
+
             result = os.system('chroot /sysroot/%s smart upgrade -y' % upgrade_rootfs[self.rootfs])
+
+            os.system('cp -r /sysroot/%s/var/lib/rpm/* %s/' % (upgrade_rootfs[self.rootfs], tempd))
+            os.system('umount /sysroot/%s/var/lib/rpm' % upgrade_rootfs[self.rootfs])
+            os.system('cp -r %s/* /sysroot/%s/var/lib/rpm/' % (tempd, upgrade_rootfs[self.rootfs]))
+            os.system('rm -rf %s' % tempd)
 
             if result != 0:
                 self.message = 'Error: System update failed! It has no effect on the running system!'
