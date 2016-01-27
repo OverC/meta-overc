@@ -53,6 +53,16 @@ branch: master
 revision: HEAD
 prio: default
 
+URI: git://git.yoctoproject.org/meta-qt4
+branch: master
+revision: HEAD
+prio: default
+
+URI: git://github.com/errordeveloper/oe-meta-go.git
+branch: master
+revision: HEAD
+prio: default
+
 Maintenance
 -----------
 
