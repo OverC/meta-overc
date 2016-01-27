@@ -6,24 +6,24 @@ BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
 BBLAYERS ?= " \
-  /home/paul/poky/meta \
-  /home/paul/poky/meta-yocto \
-  /home/paul/poky/meta-yocto-bsp \
-  /home/paul/poky/meta-overc \
-  /home/paul/poky/meta-overc/meta-cube \
-  /home/paul/poky/meta-openembedded/meta-oe \
-  /home/paul/poky/meta-openembedded/meta-gnome \
-  /home/paul/poky/meta-openembedded/meta-xfce \
-  /home/paul/poky/meta-virtualization \
-  /home/paul/poky/meta-openembedded/meta-python \
-  /home/paul/poky/meta-openembedded/meta-networking \
-  /home/paul/poky/meta-openembedded/meta-multimedia \
-  /home/paul/poky/meta-cloud-services \
-  /home/paul/poky/meta-qt4 \
-  /home/paul/poky/oe-meta-go \
-  /home/paul/poky/meta-openembedded/meta-filesystems \
+  $HOME/poky/meta \
+  $HOME/poky/meta-yocto \
+  $HOME/poky/meta-yocto-bsp \
+  $HOME/poky/meta-overc \
+  $HOME/poky/meta-overc/meta-cube \
+  $HOME/poky/meta-openembedded/meta-oe \
+  $HOME/poky/meta-openembedded/meta-gnome \
+  $HOME/poky/meta-openembedded/meta-xfce \
+  $HOME/poky/meta-virtualization \
+  $HOME/poky/meta-openembedded/meta-python \
+  $HOME/poky/meta-openembedded/meta-networking \
+  $HOME/poky/meta-openembedded/meta-multimedia \
+  $HOME/poky/meta-cloud-services \
+  $HOME/poky/meta-qt4 \
+  $HOME/poky/oe-meta-go \
+  $HOME/poky/meta-openembedded/meta-filesystems \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
-  /home/paul/poky/meta \
-  /home/paul/poky/meta-yocto \
+  $HOME/poky/meta \
+  $HOME/poky/meta-yocto \
   "
