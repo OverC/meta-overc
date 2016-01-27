@@ -32,7 +32,7 @@ OverC build
 Modify local.conf with following settings:
 
  # build the cube distro
- DISTRO ?= "cube"
+ DISTRO ?= "overc"
 
  # build the genericx86 machine, ussing the common-pc-64 branch
  MACHINE="genericx86-64"
@@ -74,15 +74,23 @@ The following sample shows how to create an installer on a network block
 device, with the outputs of a typical OverC build. Changing the target device
 to a USB stick results in an installer that boots and runs on most x86 targets.
 
- % cd usbhdinstaller
- % mkdir ~/.overc
- % cp config/config-usb-cube.sh.sample ~/.overc/config-usb-cube.sh
- % cp config/config-usb.sh.sample ~/.overc/config-usb.sh
+ % WORKDIR=<your_working_directory>
+ % CLONEDIR=<your_clone_directory> #e.g. CLONEDIR=$WORKDIR
+ % cd $CLONEDIR
+ % git clone git://github.com/WindRiver-OpenSourceLabs/overc-installer.git
+ % mkdir -p $WORKDIR/usbhdinstaller
+ % cd $WORKDIR/usbhdinstaller
+ % mkdir .overc
+ % cp $CLONEDIR/overc-installer/config/config-usb-cube.sh.sample .overc/config-usb-cube.sh
+ % cp $CLONEDIR/overc-installer/config/config-usb.sh.sample .overc/config-usb.sh
 
 Edit the variables in config-usb.sh to suit the build and desired installation.
 In particular:
 
  ARTIFACTS_DIR: set this to the directory containing the built images and kernel
+                e.g. $WORKDIR/tmp/deploy/images/genericx86-64
+** NOTE: ARTIFACTS_DIR defined in config-usb.sh will be ignored 
+         if ./cubeit is called with --artifacts <artifacts_dir>
 
 And confirm that the following outputs exist in the artifacts directory:
 
@@ -103,6 +111,8 @@ Copy the grub configuration to ~/.overc/ and edit to suit your device(s).
 
 ** NOTE: the grub installed on the machine writing the USB stick is used to
          populate the bootable device. 
+
+ % cp $CLONEDIR/overc-installer/files/grub-usb.cfg $WORKDIR/usbhdinstaller/.overc
 
          The sample grub configuration files are for grub2, so if the machine
          creating the stick is not grub2, they will not work.
@@ -135,7 +145,8 @@ Once the installer(s) have been modified to suit the target device, the
 following example command produces a bootable nbd USB device (assuming that a
 nbd has been created properly started):
 
- % sudo ./sbin/cubeit --config ~/.overc/config-usb-cube.sh --artifacts `pwd` /dev/nbd0
+ % BLOCK_DEV=<your_block_dev> # e.g. /dev/nbd0 or /dev/sdb etc.
+ % sudo $CLONEDIR/overc-installer/sbin/cubeit --config $WORKDIR/usbhdinstaller/.overc/config-usb-cube.sh --artifacts $ARTIFACTS_DIR $BLOCK_DEV
 
 We now have a bootable device, with an embedded installer + installation payload.
 
@@ -162,7 +173,7 @@ In our cube-install.sh example from above, the following commands should be
 run (assuming an installation to a second virtual disk):
 
  % cd /opt/installer/
- % ./sbin/cubeit-install images/cube-essential-* vdb
+ % ./sbin/cubeit-installer images/cube-essential-* vdb #or e.g. sda for hard drive
 
 ** Note: The cube installer will destroy all data on the target device, since
          it re-partitions, create filesystems, installs the boot image and
@@ -171,7 +182,7 @@ run (assuming an installation to a second virtual disk):
          Do not run it against a device with data you cannot afford to lose.
 
 ** Note: To create the root filesystem in btrfs, add -b option to cube-install.sh
- % ./sbin/cubeit-install -b images/cube-essential-* vdb
+ % ./sbin/cubeit-installer -b images/cube-essential-* vdb
 
 Once this completes, the device is powered off, and is ready with the OverC
 runtime.
