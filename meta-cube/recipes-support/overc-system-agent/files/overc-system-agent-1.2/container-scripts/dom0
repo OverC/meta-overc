@@ -320,7 +320,17 @@ rpm_upgrade() {
 
 	echo "snapshots on container: $container"
 	snapshot $container
+
+	tempdir="/tmp/tmpd.$RANDOM"
+	runcmd_in_container $container "mkdir -p $tempdir"
+	runcmd_in_container $container "cp -r /var/lib/rpm $tempdir"
+	runcmd_in_container $container "mount -t tmpfs tmpfs /var/lib/rpm"
+	runcmd_in_container $container "cp -r $tempdir/rpm /var/lib/"
 	runcmd_in_container $container "smart upgrade -y"
+	runcmd_in_container $container "cp -r /var/lib/rpm $tempdir"
+	runcmd_in_container $container "umount /var/lib/rpm"
+	runcmd_in_container $container "cp -r $tempdir/rpm /var/lib/"
+	runcmd_in_container $container "rm -rf $tempdir"
 }
 
 delete_container() {
