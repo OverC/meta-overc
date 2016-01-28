@@ -305,6 +305,31 @@ runcmd_in_container() {
 	$DOM0_CTL exec-cmd -n $1 $2
 }
 
+format_size() {
+	local size=$1
+	size_unit=${size: -1}
+	size_num=`echo $size | sed "s/${size_unit}//"`
+
+        case $size_unit in
+		"K")
+			num=`echo "$size_num*1000"|bc`
+			echo $((${num//.*/+1}))
+			;;
+		"M")
+			num=`echo "$size_num*1000*1000"|bc`
+			echo $((${num//.*/+1}))
+			;;
+		"G")
+			num=`echo "$size_num*1000*1000*1000"|bc`
+			echo $((${num//.*/+1}))
+			;;
+		"*")
+			echo "Error! cannot recognize size"
+			exit 1
+			;;
+	esac
+}
+
 rpm_upgrade() {
 	local container=$1
 
@@ -318,8 +343,19 @@ rpm_upgrade() {
 		return 0
 	fi
 
-	echo "snapshots on container: $container"
-	snapshot $container
+	c_raw_size=`du -hs /var/lib/lxc/${container}/rootfs | awk '{print $1}'`
+	c_size=`format_size $c_raw_size`
+	a_raw_size=`df -ha /var/lib/lxc/overc-containers | sed -n '2p' | awk '{print $4}'`
+	a_size=`format_size $a_raw_size`
+
+	if [ $a_size -ge $c_size ]; then
+		echo "snapshots on container: $container"
+		snapshot $container
+	else
+		echo "*******************************************************************"
+		echo "  Warning: There isn't enough space left to snapshot conainer"
+		echo "*******************************************************************"
+	fi
 
 	tempdir="/tmp/tmpd.$RANDOM"
 	runcmd_in_container $container "mkdir -p $tempdir"

@@ -20,6 +20,7 @@ RDEPENDS_${PN} = "\
 	python-markupsafe \
 	python-werkzeug \
 	bash \
+	bc \
 	overc-installer \
 	"
 
