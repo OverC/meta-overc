@@ -53,6 +53,15 @@ if __name__ == '__main__':
     subparser = parser.add_subparsers(help=_("commands"))
 
     if os.path.exists("/usr/bin/smart"):
+	systemp = subparser.add_parser("system",help=_("execute OverC system commands"))
+	system_subparse = systemp.add_subparsers(help=_("system commands"))
+	s_upgradep = system_subparse.add_parser("upgrade", help=_("upgrade to the latest whole system, including host and containers"))
+	s_upgradep.set_defaults(func=overc.system_upgrade)
+	s_upgradep.add_argument('template', help="template of container")
+	s_upgradep.add_argument("-r", "--reboot", dest="reboot",
+				action="store_true",
+				help=_("if an upgrade is available, reboot after deployment is complete"))
+
         hostp = subparser.add_parser("host",help=_("execute OverC host commands"))
         host_subparser = hostp.add_subparsers(help=_("host commands"))
         rollbackp = host_subparser.add_parser("rollback", help=_("switch to alternate core system at boot"))

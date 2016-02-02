@@ -51,6 +51,20 @@ class Overc(object):
         except:
             self.command = None
 
+    def system_upgrade(self):
+        containers = self.container.get_container(self.args.template)
+	#By now only support "Pulsar" and "overc" Linux upgrading
+        DIST = "Pulsar overc"
+        for cn in containers:
+            if self.container.is_active(cn, self.args.template):
+	        for dist in DIST.split():
+	            if dist in self.container.get_issue(cn, self.args.template).split():
+                        print "Updating container %s" % cn
+                        self._container_upgrade(cn, self.args.template) #by now only rpm upgrade support
+                        break
+
+        self.host_upgrade()
+
     def _need_upgrade(self):
         self.host_update()
         if self.host_newer() == 0 or self.args.force:
@@ -174,7 +188,7 @@ class Overc(object):
     def container_upgrade(self):
         self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
         sys.exit(self.retval)
-    def _container_upgrade(self, container, template, rpm, image):
+    def _container_upgrade(self, container, template, rpm=True, image=False):
         self.retval = self.container.upgrade(container, template, rpm, image)
         self.message = self.container.message
 
