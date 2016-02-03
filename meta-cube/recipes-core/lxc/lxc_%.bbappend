@@ -14,5 +14,9 @@ do_install_append(){
 
 	# disable the dmesg output on the console when booting the containers,
 	# and this will make the system's boot console clean and reduce the boottime.
-	sed -i  '2a dmesg -D'  ${D}/${libdir}/lxc/lxc/lxc-containers
+	if [ -w ${D}${libdir}/lxc/lxc/lxc-containers ]; then
+	    sed -i  '2a dmesg -D'  ${D}${libdir}/lxc/lxc/lxc-containers
+	else
+	    sed -i  '2a dmesg -D'  ${D}${libexecdir}/lxc/lxc-containers
+	fi
 }
