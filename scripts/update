@@ -3,9 +3,11 @@
 LAYERS="meta-openembedded \
 	meta-virtualization \
 	meta-overc \
+	meta-browser \
+	oe-meta-go \
 	meta-cloud-services \
 	"
-	 
+
 if [ ! -d meta-overc ]; then
 	echo I do not see a meta-overc subdir.  Are you in poky dir\?
 	exit 1
