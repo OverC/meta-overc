@@ -4,6 +4,7 @@ LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
 DEPENDS = "go-metrics go-msgpack"
+CLEANBROKEN = "1"
 
 PKG_NAME = "github.com/hashicorp/raft"
 SRC_URI = "git://${PKG_NAME}.git"
