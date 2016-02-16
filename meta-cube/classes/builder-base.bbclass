@@ -22,8 +22,19 @@ systemd_autostart_fixups() {
     fi
 }
 
+def select_networking_config(d):
+    if bb.utils.contains('DISTRO_FEATURES', 'sysvinit', True, False, d):
+        if bb.utils.contains('DISTRO_FEATURES', 'overc_bridge_networking', True, False, d):
+            return "sysvinit_network; "
+        else:
+            return "sysvinit_network_unsupported; "
+    else:
+        if bb.utils.contains('DISTRO_FEATURES', 'overc_bridge_networking', True, False, d):
+            return "systemd_bridged_network; "
+        else:
+            return "systemd_openvswitch_network; "
 
-ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit_network; ', 'systemd_bridged_network; ', d)}"
+ROOTFS_POSTPROCESS_COMMAND += "${@select_networking_config(d)}"
 
 systemd_network () {
         install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
@@ -81,4 +92,20 @@ EOF
 
 sysvinit_network () {
         install -d ${IMAGE_ROOTFS}${sysconfdir}/etc/network
+}
+
+sysvinit_network_unsupported () {
+        echo "ERROR: Unsupported configuration. No support for OpenVSwitch networking with sysvinit"
+	exit 1
+}
+
+systemd_openvswitch_network () {
+        install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
+        cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/20-wired.network
+[Match]
+Name=eth*
+
+[Network]
+DHCP=ipv4
+EOF
 }
