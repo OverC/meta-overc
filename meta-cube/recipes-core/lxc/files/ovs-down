@@ -1,0 +1,4 @@
+#!/bin/bash
+
+BRIDGE="br-int"
+ovs-vsctl --if-exists del-port $BRIDGE $5

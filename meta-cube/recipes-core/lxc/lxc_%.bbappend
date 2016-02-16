@@ -6,6 +6,13 @@ PACKAGECONFIG[cgmanager] = "--enable-cgmanager=yes,--enable-cgmanager=no,cgmanag
 
 SYSTEMD_AUTO_ENABLE_${PN}-setup = "enable"
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+SRC_URI += " \
+    file://ovs-up \
+    file://ovs-down \
+    "
+
 do_install_append(){
 	# essential system controls the network, so lxc-net.service is redundant,
 	# remove the dependancy from lxc.service to reduce the boottime.
@@ -19,4 +26,9 @@ do_install_append(){
 	else
 	    sed -i  '2a dmesg -D'  ${D}${libexecdir}/lxc/lxc-containers
 	fi
+
+	# allow containers to connect to an OpenVSwitch bridge (br-int)
+	install -d ${D}/etc/lxc/
+	install -m 755 ${WORKDIR}/ovs-up ${D}/etc/lxc/ovs-up
+	install -m 755 ${WORKDIR}/ovs-down ${D}/etc/lxc/ovs-down
 }
