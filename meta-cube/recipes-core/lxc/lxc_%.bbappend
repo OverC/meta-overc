@@ -18,6 +18,7 @@ do_install_append(){
 	# remove the dependancy from lxc.service to reduce the boottime.
 
 	sed -i 's/lxc-net.service//g'  ${D}${systemd_unitdir}/system/lxc.service
+	sed -i 's/\(After=.*$\)/\1 openvswitch-nonetwork.service/' ${D}${systemd_unitdir}/system/lxc.service
 
 	# disable the dmesg output on the console when booting the containers,
 	# and this will make the system's boot console clean and reduce the boottime.
