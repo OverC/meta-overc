@@ -26,8 +26,10 @@ Usage: $0 [OPTION] ...
 	activate container
 
 	-f: force
-  -R -n <container name>
+  -R -n <container name> [-f]
 	rollback container with last snapshot
+
+	-f: force
   -L
 	list containers
   -B -n <container name>
@@ -189,8 +191,9 @@ activate() {
 #
 rollback_container() {
 	local container=$1
-
-	if [ $container != "dom0" ]; then
+	
+	if [ $force -eq 0 ]; then
+	    if [ $container != "dom0" ]; then
 	        # 0: does not exist
 	        # 2: exists, not active
 	        # 3: exists, active
@@ -203,6 +206,7 @@ rollback_container() {
 			echo "Error! Container $container is active"
 			exit 1
 		fi
+	    fi
 	fi
 	$OVERC_CCTL rollback -n $container -F
 }
