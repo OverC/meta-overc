@@ -21,10 +21,12 @@ class Container(object):
             self.message += "\nActivate ok"
         return retval
 
-    def rollback(self, name, snapshot_name, template):
+    def rollback(self, name, snapshot_name, template, force):
         args = "-R -n %s" % name
         if snapshot_name is not None:
             args += " -b %s" % snapshot_name
+        if force:
+            args += " -f"
         retval = self.run_script(template, args)
         if retval is 0:
             self.message += "\nRollback ok"

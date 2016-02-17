@@ -61,10 +61,31 @@ class Overc(object):
 	            if dist in self.container.get_issue(cn, self.args.template).split():
                         print "Updating container %s" % cn
                         self._container_upgrade(cn, self.args.template) #by now only rpm upgrade support
+                        if self.retval is not 0:
+                            print "*** Failed to upgrade container %s" % cn
+                            print "*** Abort the system upgrade action"
+                            sys.exit(self.retval)
                         break
 
         self.host_upgrade()
 
+    def system_rollback(self):
+        containers = self.container.get_container(self.args.template)
+        #By now only support "Pulsar" and "overc" Linux rollback
+        DIST = "Pulsar overc"
+        for cn in containers:
+            if self.container.is_active(cn, self.args.template):
+                for dist in DIST.split():
+                    if dist in self.container.get_issue(cn, self.args.template).split():
+                        print "Rollback container %s" % cn
+                        self._container_rollback(cn, None, self.args.template, True)
+                        if self.retval is not 0:
+                            print "*** Failed to rollback container %s" % cn
+                            print "*** Abort the system rollback action"
+                            sys.exit(self.retval)
+
+        self.host_rollback()
+                        
     def _need_upgrade(self):
         self.host_update()
         if self.host_newer() == 0 or self.args.force:
@@ -116,10 +137,10 @@ class Overc(object):
             os.system('reboot')
         
     def container_rollback(self):
-        self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template)
+        self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template, False)
         sys.exit(self.retval)
-    def _container_rollback(self, container, snapshot, template):
-        self.retval = self.container.rollback(container, snapshot, template)
+    def _container_rollback(self, container, snapshot, template, force):
+        self.retval = self.container.rollback(container, snapshot, template, force)
         self.message = self.container.message
 
     def container_list(self):
