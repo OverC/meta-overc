@@ -4,9 +4,3 @@ Name=br-int
 [Network]
 Address=192.168.0.2/24
 Gateway=192.168.0.1
-DHCPServer=yes
-
-[DHCPServer]
-PoolOffset=100
-PoolSize=100
-

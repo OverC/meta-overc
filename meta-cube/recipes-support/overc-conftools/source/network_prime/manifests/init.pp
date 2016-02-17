@@ -2,6 +2,7 @@ class network_prime
 (
   $container = $network_prime::container,
   $network_device = $network_prime::network_device,
+  $network_offsets = $network_prime::network_offsets,
 ) {
   # Let networkd bring up the physical interface - network-prime container
   file { '20-br-ext-phys.network':
@@ -92,6 +93,40 @@ class network_prime
     path => "/var/lib/lxc/$container/rootfs/etc/sysctl.conf",
     match => '.*net.ipv4.ip_forward=[01]',
     line => 'net.ipv4.ip_forward=1',
+  }
+
+  # Set container network offset and gateway. Containers not
+  # found in $network_offset_map should be setup for DHCP.
+  # This expects 20-wired.network to exists and have 'DHCP=' specified.
+  define set_network_offset {
+    $offset = split($name, ',')
+    file_line { "${offset[0]}.offset":
+      path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
+      match => '^DHCP=.*',
+      line => "Address=192.168.0.${offset[1]}/24",
+    }
+    file_line { "${offset[0]}.gateway":
+      path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
+      line => 'Gateway=192.168.0.1',
+    }
+  }
+  set_network_offset { $network_offsets: }
+
+  # Setup dnsmasq on -essential
+  file_line { 'dnsmasq-interface':
+    path => '/etc/dnsmasq.conf',
+    line => 'interface=br-int',
+    before => File_line['dnsmasq-range-config'],
+  }
+  file_line { 'dnsmasq-range-config':
+    path => '/etc/dnsmasq.conf',
+    match => '^dhcp-range=*',
+    line => 'dhcp-range=192.168.0.100,192.168.0.200,2h',
+    before => File_Line['dnsmasq-set-gateway'],
+  }
+  file_line { 'dnsmasq-set-gateway':
+    path => '/etc/dnsmasq.conf',
+    line => 'dhcp-option=option:router,192.168.0.1',
   }
 
   # Disable configuration of the network prime on subsequent boots

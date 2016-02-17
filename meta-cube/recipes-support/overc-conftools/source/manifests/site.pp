@@ -3,6 +3,11 @@
 $network_prime_container = "domE"
 $network_prime_device = "enp0s3"
 
+# network_prime_container will have an offset of 1
+# -essential will always have an offset of 2
+#$network_offsets = ['dom0,3','cube-server,4']
+$network_offsets = []
+
 # Setup the Network Prime container. Enabled during first
 # boot uncomment to enable during the _next_ boot.
 $configure_network_prime = true
@@ -11,7 +16,10 @@ if $configure_network_prime == true {
   class { '::network_prime':
     container => "$network_prime_container",
     network_device => "$network_prime_device",
+    network_offsets => $network_offsets,
   }
+  # Used to ensure networking 'restart' happens after configuration.
+  $networking_require = [ Class["::network_prime"] ]
 }
 
 # The overc-conftools service runs after the network.target
@@ -19,9 +27,9 @@ if $configure_network_prime == true {
 # systemd-networkd to ensure these changes take effect.
 exec { 'restart-networking':
   command => '/bin/systemctl restart systemd-networkd',
+  before => Exec['restart-dnsmasq'],
+  require => $networking_require,
 }
-
-# Start dnsmasq to hand out IP addresses on the internal net
-#exec { 'start-dnsmasq':
-#  command => '/usb/bin/dnsmasq --interface=br-int --except-interface=lo --dhcp-range=192.168.0.100,192.168.0.200',
-#}
+exec { 'restart-dnsmasq':
+  command => '/bin/systemctl restart dnsmasq',
+}
