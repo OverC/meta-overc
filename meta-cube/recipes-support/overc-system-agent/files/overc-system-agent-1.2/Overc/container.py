@@ -141,7 +141,9 @@ class Container(object):
     def get_container(self, template):
         cmd = "cube-cmd"
         p = subprocess.Popen([cmd,'lxc-ls'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cn=p.stdout.readline() #abandon the first line
+        cn=p.stdout.readline()
+        while p.stdout.readline(): #drain out of the pipe
+            pass
 
         return cn.split()
 
