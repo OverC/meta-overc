@@ -44,7 +44,7 @@ python package_name_hook_append() {
         #are not provded by other rpms.
         #
         if pkg.endswith("-dev"):
-            newpkg = d.getVar('PKG_' + pkg)
+            newpkg = d.getVar('PKG_' + pkg, True)
             #
             #Some packages will rewrite their package names by
             #changing PKG. Here also add a rprovides for this new 
