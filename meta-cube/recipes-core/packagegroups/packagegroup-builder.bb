@@ -203,6 +203,5 @@ RDEPENDS_packagegroup-builder-graphics = "\
     libsdl \
     libsdl-dev \
     libx11-dev \
-    python-pygtk \
     gtk-theme-clearlooks \
     "
