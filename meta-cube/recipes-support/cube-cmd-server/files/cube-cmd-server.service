@@ -7,6 +7,7 @@ Type=simple
 ExecStart=/sbin/cube-cmd-server -l /var/log/cube-cmd-server.log
 ExecStop=/bin/true
 RemainAfterExit=yes
+Restart=on-success
 
 [Install]
 WantedBy=multi-user.target
