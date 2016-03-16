@@ -31,6 +31,22 @@ commands (and options):
 
        <name>: name of the container to be stoped
 
+ ${0##*/} add [-n <name>] <source tar.bz2>
+
+    add a container to the platform. Once added, the container is monitored, but
+    not started. Use "cube-ctl start" to launch a container after adding it.
+
+       -n <name>: name of the container once added to the system. If this is
+                  not supplied, the container source tarball is used to generate
+                  a name.
+
+       <source>: path to the container source (tar.bz2)
+
+ ${0##*/} del <name>
+
+    remove a container from the system. Once this completes, the container is
+    stopped and purged from the fileystem.
+
  ${0##*/} status
  ${0##*/} list
 
@@ -84,7 +100,20 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	--*)
-	    dashed="${dashed} $1"
+	    # if the next argument is dashed, we just add $1 to our collection
+	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
+	    # to the --dashed option, and we grab it as well. Don't try and mix
+	    # dashed and non-dashed, since we'll grab them!
+	    case $2 in
+		--*)
+		    dashed="${dashed} $1"
+		    ;;
+		*)
+		    # sneak a : in between, so we can split it later
+		    dashed="${dashed} $1:$2"
+		    shift
+		    ;;
+	    esac
 	    ;;
 	*:*)
 	    # once we see something of the format <foo>:<var>, we are done processing,
@@ -100,15 +129,20 @@ while [ $# -gt 0 ]; do
 done
 
 dom0ctl="/opt/dom0-contctl/dom0_contctl"
+overc_cctl="/opt/overc-installer/overc-cctl"
 
-# returns 1 if we are container, 0 otherwise                                                                                                                                $
+if [ -f "${dom0ctl}" ]; then
+    i_am_dom0=t
+fi
+
+# returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    # the 3rd field is the hierarchy. If we are the host, the hierarchy                                                                                                     $
-    # is always "/" or "/init.scope". Otherwise, we are a container.                                                                                                        $
+    # the 3rd field is the hierarchy. If we are the host, the hierarchy
+    # is always "/" or "/init.scope". Otherwise, we are a container.
     local archy=`cat /proc/1/cgroup | cut -d: -f3 | head -1`
     if [ "${archy}" = "/" ] || [ "${archy}" = "/init.scope" ]; then
-        return 0
+	return 0
     fi
 
     return 1
@@ -151,6 +185,63 @@ if [ $? -eq 0 ]; then
 fi
 
 case "${cmd}" in
+    add)
+	check_required ${overc_cctl}
+
+	# the first non dashed argument will be the container source
+	container_source=${cmd_options_non_dashed[1]}
+
+	for o in ${dashed}; do
+	    case ${o} in
+		-n*)
+		    container_name=`echo $o | cut -d: -f2`
+		    ;;
+	    esac
+	done
+
+	# if no name was provided, we just generate one from the source
+	if [ -z "${container_name}" ]; then
+	    filename=$(basename "$container_source")
+	    extension="${filename##*.}"
+	    filename="${filename%%.*}"
+	    container_name="`cubename ${filename}`"
+	fi
+
+	${overc_cctl} add -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
+
+	# now we need to restart the command server, so the new container can be monitored
+	# echo "exit" /tmp/container/self/cmd-pipe"
+	systemctl stop cube-cmd-server
+	systemctl start cube-cmd-server
+	;;
+    del|delete|remove)
+	check_required ${overc_cctl}
+	check_required ${dom0ctl}
+
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+
+	if [ -n "${i_am_dom0}" ]; then
+	    containers="`cube-cmd lxc-ls`"
+	fi
+
+	if [ -n "${containers}" ]; then
+	    echo ${containers} | grep -q -w ${container_name}
+	    if [ $? -ne 0 ]; then
+		echo "[ERROR] Container ${container_name} not found, cannot remove."
+		echo -n "Valid containers are: "
+		echo ${containers}
+		exit 1
+	    fi
+	fi
+
+	echo "[INFO] stopping container ${container_name}"
+	${dom0ctl} stop -n ${container_name}
+
+	# now nuke it
+	echo "[INFO] removing container ${container_name}"
+	${overc_cctl} delete -n ${container_name}
+	;;
     start)
 	check_required ${dom0ctl}
 

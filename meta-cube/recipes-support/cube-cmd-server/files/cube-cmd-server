@@ -171,6 +171,9 @@ function do_command()
     shift
     local command=$@
 
+    # if the command is not in a valid set of root commands, we switch user
+    # to something unprivileged
+
     # We run this within socat to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost.
@@ -301,6 +304,10 @@ else
     input_stream=`setup_listening_mechanism fifo ${monitor_container}`
     requestor="${monitor_container}"
 fi
+
+mkdir -p "/tmp/container/self/"
+m=`setup_listening_mechanism fifo self /tmp/container/self/`
+input_stream="$input_stream $m"
 
 # create a single pipe that we can read for all commands
 consolidated_pipe="/tmp/consolidated_pipe"
@@ -455,6 +462,25 @@ while (true) do
 		    output_and_log_msg "[INFO]: requestor ($requestor) is not allowed to issue reboot"
 		fi
 		;;
+	    restart|exit)
+	        # restart the cmd-server itself
+		if [ -z "${requestor}" ]; then
+		    output_and_log_msg "[ERROR]: cmd-server-restart command requires a requestor hostname"
+		fi
+
+		echo ${commands_restart_acl[@]} | grep -q ${requestor}
+		if [ $? -eq 0 ]; then
+		    output_and_log_msg "[INFO]: issuing cmd-server-restart for $requestor"
+		    # dump a message and then flee
+		    if [ -p "/opt/container/${requestor}/cmd-output" ]; then
+			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${requestor}/cmd-output "exec:echo cmd-server restarting,pty,setsid,stderr,ctty"
+		    fi
+		    # clean exit, so systemd will restart us
+		    break
+		fi
+		;;
 	esac
 
 done < <(tail -q -f ${consolidated_pipe})
+
+output_and_log_msg "[INFO]: cube-cmd-server exiting (cleanly)"

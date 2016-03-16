@@ -2,8 +2,13 @@
 
 function setup_cmd_pipe() {
 	local target_container=$1
+	local target_path=$2
 
-	CMD_PIPE="/opt/container/${target_container}/cmd-pipe"
+	if [ -z "${target_path}" ]; then
+	    CMD_PIPE="/opt/container/${target_container}/cmd-pipe"
+	else
+	    CMD_PIPE="${target_path}/cmd-pipe"
+	fi
 
 	rm -f ${CMD_PIPE}
 
@@ -18,12 +23,13 @@ function setup_cmd_pipe() {
 function setup_listening_mechanism() {
 	local type=$1
 	local target_container=$2
+	local target_path=$3
 	local listening_mechanism_input_stream
 
 	# Currently we only support a named pipe aka fifo
 	case "${type}" in
 	fifo)
-		setup_cmd_pipe ${target_container}
+		setup_cmd_pipe ${target_container} ${target_path}
 		listening_mechanism_input_stream=${CMD_PIPE}
 		;;
 	*)
