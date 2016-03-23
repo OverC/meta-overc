@@ -29,7 +29,9 @@ inherit autotools-brokensep
 EXTRA_OECONF = "--with-curses=${STAGING_LIBDIR}/.. \
 	        --enable-pop \
                 --enable-imap \
-                --with-gnutls"
+                --with-gnutls \
+                --with-mailpath=${localstatedir}/spool/mail\
+                "
 
 # TODO: --enable-gpgme: needs m4 macro converted to pkg-config
                
