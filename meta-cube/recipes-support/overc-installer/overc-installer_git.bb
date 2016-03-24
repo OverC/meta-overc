@@ -4,7 +4,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
 SRCREV = "${AUTOREV}"
 SRC_URI = " \
-    git://github.com/WindRiver-OpenSourceLabs/overc-installer.git \
+    git://github.com/OverC/overc-installer.git \
     file://git/COPYING \
 "
 

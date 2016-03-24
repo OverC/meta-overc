@@ -6,7 +6,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 
 SRCREV = "${AUTOREV}"
 SRC_URI = " \
-    git://github.com/WindRiver-OpenSourceLabs/overc-installer.git;branch=master \
+    git://github.com/OverC/overc-installer.git;branch=master \
     file://source/cube-cmd \
     file://source/cube-ctl \
     file://source/cube \
