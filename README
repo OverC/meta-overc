@@ -34,9 +34,11 @@ layers: meta-oe
         meta-networking
         meta-filesystems
         meta-python
+        meta-perl
         meta-gnome
         meta-xfce
         meta-multimedia
+        meta-security
 
 URI: git://git.yoctoproject.org/meta-virtualization
 branch: master
@@ -59,6 +61,11 @@ revision: HEAD
 prio: default
 
 URI: git://github.com/errordeveloper/oe-meta-go.git
+branch: master
+revision: HEAD
+prio: default
+
+URI: git://git.yoctoproject.org/meta-security
 branch: master
 revision: HEAD
 prio: default
