@@ -1,7 +1,7 @@
 SUMMARY = "Go clients for various APIs at DataDog."
 HOMEPAGE = "https://github.com/DataDog/datadog-go"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=3f7765c3d4f58e1f84c4313cecf0f5bd"
+LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=229fc88a2f846fc676e9edeafb0e4011"
 
 PKG_NAME = "github.com/DataDog/datadog-go"
 SRC_URI = "git://${PKG_NAME}.git"
