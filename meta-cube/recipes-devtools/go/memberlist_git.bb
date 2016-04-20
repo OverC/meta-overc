@@ -3,11 +3,11 @@ HOMEPAGE = "https://github.com/hashicorp/memberlist"
 LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
-DEPENDS = "go-metrics go-msgpack"
+DEPENDS = "go-metrics go-msgpack hashicorp-go-multierror"
 
 PKG_NAME = "github.com/hashicorp/memberlist"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "c0dd21a51b7f6af4ecb9e1c954bc83b2aa0fd2d8"
+SRCREV = "88ac4de0d1a0ca6def284b571342db3b777a4c37"
 
 S = "${WORKDIR}/git"
 

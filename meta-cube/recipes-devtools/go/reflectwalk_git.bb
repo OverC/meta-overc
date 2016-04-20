@@ -1,13 +1,11 @@
-SUMMARY = "A go based metrics library"
-HOMEPAGE = "https://github.com/armon/go-metrics"
+SUMMARY = "reflectwalk is a Go library for "walking" complex structures, similar to walking a filesystem."
+HOMEPAGE = "https://github.com/mitchellh/reflectwalk"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=d2d77030c0183e3d1e66d26dc1f243be"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=3f7765c3d4f58e1f84c4313cecf0f5bd"
 
-PKG_NAME = "github.com/armon/go-metrics"
+PKG_NAME = "github.com/mitchellh/reflectwalk"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "f303b03b91d770a11a39677f1d3b55da4002bbcb"
-
-DEPENDS += "datadog-go"
+SRCREV = "eecf4c70c626c7cfbb95c90195bc34d386c74ac6"
 
 S = "${WORKDIR}/git"
 
@@ -16,9 +14,9 @@ do_install() {
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
-SYSROOT_PREPROCESS_FUNCS += "go_metrics_sysroot_preprocess"
+SYSROOT_PREPROCESS_FUNCS += "reflectwalk_sysroot_preprocess"
 
-go_metrics_sysroot_preprocess () {
+reflectwalk_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }

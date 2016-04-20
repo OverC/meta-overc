@@ -18,7 +18,7 @@ DEPENDS += "go-cross \
 
 PKG_NAME = "github.com/hashicorp/serf"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "5e07170d82d73e20b832e238d71caa531b6d8a2c"
+SRCREV = "44945ab711fb48f1cee51d248568487b938c178d"
 
 S = "${WORKDIR}/git"
 

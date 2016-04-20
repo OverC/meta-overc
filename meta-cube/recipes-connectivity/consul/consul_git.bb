@@ -7,7 +7,11 @@ DEPENDS += "circbuf \
     consul-migrate \
     go-checkpoint \
     go-msgpack \
+    go-metrics \
+    go-bindata \
+    go-sys \
     go-syslog \
+    dockerclient \
     hcl \
     logutils \
     memberlist \
@@ -20,20 +24,33 @@ DEPENDS += "circbuf \
     dns \
     cli \
     mapstructure \
+    copystructure \
+    reflectwalk \
     columnize \
     go-radix \
     golang-lru \
+    hashicorp-scada-client \
+    hashicorp-hil \
+    hashicorp-hcl \
+    hashicorp-go-cleanhttp \
+    hashicorp-go-memdb \
+    hashicorp-go-reap \
+    hashicorp-go-uuid \
     "
 
 PKG_NAME = "github.com/hashicorp/consul"
 SRC_URI = "git://${PKG_NAME}.git \
            file://consul.service \
+           file://0001-prepared_query-make-compatible-with-go1.5.patch \
           "
-SRCREV = "5aa90455ce78d4d41578bafc86305e6e6b28d7d2"
+SRCREV = "f97afda8e15046b41d951bf3b4220372c45df7ab"
 
 CCACHE = ""
 
 inherit systemd golang
+
+ERROR_QA_remove = "ldflags"
+WARN_QA_append = " ldflags"
 
 SYSTEMD_SERVICE_${PN} = "consul.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"

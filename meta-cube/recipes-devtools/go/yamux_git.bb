@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=2dd1a9ecf92cd5617f128808f9b85b44"
 
 PKG_NAME = "github.com/hashicorp/yamux"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "b2e55852ddaf823a85c67f798080eb7d08acd71d"
+SRCREV = "c8a8a076e0858546ae6e2ee189d94e78b9b881ce"
 
 S = "${WORKDIR}/git"
 

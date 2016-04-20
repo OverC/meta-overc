@@ -1,11 +1,11 @@
-SUMMARY = "A fixed-size thread safe LRU cache in go"
-HOMEPAGE = "https://github.com/hashicorp/golang-lru"
-LICENSE = "MPL-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=f27a50d2e878867827842f2c60e30bfc"
+SUMMARY = "Go (golang) library for deep copying values in Go."
+HOMEPAGE = "https://github.com/mitchellh/copystructure"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=3f7765c3d4f58e1f84c4313cecf0f5bd"
 
-PKG_NAME = "github.com/hashicorp/golang-lru"
+PKG_NAME = "github.com/mitchellh/copystructure"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4"
+SRCREV = "80adcec1955ee4e97af357c30dee61aadcc02c10"
 
 S = "${WORKDIR}/git"
 
@@ -14,9 +14,9 @@ do_install() {
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
-SYSROOT_PREPROCESS_FUNCS += "golang_lru_sysroot_preprocess"
+SYSROOT_PREPROCESS_FUNCS += "copystructure_sysroot_preprocess"
 
-golang_lru_sysroot_preprocess () {
+copystructure_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }

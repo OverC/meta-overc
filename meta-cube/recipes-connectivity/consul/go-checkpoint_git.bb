@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
 PKG_NAME = "github.com/hashicorp/go-checkpoint"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "88326f6851319068e7b34981032128c0b1a6524d"
+SRCREV = "e4b2dc34c0f698ee04750bf2035d8b9384233e1b"
 
 S = "${WORKDIR}/git"
 

@@ -1,11 +1,13 @@
-SUMMARY = "A fixed-size thread safe LRU cache in go"
-HOMEPAGE = "https://github.com/hashicorp/golang-lru"
-LICENSE = "MPL-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=f27a50d2e878867827842f2c60e30bfc"
+SUMMARY = "HIL is a small embedded language for string interpolations."
+HOMEPAGE = "https://github.com/hashicorp/hil"
+LICENSE = "BSD"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
 
-PKG_NAME = "github.com/hashicorp/golang-lru"
+DEPENDS += "go-net"
+
+PKG_NAME = "github.com/hashicorp/hil"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4"
+SRCREV = "4cc4a6ebbc3a6ecd7d8f1e6fcd75cf52096e6271"
 
 S = "${WORKDIR}/git"
 
@@ -14,9 +16,9 @@ do_install() {
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
-SYSROOT_PREPROCESS_FUNCS += "golang_lru_sysroot_preprocess"
+SYSROOT_PREPROCESS_FUNCS += "hashicorp_hil_sysroot_preprocess"
 
-golang_lru_sysroot_preprocess () {
+hashicorp_hil_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }
