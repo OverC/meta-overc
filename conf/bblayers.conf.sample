@@ -14,11 +14,13 @@ BBLAYERS ?= " \
   $HOME/poky/meta-openembedded/meta-oe \
   $HOME/poky/meta-openembedded/meta-gnome \
   $HOME/poky/meta-openembedded/meta-xfce \
+  $HOME/poky/meta-openembedded/meta-perl \
   $HOME/poky/meta-virtualization \
   $HOME/poky/meta-openembedded/meta-python \
   $HOME/poky/meta-openembedded/meta-networking \
   $HOME/poky/meta-openembedded/meta-multimedia \
   $HOME/poky/meta-cloud-services \
+  $HOME/poky/meta-security \
   $HOME/poky/meta-qt4 \
   $HOME/poky/oe-meta-go \
   $HOME/poky/meta-openembedded/meta-filesystems \

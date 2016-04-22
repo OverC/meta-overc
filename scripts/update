@@ -2,6 +2,7 @@
 
 LAYERS="meta-openembedded \
 	meta-virtualization \
+	meta-security \
 	meta-overc \
 	meta-browser \
 	oe-meta-go \
