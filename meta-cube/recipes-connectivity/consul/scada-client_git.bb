@@ -1,13 +1,11 @@
-SUMMARY = "Golang client for the HashiCorp SCADA service"
+SUMMARY = "Implements a Golang client to the HashiCorp SCADA system"
 HOMEPAGE = "https://github.com/hashicorp/scada-client"
-LICENSE = "MPL-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea"
-
-DEPENDS = "net-rpc-msgpackrpc yamux go-metrics"
+LICENSE = "BSD"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
 
 PKG_NAME = "github.com/hashicorp/scada-client"
 SRC_URI = "git://${PKG_NAME}.git"
-SRCREV = "c26580cfe35393f6f4bf1b9ba55e6afe33176bae"
+SRCREV = "84989fd23ad4cc0e7ad44d6a871fd793eb9beb0a"
 
 S = "${WORKDIR}/git"
 
@@ -16,9 +14,9 @@ do_install() {
     cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
-SYSROOT_PREPROCESS_FUNCS += "scada_client_sysroot_preprocess"
+SYSROOT_PREPROCESS_FUNCS += "hashicorp_scada_sysroot_preprocess"
 
-scada_client_sysroot_preprocess () {
+hashicorp_scada_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }

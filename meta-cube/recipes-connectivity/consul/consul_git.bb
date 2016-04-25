@@ -29,7 +29,6 @@ DEPENDS += "circbuf \
     columnize \
     go-radix \
     golang-lru \
-    hashicorp-scada-client \
     hashicorp-hil \
     hashicorp-hcl \
     hashicorp-go-cleanhttp \
