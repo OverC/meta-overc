@@ -3,7 +3,7 @@ HOMEPAGE = "https://github.com/hashicorp/memberlist"
 LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
-DEPENDS = "go-metrics go-msgpack hashicorp-go-multierror"
+DEPENDS = "go-metrics go-msgpack go-multierror"
 RDEPENDS_${PN} = "bash"
 
 PKG_NAME = "github.com/hashicorp/memberlist"
