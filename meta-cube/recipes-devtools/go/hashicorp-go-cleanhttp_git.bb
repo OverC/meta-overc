@@ -1,7 +1,7 @@
 SUMMARY = "Functions for accessing clean Go http.Client values"
 HOMEPAGE = "https://github.com/hashicorp/go-cleanhttp"
-LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
+LICENSE = "MPLv2"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea"
 
 PKG_NAME = "github.com/hashicorp/go-cleanhttp"
 SRC_URI = "git://${PKG_NAME}.git"

@@ -1,7 +1,7 @@
 SUMMARY = "Go client for the Docker remote API."
 HOMEPAGE = "https://github.com/fsouza/go-dockerclient"
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=3f7765c3d4f58e1f84c4313cecf0f5bd"
+LICENSE = "BSD-2-Clause"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=9687fb4c7ee49afa7b6afd459d1f7169"
 
 PKG_NAME = "github.com/fsouza/go-dockerclient"
 SRC_URI = "git://${PKG_NAME}.git"

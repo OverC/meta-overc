@@ -1,7 +1,7 @@
 SUMMARY = "A Go (golang) package for representing a list of errors as a single error."
 HOMEPAGE = "https://github.com/hashicorp/go-multierror"
-LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
+LICENSE = "MPLv2"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=d44fdeb607e2d2614db9464dbedd4094"
 
 PKG_NAME = "github.com/hashicorp/go-multierror"
 SRC_URI = "git://${PKG_NAME}.git"

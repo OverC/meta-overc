@@ -1,7 +1,7 @@
 SUMMARY = "Serve embedded files from jteeuwen/go-bindata with net/http."
 HOMEPAGE = "https://github.com/elazarl/go-bindata-assetfs"
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=3f7765c3d4f58e1f84c4313cecf0f5bd"
+LICENSE = "BSD-2-Clause"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=722abb44e97dc8f098516e09e5564a6a"
 
 PKG_NAME = "github.com/elazarl/go-bindata-assetfs"
 SRC_URI = "git://${PKG_NAME}.git"
