@@ -1,7 +1,7 @@
 SUMMARY = "HCL (HashiCorp Configuration Language) is a configuration language built by HashiCorp"
 HOMEPAGE = "https://github.com/hashicorp/hcl"
-LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
+LICENSE = "MPLv2"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
 PKG_NAME = "github.com/hashicorp/hcl"
 SRC_URI = "git://${PKG_NAME}.git"
