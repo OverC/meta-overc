@@ -12,7 +12,6 @@ DEPENDS += "circbuf \
     go-sys \
     go-syslog \
     dockerclient \
-    hcl \
     logutils \
     memberlist \
     raft \
