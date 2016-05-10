@@ -2,5 +2,6 @@
 Name=br-ext
 
 [Network]
+IPForward=ipv4
 DHCP=ipv4
 
