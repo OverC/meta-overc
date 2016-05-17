@@ -52,22 +52,25 @@ class Overc(object):
             self.command = None
 
     def system_upgrade(self):
-        containers = self.container.get_container(self.args.template)
+        self._system_upgrade(self.args.template, self.args.reboot, self.args.force)
+
+    def _system_upgrade(self, template, reboot, force):
+        containers = self.container.get_container(template)
 	#By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
         for cn in containers:
-            if self.container.is_active(cn, self.args.template):
+            if self.container.is_active(cn, template):
 	        for dist in DIST.split():
-	            if dist in self.container.get_issue(cn, self.args.template).split():
+	            if dist in self.container.get_issue(cn, template).split():
                         print "Updating container %s" % cn
-                        self._container_upgrade(cn, self.args.template) #by now only rpm upgrade support
+                        self._container_upgrade(cn, template) #by now only rpm upgrade support
                         if self.retval is not 0:
                             print "*** Failed to upgrade container %s" % cn
                             print "*** Abort the system upgrade action"
                             sys.exit(self.retval)
                         break
 
-        self.host_upgrade()
+        self._host_upgrade(reboot, force)
 
     def system_rollback(self):
         containers = self.container.get_container(self.args.template)
@@ -88,7 +91,7 @@ class Overc(object):
                         
     def _need_upgrade(self):
         self.host_update()
-        if self.host_newer() == 0 or self.args.force:
+        if self.host_newer() == 0:
             return True
         else:
             return False
@@ -107,22 +110,22 @@ class Overc(object):
         return rc
 
     def host_upgrade(self):
-        self._host_upgrade()
-
-        if self.args.reboot:
-            self.message += "\nrebooting..."
-            print self.message
-            os.system('reboot')
-
+        self._host_upgrade(self.args.reboot, self.args.force)
         print self.message
 
-    def _host_upgrade(self):
-        if self._need_upgrade():
+    def _host_upgrade(self, reboot, force):
+        if self._need_upgrade() or force:
             self.agency.do_upgrade()
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
-       
+	    return 
+
+	if reboot:
+	    self.message += "\nrebooting..."
+	    print self.message
+	    os.system('reboot')
+	         
     def host_rollback(self):
         if self.bakup_mode:
             self.message = "Error: You are running in the backup mode, cannot do rollback!"

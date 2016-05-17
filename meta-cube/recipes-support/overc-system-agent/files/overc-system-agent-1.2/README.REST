@@ -17,11 +17,20 @@ Usage (Client)
 ==============================================================
 host commands, please see README for more information.
 
-Rollback the system:
+Upgrade the whole system:
+http://0.0.0.0:<port>/system/upgrade?reboot=[True|False]&force=[True|False]'
+
+    The system is conditionally rebooted after performing an
+    upgrade by the reboot parameter.
+
+Rollback the whole system:
+http://0.0.0.0:<port>/system/rollback
+
+Rollback the essential system:
 http://0.0.0.0:<port>/host/rollback
 
-Upgrade the system:
-http://0.0.0.0:<port>/host/upgrade?reboot=[True|False]'
+Upgrade the essential system:
+http://0.0.0.0:<port>/host/upgrade?reboot=[True|False]&force=[True|False]'
 
     The system is conditionally rebooted after performing an
     upgrade by the reboot parameter.

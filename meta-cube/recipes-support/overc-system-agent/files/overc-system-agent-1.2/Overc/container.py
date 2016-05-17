@@ -132,20 +132,25 @@ class Container(object):
 
     def get_issue(self, name, template):
         cmd = "cube-cmd"
-        p = subprocess.Popen([cmd,'lxc-attach', '-n', name, 'cat', '/etc/issue'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        issue_s = p.stdout.readline()
-        while p.stdout.readline(): #drain out of the pipe
-            pass
-        return issue_s
+        loop = 5 #cube-cmd is not stable, and some times it will responde
+                 #noting, thus we loop several times to fetch the issue string.
+        stdout = ''
+        while loop > 0:
+            p = subprocess.Popen([cmd,'lxc-attach', '-n', name, 'cat', '/etc/issue'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            if stdout.strip() != '':
+                break
+            loop = loop - 1
+        
+        if stdout == '':
+            print "Cannot get container %s issue string" % name
+        return stdout
 
     def get_container(self, template):
-        cmd = "cube-cmd"
-        p = subprocess.Popen([cmd,'lxc-ls'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cn=p.stdout.readline()
-        while p.stdout.readline(): #drain out of the pipe
-            pass
-
-        return cn.split()
+        cmd = "cube-cmd lxc-ls"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout,stderr = p.communicate()
+        return stdout.split()
 
     def is_active(self, cn, template):
         args = "-A -n %s" % cn

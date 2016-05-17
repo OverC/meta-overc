@@ -15,6 +15,34 @@ def json_msg(s):
     resp = jsonify(message)
     return resp
 
+@app.route('/system/rollback')
+def system_rollback():
+    overc=Overc.Overc()
+    print "System will rollback and reboot!"
+    overc.system_rollback()
+
+@app.route('/system/upgrade')
+def system_upgrade():
+    usage = 'Usage: ' + request.url_root + 'system/upgrade?template=[dom0]&reboot=[True|False]&force=[True|False]'
+    overc=Overc.Overc()
+    reboot_s = request.args.get('reboot')
+    force_s = request.args.get('force')
+    template = request.args.get('template')
+    reboot=False
+    force=False
+    
+    if template != 'dom0':
+        usage += "\n The only supported template is 'dom0'"
+        return json_msg(usage)
+
+    if reboot_s == "True":
+        print "do reboot"
+    if force_s == "True":
+        print "force upgrade"
+        force=True
+    overc._system_upgrade(template, reboot, force)
+    return json_msg(overc.message)
+
 @app.route('/host/rollback')
 def host_rollback():
     overc=Overc.Overc()
@@ -23,19 +51,21 @@ def host_rollback():
 
 @app.route('/host/upgrade')
 def host_upgrade():
-    usage = 'Usage: ' + request.url_root + 'host/upgrade?reboot=[True|False]'
+    usage = 'Usage: ' + request.url_root + 'host/upgrade?reboot=[True|False]&force=[True|False]'
 
     overc=Overc.Overc()
-    tmp = request.args.get('reboot')
-    if tmp == "True":
+    reboot_s = request.args.get('reboot')
+    force_s = request.args.get('force')
+    reboot=False
+    force=False
+    if reboot_s == "True":
         print "do reboot"
         reboot = True
-    elif tmp == "False":
-        print "do not reboot"
-        reboot = False
-    else:
-        return json_msg(usage)
-    overc._host_upgrade(reboot)
+    if force_s == "True":
+        print "do force to upgrade"
+	force=True
+
+    overc._host_upgrade(reboot, force)
     return json_msg(overc.message)
 
 @app.route('/host/update')
