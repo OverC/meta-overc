@@ -61,6 +61,9 @@ if __name__ == '__main__':
 	s_upgradep.add_argument("-r", "--reboot", dest="reboot",
 				action="store_true",
 				help=_("if an upgrade is available, reboot after deployment is complete"))
+	s_upgradep.add_argument("-f", "--force", dest="force",
+	                        action="store_true",
+			        help=_("do system backup and upgrade even the system is up to date"))
 
         s_roolback = system_subparse.add_parser("rollback", help=_("switch to the top of the history rollback list, including host and containers"))
         s_roolback.set_defaults(func=overc.system_rollback)
