@@ -82,9 +82,6 @@ if __name__ == '__main__':
         upgradep.add_argument("-r", "--reboot", dest="reboot",
                                action="store_true",
                                help=_("if an upgrade is available, reboot after deployment is complete"))
-        upgradep.add_argument("-y", "--yes", dest="yes",
-                               action="store_true",
-                               help=_("Do not ask for confirmation"))
 
         upgradep.add_argument("-f", "--force", dest="force",
                                action="store_true",
