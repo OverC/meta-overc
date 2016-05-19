@@ -3,8 +3,6 @@ HOMEPAGE = "https://github.com/hashicorp/hil"
 LICENSE = "MPLv2"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d44fdeb607e2d2614db9464dbedd4094"
 
-DEPENDS += "go-net"
-
 PKG_NAME = "github.com/hashicorp/hil"
 SRC_URI = "git://${PKG_NAME}.git"
 SRCREV = "4cc4a6ebbc3a6ecd7d8f1e6fcd75cf52096e6271"
