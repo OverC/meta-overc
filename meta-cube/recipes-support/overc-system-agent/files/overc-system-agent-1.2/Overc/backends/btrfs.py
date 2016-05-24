@@ -153,7 +153,7 @@ class Btrfs(Utils):
                 os.system('cp -f %s %s' % (upgrade_kernel, self.kernel))
 
             #setup default subvolume
-            upgrade_subvolid = self._get_btrfs_value('/sysroot/%s' % upgrade_rootfs[self.rootfs], 'Object ID')
+            upgrade_subvolid = self._get_btrfs_value('/sysroot/%s' % upgrade_rootfs[self.rootfs], 'Subvolume ID')
             argv = 'subvolume set-default %s /sysroot' % upgrade_subvolid
             self._btrfs(argv)
         else:
@@ -196,7 +196,7 @@ class Btrfs(Utils):
             os.system('cp -f %s %s' % (rollback_kernel, self.kernel))
 
         #setup default subvolume
-        rollback_subvolid = self._get_btrfs_value('/sysroot/%s' % rollback_rootfs[self.rootfs], 'Object ID')
+        rollback_subvolid = self._get_btrfs_value('/sysroot/%s' % rollback_rootfs[self.rootfs], 'Subvolume ID')
         argv = 'subvolume set-default %s /sysroot' % rollback_subvolid
         self._btrfs(argv)
 

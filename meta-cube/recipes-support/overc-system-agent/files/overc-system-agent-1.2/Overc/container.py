@@ -132,9 +132,9 @@ class Container(object):
 
     def get_issue(self, name, template):
         cmd = "cube-cmd"
-        loop = 5 #cube-cmd is not stable, and some times it will responde
-                 #noting, thus we loop several times to fetch the issue string.
         stdout = ''
+        loop = 100 #cube-cmd is not stable, and some times it will responde
+                   #noting, thus we loop a large times to fetch the issue string. 
         while loop > 0:
             p = subprocess.Popen([cmd,'lxc-attach', '-n', name, 'cat', '/etc/issue'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
