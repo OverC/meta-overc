@@ -1,9 +1,14 @@
 import sys, os
 import subprocess
 import select
+import random
+import string
 
 ROOTMOUNT = "/essential"
+SYSROOT = "/sysroot"
 HOSTPID = "/host/proc/1"
+FACTORY_SNAPSHOT = ".factory"
+CONTAINER_MOUNT = "/var/lib/lxc"
 
 class Utils(object):
     def __init__(self):
@@ -38,6 +43,9 @@ class Utils(object):
         self.message = process.message
         return retval
 
+    def _random_str(self, size=6, chars=string.ascii_uppercase + string.digits):
+        return ''.join(random.choice(chars) for _ in range(size))
+        
 class Process(object):
     def __init__(self):
         self.stdout = ''

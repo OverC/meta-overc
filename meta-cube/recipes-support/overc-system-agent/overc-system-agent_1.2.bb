@@ -6,8 +6,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 SRC_URI = " \
     file://${BPN}-${PV}/* \
 "
+inherit distutils systemd
 
-inherit distutils
+SYSTEMD_PACKAGES = "${PN}"
+SYSTEMD_SERVICE_${PN} = "factory-reset.service"
 
 RDEPENDS_${PN} = "\
 	btrfs-tools \
@@ -48,6 +50,14 @@ do_install() {
 
 	install -d ${D}/${sysconfdir}/overc/container/
 	install -m755 ${S}/container-scripts/* ${D}/${sysconfdir}/overc/container/
+
+        # systemd services
+        install -d ${D}${systemd_unitdir}/system
+        install -m 0644 ${S}/factory-reset.service ${D}${systemd_unitdir}/system/
+
 }
 
-FILES_${PN} += "/opt/${BPN} ${sysconfdir}/overc"
+FILES_${PN} += "/opt/${BPN} ${sysconfdir}/overc \
+                ${base_libdir}/systemd \
+	      "
+

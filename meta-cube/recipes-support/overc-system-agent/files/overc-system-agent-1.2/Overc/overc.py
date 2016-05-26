@@ -88,6 +88,18 @@ class Overc(object):
                             sys.exit(self.retval)
 
         self.host_rollback()
+
+    def factory_reset(self):
+        rc = self.agency.factory_reset()
+        if not rc:
+           self.agency.clean_essential()
+           self.agency.clean_container()
+           self.message += self.agency.message
+           print self.message
+        else:
+            self.message += "\nrebooting..."
+            print self.message
+            os.system('reboot')
                         
     def _need_upgrade(self):
         self.host_update()

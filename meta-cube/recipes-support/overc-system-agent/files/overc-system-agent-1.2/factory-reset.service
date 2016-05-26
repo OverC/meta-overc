@@ -1,0 +1,11 @@
+[Unit]
+Description=factory reset post clean up
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/overc-system-agent/factory_clean.py
+ExecStartPost=/bin/systemctl disable factory-reset.service
+
+[Install]
+WantedBy=multi-user.target
