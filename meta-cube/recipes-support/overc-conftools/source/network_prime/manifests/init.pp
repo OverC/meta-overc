@@ -5,6 +5,11 @@ class network_prime
   $network_offsets = $network_prime::network_offsets,
 ) {
 
+  # Static IP address for cube-essential connected to br-int
+  host { 'cube-essential':
+    ip => '192.168.42.2',
+  }
+
   # Let networkd configure br-int - network-prime container
   file { '25-br-int.network':
     path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/25-br-int.network",
