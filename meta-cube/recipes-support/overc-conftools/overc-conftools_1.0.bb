@@ -23,12 +23,9 @@ SRC_URI = " \
     file://source/manifests/site.pp \
     file://source/network_prime/files/20-br-int-virt.network \
     file://source/network_prime/files/25-br-int.network \
-    file://source/network_prime/files/25-br-ext.network \
     file://source/network_prime/files/25-br-int.network.essential \
     file://source/network_prime/files/overc-network-prime.service \
     file://source/network_prime/manifests/init.pp \
-    file://source/network_prime/templates/20-br-ext-phys.network.erb \
-    file://source/network_prime/templates/mac-clone-phys-to-br-ext.erb \
     file://source/network_prime/templates/network_prime.sh.erb \
 "
 
@@ -40,7 +37,7 @@ do_install() {
                    ${D}/${sysconfdir}/puppet/modules/network_prime/manifests/
 
     install -d ${D}/${sysconfdir}/puppet/modules/network_prime/files
-    for file in 25-br-ext.network overc-network-prime.service \
+    for file in overc-network-prime.service \
                 20-br-int-virt.network 25-br-int.network \
 		25-br-int.network.essential; do
         install -m 644 ${WORKDIR}/source/network_prime/files/$file \
@@ -48,8 +45,7 @@ do_install() {
     done
 
     install -d ${D}/${sysconfdir}/puppet/modules/network_prime/templates
-    for template in mac-clone-phys-to-br-ext.erb network_prime.sh.erb \
-                    20-br-ext-phys.network.erb; do
+    for template in network_prime.sh.erb; do
          install -m 644 ${WORKDIR}/source/network_prime/templates/$template \
                    ${D}/${sysconfdir}/puppet/modules/network_prime/templates/
     done

@@ -1,7 +1,7 @@
 [Unit]
 Description=Configure the OverC network-prime
 After=openvswitch-nonetwork.service
-Before=systemd-networkd.service mac-clone-phys-to-br-ext.service
+Before=systemd-networkd.service
 
 [Service]
 Type=oneshot

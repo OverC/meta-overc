@@ -4,17 +4,6 @@ class network_prime
   $network_device = $network_prime::network_device,
   $network_offsets = $network_prime::network_offsets,
 ) {
-  # Let networkd bring up the physical interface - network-prime container
-  file { '20-br-ext-phys.network':
-    path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/20-br-ext-phys.network",
-    content => template('network_prime/20-br-ext-phys.network.erb'),
-  }
-
-  # Let networkd bring up and configure br-ext - network-prime container
-  file { '25-br-ext.network':
-    path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/25-br-ext.network",
-    source => 'puppet:///modules/network_prime/25-br-ext.network',
-  }
 
   # Let networkd configure br-int - network-prime container
   file { '25-br-int.network':
@@ -50,19 +39,6 @@ class network_prime
   file { '20-wired.network.essential':
     path => "/etc/systemd/network/20-wired.network",
     ensure => 'absent',
-  }
-
-  # Service file to clone MAC address from external interface to br-ext.
-  # Copy the service file and create a link to ensure it is 'enabled'
-  file { 'mac-clone-phys-to-br-ext.service':
-    path => "/var/lib/lxc/$container/rootfs/etc/systemd/system/mac-clone-phys-to-br-ext.service",
-    content => template('network_prime/mac-clone-phys-to-br-ext.erb'),
-    before => File['mac-clone-phys-to-br-ext-link'],
-  }
-  file { 'mac-clone-phys-to-br-ext-link':
-    ensure => 'link',
-    target => "../mac-clone-phys-to-br-ext.service",
-    path => "/var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/mac-clone-phys-to-br-ext.service",
   }
 
   # Service file and script to make sure the network-prime is properly
