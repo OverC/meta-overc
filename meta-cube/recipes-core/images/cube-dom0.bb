@@ -37,5 +37,7 @@ IMAGE_FEATURES += "package-management doc-pkgs"
 
 IMAGE_FSTYPES = "tar.bz2"
 
+TARGETNAME ?= "cube-dom0"
+
 inherit core-image
 inherit builder-base

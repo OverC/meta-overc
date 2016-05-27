@@ -32,6 +32,8 @@ IMAGE_FEATURES += "package-management"
 
 IMAGE_FSTYPES = "tar.bz2"
 
+TARGETNAME ?= "cube-essential"
+
 INITRD = "True"
 INITRAMFS_IMAGE = "cube-builder-initramfs"
 # We want it separate, and not bundled with the kernel.
