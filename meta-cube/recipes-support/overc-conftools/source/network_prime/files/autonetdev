@@ -1,0 +1,22 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+config=$DIR/config
+
+grep -q "^overc.network.link = all" $config
+if [ $? != 0 ] ; then
+    exit 0
+fi
+
+linkdevs=`grep "^overc.network.linkdevs =" $config |cut -c 25-`
+
+if [ -z "$linkdevs" ] ; then
+    linkdevs="wl* en* eth*"
+fi
+
+sed -i -e '/^lxc.network.type = phys/d; /^lxc.network.link =/d' $config
+
+for dev in `(cd /sys/class/net && ls -d $linkdevs 2>/dev/null)`; do
+    echo lxc.network.type = phys >> $config
+    echo lxc.network.link = $dev >> $config
+done

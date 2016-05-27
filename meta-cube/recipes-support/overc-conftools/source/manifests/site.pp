@@ -20,6 +20,10 @@ if $configure_network_prime == true {
   }
   # Used to ensure networking 'restart' happens after configuration.
   $networking_require = [ Class["::network_prime"] ]
+  exec { 'lxc-autonetdev':
+    command => "/var/lib/lxc/$network_prime_container/autonetdev",
+    require => $networking_require,
+  }
 }
 
 # The overc-conftools service runs after the network.target

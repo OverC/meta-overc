@@ -46,11 +46,16 @@ class network_prime
     ensure => 'absent',
   }
 
-  # Service file and script to make sure the network-prime is properly
+  # Service files and script to make sure the network-prime is properly
   # configured (OVS, iptables...) on boot.
   file { 'overc-network-prime.service':
     path => "/var/lib/lxc/$container/rootfs/etc/systemd/system/overc-network-prime.service",
     source => 'puppet:///modules/network_prime/overc-network-prime.service',
+    before => File['overc-network-prime.service.link'],
+  }
+  file { 'autonetdev':
+    path => "/var/lib/lxc/$container/autonetdev",
+    source => 'puppet:///modules/network_prime/autonetdev',
     before => File['overc-network-prime.service.link'],
   }
   file { 'overc-network-prime.service.link':
