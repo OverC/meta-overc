@@ -7,7 +7,7 @@ SVR_PORT=12345
 OVERC_DOM0=/etc/overc/container/dom0
 
 # test url for send_image
-url=http://openlinux.windriver.com/overc/images/genericx86-64/cube-domE-genericx86-64.tar.bz2
+url=http://openlinux.windriver.com/overc/images/genericx86-64/cube-desktop-genericx86-64.tar.bz2
 
 count_snapshots() {
 	local container=$1
@@ -47,18 +47,18 @@ echo "REST server started at pid: $svr_pid"
 
 #################################################
 # test status
-# on bootup, dom0, dom1 and domE containers should be active
+# on bootup, dom0, dom1 and cube-desktop containers should be active
 #################################################
 test_container_status dom0 3
 test_container_status dom1 3
-test_container_status domE 3
+test_container_status cube-desktop 3
 test_container_status invalid_container 0
 
 #################################################
 # test start/stop
 #################################################
 echo "Test: Trying to start a container that's already active"
-$OVERC container start domE dom0
+$OVERC container start cube-desktop dom0
 status=$?
 if [ $status -ne 1 ]; then
 	echo "Error! Starting an active container should fail"
@@ -68,7 +68,7 @@ else
 	echo "OK: failed"
 fi
 echo "Test: Trying to stop a container that's active"
-$OVERC container stop domE dom0
+$OVERC container stop cube-desktop dom0
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Stopping an active container should succeed"
@@ -78,7 +78,7 @@ else
 	echo "OK: succeeded"
 fi
 echo "Test: Trying to start a container that's inactive"
-$OVERC container start domE dom0
+$OVERC container start cube-desktop dom0
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Starting an inactive container should succeed"
@@ -115,16 +115,16 @@ else
 fi
 
 #################################################
-# test activate rollback on domE
+# test activate rollback on cube-desktop
 #################################################
 echo "Test: Setting up file marker before activate/rollback test"
-touch /essential/var/lib/lxc/domE/rootfs/root/test
+touch /essential/var/lib/lxc/cube-desktop/rootfs/root/test
 
-count_snapshots domE
+count_snapshots cube-desktop
 orig_num_snapshot=$?
 
 echo "Test: activate container"
-$OVERC container activate domE dom0 -f
+$OVERC container activate cube-desktop dom0 -f
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Failed to activate container"
@@ -135,8 +135,8 @@ else
 fi
 
 echo "Test: Looking for file marker after activate"
-if [ -e /essential/var/lib/lxc/domE/rootfs/root/test ]; then
-	echo "Error! File /essential/var/lib/lxc/domE/rootfs/root/test should not exist!"
+if [ -e /essential/var/lib/lxc/cube-desktop/rootfs/root/test ]; then
+	echo "Error! File /essential/var/lib/lxc/cube-desktop/rootfs/root/test should not exist!"
 	exit 1
 else
 	echo "OK: file marker doesn't exist"
@@ -144,7 +144,7 @@ fi
 
 echo "Test: counting snapshots after activate"
 expected_num_snapshot=$(expr $orig_num_snapshot + 1)
-count_snapshots domE
+count_snapshots cube-desktop
 num_snapshot=$?
 if [ $num_snapshot -ne $expected_num_snapshot ]; then
 	echo "Error! Number of snapshots should be $expected_num_snapshot [got $num_snapshot]"
@@ -154,7 +154,7 @@ else
 fi
 
 echo "Test: container should be active after active, stopping container"
-$OVERC container stop domE dom0
+$OVERC container stop cube-desktop dom0
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Stopping an active container should succeed"
@@ -165,7 +165,7 @@ else
 fi
 
 echo "Test: rollback container"
-$OVERC container rollback domE  dom0
+$OVERC container rollback cube-desktop  dom0
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Failed to perform container rollback"
@@ -176,7 +176,7 @@ else
 fi
 
 echo "Test: counting snapshots after rollback"
-count_snapshots domE
+count_snapshots cube-desktop
 num_snapshot=$?
 if [ $num_snapshot -ne $orig_num_snapshot ]; then
 	echo "Error! Number of snapshots should be $orig_num_snapshot [got $num_snapshot]"
@@ -185,7 +185,7 @@ else
 	echo "OK: $num_snapshot snapshot"
 fi
 
-$OVERC container start domE dom0
+$OVERC container start cube-desktop dom0
 status=$?
 if [ $status -ne 0 ]; then
 	echo "Error! Starting an inactive container should succeed"
@@ -194,13 +194,13 @@ if [ $status -ne 0 ]; then
 fi
 
 echo "Test: Looking for file marker after rollback"
-if [ ! -e /essential/var/lib/lxc/domE/rootfs/root/test ]; then
-	echo "Error! File /essential/var/lib/lxc/domE/rootfs/root/test should exist!"
+if [ ! -e /essential/var/lib/lxc/cube-desktop/rootfs/root/test ]; then
+	echo "Error! File /essential/var/lib/lxc/cube-desktop/rootfs/root/test should exist!"
 	exit 1
 else
 	echo "OK: file marker found"
 fi
-rm /essential/var/lib/lxc/domE/rootfs/root/test
+rm /essential/var/lib/lxc/cube-desktop/rootfs/root/test
 #
 #################################################
 # test operations on dom0

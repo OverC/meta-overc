@@ -1,0 +1,13 @@
+# In the domain that you'd like to create a lxc container, run the following.
+# Note: we use --no-validate, since pgp is not currently available
+
+% lxc-create -t download -n <name> -- --no-validate
+
+# configure as required via:
+
+% lxc-attach -n <name>
+
+# to get the proper networking configuration, add the following to
+# /var/lib/lxc/<name>/config
+lxc.network.type = veth
+lxc.network.link = br-ext

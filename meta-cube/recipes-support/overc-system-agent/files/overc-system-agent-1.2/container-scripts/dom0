@@ -8,7 +8,7 @@ IMAGE_DIR=/root/images
 UPSTREAM_URL=http://openlinux.windriver.com/overc/images/genericx86-64/
 DOM0_IMAGE=cube-dom0-genericx86-64.tar.bz2
 DOM1_IMAGE=cube-dom1-genericx86-64.tar.bz2
-DOME_IMAGE=cube-domE-genericx86-64.tar.bz2
+DOME_IMAGE=cube-desktop-genericx86-64.tar.bz2
 
 usage() {
 	cat <<EOT;
@@ -61,7 +61,7 @@ EOT
 # demoService (lxc) - STOPPED
 # dom0 (lxc) - Container that I'm in
 # dom1 (lxc) (/) - RUNNING
-# domE (lxc) (/) - RUNNING
+# cube-desktop (lxc) (/) - RUNNING
 # s1 (lxc) - STOPPED
 #
 #     return value:
@@ -116,7 +116,7 @@ activate() {
 		dom1)
 			rootfs=$IMAGE_DIR/$DOM1_IMAGE
 			;;
-		domE)
+		*desktop)
 			rootfs=$IMAGE_DIR/$DOME_IMAGE
 			;;
 		*)

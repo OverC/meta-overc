@@ -9,12 +9,12 @@ functionality. The current cubes are:
          by non admin users.
  - dom1: provides system services (such as ntpd, etc) to the platform. This
          is not used by a typical user.
- - domE: provides full 'enterprise' functionality. This includes man pages,
+ - cube-desktop: provides full 'enterprise' functionality. This includes man pages,
          development tools, graphical desktop, etc. This domain is the primary
          environment for most users.
 
  - cube-server: provides a full featured, headless server environment. This is
-                similar to domE, without graphics.
+                similar to cube-desktop, without graphics.
 
 OverC also has two essential image types, that provide a foundation for the
 container runtimes. These are:
@@ -45,7 +45,7 @@ Modify local.conf with following settings:
 Clone the layers described in the meta-overc/README, and build the images
 mentioned in the overview:
 
-  % bitbake cube-dom0 cube-dom1 cube-domE cube-essential cube-builder
+  % bitbake cube-dom0 cube-dom1 cube-desktop cube-essential cube-builder
 
 This will take some time, since multiple images and configurations are
 being build and assembled.
@@ -61,7 +61,7 @@ OverC installer
 The OverC installer must be assembled from build artifacts, and provides a 
 bootable USB stick that is capable of installing to a hard disk on the 
 target system. It also completes required installation and configuration of
-the components that make up the core system (dom0, dom1, domE, essential).
+the components that make up the core system (dom0, dom1, cube-desktop, essential).
 
 The OverC installer is available from the following repository:
 
@@ -126,7 +126,7 @@ that is to be installed. This is typically:
  HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/cube-essential-genericx86-64.tar.bz2"
 
  HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2 \
-                       ${ARTIFACTS_DIR}/cube-domE-genericx86-64.tar.bz2"
+                       ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2"
 
 At this point we have the payload to create a bootable USB disk prepared. The
 scripts (or applications) that perform the final install to the target device

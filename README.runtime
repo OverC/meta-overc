@@ -3,7 +3,7 @@ OverC runtime
 
 Depending on the selected cubes, the user/application developer runtime varies.
 
-Generally speaking, if either domE or cube-server have been selected the user
+Generally speaking, if either cube-desktop or cube-server have been selected the user
 is presented with a enterprise-like, fully featured runtime that is suitable
 for development or application deployment.
 
@@ -41,9 +41,9 @@ Console access is available through several mechanisms:
 
        HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2 \
 			     ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:vty=3 \
-			     ${ARTIFACTS_DIR}/cube-domE-genericx86-64.tar.bz2:vty=4"
+			     ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2:vty=4"
 
-       Once booted, this system would have dom0 on VT2, cube-server on VT3 and domE
+       Once booted, this system would have dom0 on VT2, cube-server on VT3 and cube-desktop
        on VT4.
 
  - inter-cube pipes: For situations where a network is not available, and physical
@@ -68,9 +68,9 @@ access examples:
 
 ssh:
 
- # domE terminal:
+ # cube-desktop terminal:
  % uname -a | cut -d' ' -f2
-cube-01-12-15-domE
+cube-01-12-15-cube-desktop
 
  # connect to dom0
  % ssh root@cube-01-12-15-dom0.local
@@ -89,12 +89,12 @@ inter-container pipes:
  # find the valid console tarets:
  % cube-ctl list
 
- # domE -> dom0
+ # cube-desktop -> dom0
  % cube-console dom0
 
 <login with dom0 credentials>
 
- # domE -> cube-server, fails with an [ERROR] message, since cube-server is
+ # cube-desktop -> cube-server, fails with an [ERROR] message, since cube-server is
  # not a valid inter-container target
  % cube-console cube-server
 ERROR: cube is not allowed direct console access. log into dom0 first.

@@ -1,6 +1,6 @@
 # Configuration data. See overc-conftools package for details.
 # Note many of these are set by the installer.
-$network_prime_container = "domE"
+$network_prime_container = "cube-server"
 $network_prime_device = "enp0s3"
 
 # network_prime_container will have an offset of 1
