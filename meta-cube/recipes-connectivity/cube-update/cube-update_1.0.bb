@@ -28,7 +28,7 @@ FILES_${PN} += " \
 
 SYSTEMD_SERVICE_${PN} = "cube-update.service"
 CONFFILES_${PN} = "${sysconfdir}/cube-update/config.default"
-SYSTEMD_AUTO_ENABLE = "${@base_contains('PULSAR_UNATTENDED_UPGRADE','true','enable','disable', d)}"
+SYSTEMD_AUTO_ENABLE = "${@bb.utils.contains('PULSAR_UNATTENDED_UPGRADE','true','enable','disable', d)}"
 
 INITSCRIPT_NAME = "cubeupdated"
 INITSCRIPT_PARAMS = "start 49 2 3 4 5 . stop 51 0 1 6 ."
@@ -42,7 +42,7 @@ do_install () {
 	install -m 0555 ${WORKDIR}/cubeupdated ${D}${sysconfdir}/cube-update/cubeupdated
 	install -m 0555 ${WORKDIR}/cubepkgcheck ${D}${sysconfdir}/cube-update/cubepkgcheck
 
-	if ${@base_contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+	if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
 	    # systemd:
 	    install -d -m 0755 ${D}${systemd_unitdir}/system
 	    install -d -m 0755 ${D}${systemd_unitdir}/system/multi-user.target.wants

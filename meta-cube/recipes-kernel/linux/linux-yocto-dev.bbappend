@@ -29,7 +29,7 @@ KERNEL_MODULE_AUTOLOAD += "kvm"
 KERNEL_MODULE_AUTOLOAD += "kvm-amd"
 KERNEL_MODULE_AUTOLOAD += "kvm-intel"
 
-KERNEL_FEATURES_append += "${@base_contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
+KERNEL_FEATURES_append += "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
 KERNEL_FEATURES_append = " cfg/systemd.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext2.scc"

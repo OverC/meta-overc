@@ -29,10 +29,10 @@ do_install_prepend() {
     # Copy assorted scripts and other control files into the build directory
     # so they get installed.
 
-    if ${@base_contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
         cp -a ${S}/config/init/sysvinit/cg* ${WORKDIR}/build/config/init/sysvinit/
     fi
-    if ${@base_contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         cp -a ${S}/config/init/systemd/*.service ${WORKDIR}/build/config/init/systemd/
     fi
 
