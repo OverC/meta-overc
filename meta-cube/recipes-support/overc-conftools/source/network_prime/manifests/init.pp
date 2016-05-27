@@ -16,7 +16,7 @@ class network_prime
     source => 'puppet:///modules/network_prime/25-br-int.network',
   }
 
-  # Let networkd configure eth0 (br-int virtual interface) - network-prime container
+  # Let networkd configure veth0 (br-int virtual interface) - network-prime container
   file { '20-br-int-virt.network':
     path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/20-br-int-virt.network",
     source => 'puppet:///modules/network_prime/20-br-int-virt.network',
