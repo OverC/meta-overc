@@ -5,7 +5,7 @@ Before=lxc.service
 
 [Service]
 Type=forking
-Environment=FACTER_ipaddress="192.168.0.2"
+Environment=FACTER_ipaddress="192.168.42.2"
 ExecStart=/usr/bin/puppet apply /etc/puppet/manifests/site.pp
 
 [Install]

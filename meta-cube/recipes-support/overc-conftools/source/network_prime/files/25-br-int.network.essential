@@ -2,5 +2,5 @@
 Name=br-int
 
 [Network]
-Address=192.168.0.2/24
-Gateway=192.168.0.1
+Address=192.168.42.2/24
+Gateway=192.168.42.1

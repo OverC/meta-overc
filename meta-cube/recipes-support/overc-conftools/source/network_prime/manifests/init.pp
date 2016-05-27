@@ -79,11 +79,11 @@ class network_prime
     file_line { "${offset[0]}.offset":
       path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
       match => '^DHCP=.*',
-      line => "Address=192.168.0.${offset[1]}/24",
+      line => "Address=192.168.42.${offset[1]}/24",
     }
     file_line { "${offset[0]}.gateway":
       path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
-      line => 'Gateway=192.168.0.1',
+      line => 'Gateway=192.168.42.1',
     }
   }
   set_network_offset { $network_offsets: }
@@ -97,12 +97,12 @@ class network_prime
   file_line { 'dnsmasq-range-config':
     path => '/etc/dnsmasq.conf',
     match => '^dhcp-range=*',
-    line => 'dhcp-range=192.168.0.100,192.168.0.200,2h',
+    line => 'dhcp-range=192.168.42.100,192.168.42.200,2h',
     before => File_Line['dnsmasq-set-gateway'],
   }
   file_line { 'dnsmasq-set-gateway':
     path => '/etc/dnsmasq.conf',
-    line => 'dhcp-option=option:router,192.168.0.1',
+    line => 'dhcp-option=option:router,192.168.42.1',
   }
 
   # Disable configuration of the network prime on subsequent boots
