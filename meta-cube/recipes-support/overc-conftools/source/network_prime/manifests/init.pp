@@ -46,6 +46,18 @@ class network_prime
     ensure => 'absent',
   }
 
+  # If not using NetworkManager, use networkd
+  file { '30-wired.network':
+    path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network",
+    content => "[Match]\n$network_device\n\n[Network]\nDHCP=ipv4\n",
+    before => Exec['check_nm'],
+  }
+
+  exec { 'check_nm':
+    command => "/bin/rm -f /var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network",
+    onlyif => "/usr/bin/test -h /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service",
+  }
+
   # Service files and script to make sure the network-prime is properly
   # configured (OVS, iptables...) on boot.
   file { 'overc-network-prime.service':
