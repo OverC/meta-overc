@@ -27,6 +27,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-xfce \
                         packagegroup-container \
                         packagegroup-networkmanager \
+                        packagegroup-audio \
                         ntp \
                         ntpdate \
                         ntp-utils \
