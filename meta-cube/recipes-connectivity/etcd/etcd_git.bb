@@ -19,3 +19,5 @@ inherit golang
 #solution has yet to be found. For now we ignore this error with
 #the line below.
 INSANE_SKIP_${PN} = "ldflags"
+
+RDEPENDS_${PN} = "bash"
