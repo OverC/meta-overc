@@ -65,10 +65,20 @@ class network_prime
     source => 'puppet:///modules/network_prime/overc-network-prime.service',
     before => File['overc-network-prime.service.link'],
   }
+  file { 'overc-network-prime-port-forward.service':
+    path => "/var/lib/lxc/$container/rootfs/etc/systemd/system/overc-network-prime-port-forward.service",
+    source => 'puppet:///modules/network_prime/overc-network-prime-port-forward.service',
+    before => File['overc-network-prime-port-forward.service.link'],
+  }
   file { 'autonetdev':
     path => "/var/lib/lxc/$container/autonetdev",
     source => 'puppet:///modules/network_prime/autonetdev',
     before => File['overc-network-prime.service.link'],
+  }
+  file { 'overc-network-prime-port-forward.service.link':
+    ensure => 'link',
+    target => "../overc-network-prime-port-forward.service",
+    path => "/var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/overc-network-prime-port-forward.service",
   }
   file { 'overc-network-prime.service.link':
     ensure => 'link',
@@ -85,7 +95,11 @@ class network_prime
     content => template('network_prime/network_prime.sh.erb'),
     mode => '0750',
   }
-
+  file { 'network_prime_port_forward.sh':
+    path => "/var/lib/lxc/$container/rootfs/etc/overc/network_prime_port_forward.sh",
+    content => template('network_prime/network_prime_port_forward.sh.erb'),
+    mode => '0750',
+  }
   # The network-prime has to be able to forward external traffic
   file_line { 'enable-ip-forwarding-config':
     path => "/var/lib/lxc/$container/rootfs/etc/sysctl.conf",
