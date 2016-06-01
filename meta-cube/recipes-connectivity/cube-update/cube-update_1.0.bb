@@ -18,6 +18,8 @@ SRC_URI += " \
 	file://config.default \
 	"
 
+S = "${WORKDIR}"
+
 inherit autotools update-rc.d systemd
 
 FILES_${PN} += " \
