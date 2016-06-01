@@ -13,6 +13,7 @@ PACKAGES = "\
 RDEPENDS_${PN} = "\
     alsa-utils \
     pulseaudio \
+    pulseaudio-server \
     pavucontrol \
     xfce4-pulseaudio-plugin \
     "
