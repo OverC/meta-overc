@@ -14,7 +14,7 @@ S = "${WORKDIR}/git"
 #with the original Mercurial repo name
 do_install() {
         install -d ${D}${prefix}/local/go/src/golang.org/x/crypto
-        cp -a ${S}/* ${D}${prefix}/local/go/src/golang.org/x/crypto/
+        cp -r --preserve=timestamp,mode ${S}/* ${D}${prefix}/local/go/src/golang.org/x/crypto/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "go_net_sysroot_preprocess"
