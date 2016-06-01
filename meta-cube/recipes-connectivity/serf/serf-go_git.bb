@@ -31,6 +31,9 @@ do_compile() {
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
     cp -a --no-preserve=ownership ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+
+    # we don't need the Debian/Ubuntu package metadata
+    rm -rf ${D}${prefix}/local/go/src/${PKG_NAME}/ops-misc/debian/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "serf_go_sysroot_preprocess"
