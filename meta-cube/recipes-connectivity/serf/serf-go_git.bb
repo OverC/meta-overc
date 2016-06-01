@@ -44,3 +44,4 @@ FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
 
 CLEANBROKEN = "1"
 
+RDEPENDS_${PN} = "bash"
