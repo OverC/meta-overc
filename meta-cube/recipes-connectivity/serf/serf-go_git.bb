@@ -30,7 +30,7 @@ do_compile() {
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    cp -a --no-preserve=ownership ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "serf_go_sysroot_preprocess"
