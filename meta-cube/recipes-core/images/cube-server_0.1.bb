@@ -28,6 +28,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-container \
                   ${CUBE_DOM_SERVER_EXTRA_INSTALL} \
                   "
+TARGETNAME ?= "cube-server"
 
 inherit core-image
 inherit builder-base

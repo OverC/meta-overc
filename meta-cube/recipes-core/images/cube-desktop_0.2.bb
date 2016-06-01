@@ -58,6 +58,8 @@ XSERVER_append = "xserver-xorg \
 
 ALTERNATIVE_PRIORITY_xfce4-session[x-session-manager] = "60"
 
+TARGETNAME ?= "cube-desktop"
+
 inherit core-image
 inherit builder-base
 
