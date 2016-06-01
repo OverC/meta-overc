@@ -14,7 +14,7 @@ do_compile() {
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    cp -r --preserve=timestamp,mode ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "dockerclient_sysroot_preprocess"
@@ -25,3 +25,4 @@ dockerclient_sysroot_preprocess () {
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
+RDEPENDS_${PN} = "bash"
