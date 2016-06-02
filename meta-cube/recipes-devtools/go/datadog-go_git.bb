@@ -11,7 +11,10 @@ S = "${WORKDIR}/git"
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    cd ${S}
+    for file in $(find * -type f); do
+        install -m 0644 -D ${file} ${D}${prefix}/local/go/src/${PKG_NAME}/${file}
+    done
 }
 
 SYSROOT_PREPROCESS_FUNCS += "datadog_sysroot_preprocess"
