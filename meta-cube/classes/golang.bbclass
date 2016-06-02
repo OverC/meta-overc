@@ -22,7 +22,10 @@ do_compile() {
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    cd ${S}
+    for file in $(find * -type f); do
+        install -m 0644 -D ${file} ${D}${prefix}/local/go/src/${PKG_NAME}/${file}
+    done
 
     install -d ${D}${bindir}
     # golang programs will install their binary files into
@@ -32,10 +35,14 @@ do_install() {
     # directory, so here will cp them from this sub directory
     # do the standard binary directory.
     if [ -d ${S}/.gopath/bin/linux_* ]; then
-        cp -a ${S}/.gopath/bin/linux_*/* ${D}${bindir}
+        src=${S}/.gopath/bin/linux_*/
     else
-        cp -a ${S}/.gopath/bin/* ${D}${bindir}
+        src=${S}/.gopath/bin/
     fi
+    cd ${src}
+    for file in $(find * -type f); do
+        install -D ${file} ${D}${bindir}/${file}
+    done
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
