@@ -13,7 +13,7 @@ S = "${WORKDIR}/git"
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    install -m 0644 ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "raft_mdb_sysroot_preprocess"
