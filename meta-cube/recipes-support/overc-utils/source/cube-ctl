@@ -99,6 +99,10 @@ while [ $# -gt 0 ]; do
 	    name=${2}
 	    shift
 	    ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
 	--*)
 	    # if the next argument is dashed, we just add $1 to our collection
 	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
@@ -194,6 +198,11 @@ case "${cmd}" in
 		-n*)
 		    container_name=`echo $o | cut -d: -f2`
 		    ;;
+		*)
+		    echo "Unknow parameter ..."
+		    usage
+		    exit
+		    ;;
 	    esac
 	done
 
@@ -206,7 +215,10 @@ case "${cmd}" in
 	fi
 
 	${overc_cctl} add -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
-
+	if [ $? != 0 ]; then
+	    echo "Add container failed ..."
+	    exit 1
+	fi
 	# now we need to restart the command server, so the new container can be monitored
 	# echo "exit" /tmp/container/self/cmd-pipe"
 	systemctl stop cube-cmd-server
