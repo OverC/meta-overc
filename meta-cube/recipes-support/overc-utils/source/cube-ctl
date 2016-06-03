@@ -221,8 +221,7 @@ case "${cmd}" in
 	fi
 	# now we need to restart the command server, so the new container can be monitored
 	# echo "exit" /tmp/container/self/cmd-pipe"
-	systemctl stop cube-cmd-server
-	systemctl start cube-cmd-server
+	systemctl restart cube-cmd-server
 	;;
     del|delete|remove)
 	check_required ${overc_cctl}
