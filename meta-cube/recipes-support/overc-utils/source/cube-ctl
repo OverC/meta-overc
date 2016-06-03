@@ -96,7 +96,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
         --n|-n)
-	    name=${2}
+	    container_name=${2}
 	    shift
 	    ;;
 	-h|--help)
