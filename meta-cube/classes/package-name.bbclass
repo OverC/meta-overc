@@ -32,7 +32,7 @@ python package_name_hook_append() {
             if pkg.startswith("lib") and not pkg.startswith("lib32-"):
                 d.appendVar('RPROVIDES_' + pkg, " " + pkg[3:])
 
-        for (rprov_pkg, rprov) in bb.utils.explode_dep_versions2(d.getVar('RPROVIDES_' + pkg, True) or "").iteritems():
+        for (rprov_pkg, rprov) in bb.utils.explode_dep_versions2(d.getVar('RPROVIDES_' + pkg, True) or "").items():
             if rprov_pkg.endswith('-dev') and (rprov_pkg + "el") not in list(d.getVar('RPROVIDES_' + pkg, True)):
                 d.appendVar('RPROVIDES_' + pkg, " " + rprov_pkg + "el")
 
