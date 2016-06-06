@@ -1,5 +1,6 @@
 [Unit]
 Description=SmartPM update daemon
+DefaultDependencies=no
 
 [Service]
 Type=forking
@@ -11,7 +12,6 @@ Restart=always
 RestartSec=600
 WatchdogSec=2419200
 StandardOutput=syslog
-DefaultDependencies=no
 
 [Install]
 WantedBy=multi-user.target
