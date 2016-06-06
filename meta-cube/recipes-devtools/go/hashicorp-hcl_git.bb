@@ -9,20 +9,24 @@ SRCREV = "27a57f2605e04995c111273c263d51cee60d9bc4"
 
 S = "${WORKDIR}/git"
 
+DEPENDS += " \
+    go-native \
+"
+
 do_compile() {
     oe_runmake generate
 }
 
 do_install() {
     install -d ${D}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
+    cp -a --no-preserve=ownership ${S}/* ${D}${prefix}/local/go/src/${PKG_NAME}/
 }
 
 SYSROOT_PREPROCESS_FUNCS += "hashicorp_hcl_sysroot_preprocess"
 
 hashicorp_hcl_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
+    cp -a --no-preserve=ownership ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
