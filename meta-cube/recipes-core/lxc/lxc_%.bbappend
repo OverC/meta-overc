@@ -1,6 +1,6 @@
 # cgmanager is needed for running unpriv containers
 
-PACKAGECONFIG_append = " cgmanager docs templates seccomp"
+PACKAGECONFIG_append = " cgmanager templates seccomp"
 
 PACKAGECONFIG[cgmanager] = "--enable-cgmanager=yes,--enable-cgmanager=no,cgmanager,cgmanager"
 
