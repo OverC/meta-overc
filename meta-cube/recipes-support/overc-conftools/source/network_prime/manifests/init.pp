@@ -49,7 +49,7 @@ class network_prime
   # If not using NetworkManager, use networkd
   file { '30-wired.network':
     path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network",
-    content => "[Match]\nName=$network_device\n\n[Network]\nDHCP=ipv4\n",
+    content => "[Match]\nName=$network_device\n\n[Network]\nDHCP=ipv4\nIPForward=ipv4\n",
     before => Exec['check_nm'],
   }
 
