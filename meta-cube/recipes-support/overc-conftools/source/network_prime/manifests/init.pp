@@ -54,7 +54,7 @@ class network_prime
   }
 
   exec { 'check_nm':
-    command => "/bin/rm -f /var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network",
+    command => "/bin/rm -f /var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network;/bin/ln -sf /dev/null /var/lib/lxc/$container/rootfs/etc/systemd/system/systemd-resolved.service",
     onlyif => "/usr/bin/test -h /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service",
   }
 
