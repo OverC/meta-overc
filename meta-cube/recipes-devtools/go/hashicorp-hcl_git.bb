@@ -9,9 +9,7 @@ SRCREV = "27a57f2605e04995c111273c263d51cee60d9bc4"
 
 S = "${WORKDIR}/git"
 
-DEPENDS += " \
-    go-native \
-"
+inherit golang
 
 do_compile() {
     oe_runmake generate
