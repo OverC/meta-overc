@@ -146,7 +146,7 @@ Index: git/src/udev/udev-node.c
 +        log_debug("removing device node '%s'\n", devnode);
 +        err = util_unlink_secure(udev, devnode);
 +        if (err == 0)
-+            rmdir_parents(udev_device_get_devnode(devnode), "/");
++            rmdir_parents(udev_device_get_devnode(dev), "/");
 +
          /* remove /dev/{block,char}/$major:$minor */
          snprintf(filename, sizeof(filename), "/dev/%s/%u:%u",
