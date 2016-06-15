@@ -86,9 +86,9 @@ function console_listener() {
     local console_file=""
 
     # only lxc is currently supported
-    for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+    for c in `ls -df /var/lib/lxc/*`; do
 	grep -q ${connectorname} $c
-	if [ $? -eq 0 ]; then
+	if [ "${connectorname}" = "${c#/var/lib/lxc/}" ]; then
 	    matches="$matches $c"
 	fi
     done
@@ -247,7 +247,7 @@ if [ -z "${whoami}" ]; then
     if [ -d '/var/lib/lxc' ]; then
 	# find our name from the container information
 
-	for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+	for c in `ls -f /var/lib/lxc/*/rootfs/etc/hostname`; do
 	    grep -q -E "^${myname}$" $c
 	    if [ $? -eq 0 ]; then
 		matches="$c"
@@ -282,17 +282,18 @@ if [ "${monitor_container}" = "'*'" ]; then
     # only lxc is currently supported
     myname=`cat /etc/hostname`
     matches=""
-    for c in `ls /var/lib/lxc/*/rootfs/etc/hostname`; do
+    for c in `ls -f /var/lib/lxc/*/rootfs/etc/hostname`; do
 	# remove ourself from the list .. we can do that by checking
 	# the hostnames
 	grep -q -E "^${myname}$" $c
 	if [ $? -ne 0 ]; then
-	    matches="$matches $c"
+	    cname=${c#/var/lib/lxc/}
+	    cname=${cname%%/*}
+	    matches="$matches $cname"
 	fi
     done
 
-    for c in $matches; do
-	cname=`echo "$c" | cut -d/ -f5`
+    for cname in $matches; do
 	# set a default requestor as the last (or first/only) container
 	requestor=${cname}
 	m=`setup_listening_mechanism fifo ${cname}`
