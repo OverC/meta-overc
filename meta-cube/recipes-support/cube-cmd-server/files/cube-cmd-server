@@ -146,14 +146,22 @@ EOF
 		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:${cmd} - linux,pty,setsid,stderr,ctty"
 		fi
 		if [ "${type}" = "namespace" ]; then
-		    # namespace enter!
-		    if [ -n "$target" ]; then
-			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
-			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/${console_file} "exec:lxc-attach -n ${target} /bin/sh,pty,setsid,stderr,ctty"
+		    if [ "${connectorname}" == "dom0" ]; then
+			# namespace enter!
+			if [ -n "$target" ]; then
+			    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+			    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/${console_file} "exec:lxc-attach -n ${target} /bin/sh,pty,setsid,stderr,ctty"
+			else
+			    do_error "[ERROR]: namespace consoles require a target container"
+			    output_and_log_msg "[ERROR]: namespace consoles require a target container"
+			fi
 		    else
-			do_error "[ERROR]: namespace consoles require a target container"
-			output_and_log_msg "[ERROR]: namespace consoles require a target container"
-		    fi
+			cmd="cube-console --ns ${target}"
+			# send the number of the console to the caller
+			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+			# exec the console command .. or proxy
+			socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:${cmd} - linux,pty,setsid,stderr,ctty"
+                   fi
 		fi
 	    ) &
 	done
@@ -385,10 +393,18 @@ while (true) do
 		fi
 		;;
 	    nsenter*)
-		# only available to dom0
+		nsenter_allowed=
+
 		target=`echo $line | cut -d' ' -f2`
 		echo ${commands_nsenter_acl[@]} | grep -q ${requestor}
 		if [ $? -eq 0 ]; then
+		    nsenter_allowed=t
+		fi
+		echo ${commands_nsenter_acl[@]} | grep -q "\*"
+		if [ $? -eq 0 ]; then
+		    nsenter_allowed=t
+		fi
+		if [ -n "${nsenter_allowed}" ]; then
 		    echo "[INFO]: entering namespace: $line"
 		    if [ -n "${target}" ]; then
 			console_listener ${whoami} ${requestor} namespace ${target}
