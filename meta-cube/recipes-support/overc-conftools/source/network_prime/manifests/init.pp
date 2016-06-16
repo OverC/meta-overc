@@ -58,6 +58,10 @@ class network_prime
     onlyif => "/usr/bin/test -h /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service",
   }
 
+  exec { 'disable_named_service':
+    command => "/bin/ln -sf /dev/null /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/named.service",
+  }
+
   # Service files and script to make sure the network-prime is properly
   # configured (OVS, iptables...) on boot.
   file { 'overc-network-prime.service':
@@ -90,6 +94,15 @@ class network_prime
      ensure => 'directory',
      before => File['network_prime.sh'],
   }
+  exec { 'remove_resolv.conf_produce_by_systemd_resolved':
+    command => "/bin/rm -rf /etc/resolv.conf", 
+    before => File['/etc/resolv.conf'],
+  }
+  file { '/etc/resolv.conf':
+    path => "/etc/resolv.conf",
+    content => "nameserver 192.168.42.1\n",
+    mode => '0666',
+  }
   file { 'network_prime.sh':
     path => "/var/lib/lxc/$container/rootfs/etc/overc/network_prime.sh",
     content => template('network_prime/network_prime.sh.erb'),
@@ -120,6 +133,11 @@ class network_prime
     file_line { "${offset[0]}.gateway":
       path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
       line => 'Gateway=192.168.42.1',
+    }
+    file { '/etc/resolv.conf':
+      path => "/var/lib/lxc/${offset[0]}/rootfs/etc/resolv.conf",
+      content => "nameserver 192.168.42.2",
+      mode => '0666',
     }
   }
   set_network_offset { $network_offsets: }
