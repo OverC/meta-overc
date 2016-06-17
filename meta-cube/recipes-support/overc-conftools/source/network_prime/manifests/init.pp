@@ -59,7 +59,7 @@ class network_prime
   }
 
   exec { 'disable_named_service':
-    command => "/bin/ln -sf /dev/null /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/named.service",
+    command => "/bin/ln -sf /dev/null /var/lib/lxc/$container/rootfs/etc/systemd/system/named.service",
   }
 
   # Service files and script to make sure the network-prime is properly
