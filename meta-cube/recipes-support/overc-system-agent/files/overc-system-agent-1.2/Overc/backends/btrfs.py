@@ -88,7 +88,7 @@ class Btrfs(Utils):
             c_list = c.split()
             subvolid = c_list[-1].split('/')[0]
             if  subvolid != self.rootfs and subvolid not in exclude:
-                subvol = 'subvolume delete %s/%s' % (subvoldir, c_list[-1])
+                subvol = 'subvolume delete -C %s/%s' % (subvoldir, c_list[-1])
                 subvol_stack.append(subvol)
             c=subp.stdout.readline()
 
