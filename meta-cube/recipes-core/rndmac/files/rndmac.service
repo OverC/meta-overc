@@ -1,0 +1,9 @@
+[Unit]
+Description=Randomize the MAC address of a selected ethernet interface
+After=dbus.service network-pre.target systemd-sysusers.service
+Before=network-pre.target network.target
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/sh -c 'if [ "$rndmac" != "" ] ; then /sbin/ifconfig $rndmac hw ether `/usr/bin/hashmac $(cat /etc/machine-id) $rndmac` ; else echo "ERROR: kernel command line systemd.setenv=rndmac=INTERFACE not set" ; exit 1; fi '
