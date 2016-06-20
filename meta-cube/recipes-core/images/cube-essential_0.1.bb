@@ -24,6 +24,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-container-setup \
 		  cube-update \
 		  overc-conftools \
+		  rndmac \
 		  iw \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
