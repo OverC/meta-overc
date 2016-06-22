@@ -42,10 +42,12 @@ commands (and options):
 
        <source>: path to the container source (tar.bz2)
 
- ${0##*/} del <name>
+ ${0##*/} del [-F] <name>
 
     remove a container from the system. Once this completes, the container is
     stopped and purged from the fileystem.
+
+       -F force remove container without prompting
 
  ${0##*/} status
  ${0##*/} list
@@ -77,6 +79,7 @@ fi
 # take the entire command into an array
 raw_command=($@)
 
+force=""
 peer=t
 non_dashed=""
 while [ $# -gt 0 ]; do
@@ -94,6 +97,9 @@ while [ $# -gt 0 ]; do
 	--parent)
 	    parent=${2}
 	    shift
+	    ;;
+	-F)
+	    force=-F
 	    ;;
         --n|-n)
 	    container_name=${2}
@@ -249,7 +255,7 @@ case "${cmd}" in
 
 	# now nuke it
 	echo "[INFO] removing container ${container_name}"
-	${overc_cctl} delete -n ${container_name}
+	${overc_cctl} delete ${force} -n ${container_name}
 	;;
     start)
 	check_required ${dom0ctl}
