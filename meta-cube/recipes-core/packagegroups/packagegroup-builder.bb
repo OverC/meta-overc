@@ -124,7 +124,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     groff \
     grub \
     gzip \
-    hicolor-icon-theme \
     ifupdown \
     inetutils \
     kernel-image \
@@ -169,7 +168,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     quota \
     readline \
     rpm \
-    sato-icon-theme \
     setserial \
     smartmontools \
     socat \
@@ -207,5 +205,4 @@ RDEPENDS_packagegroup-builder-graphics = "\
     libsdl \
     libsdl-dev \
     libx11-dev \
-    gtk-theme-clearlooks \
     "
