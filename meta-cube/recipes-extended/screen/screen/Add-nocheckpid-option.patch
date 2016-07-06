@@ -1,0 +1,161 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Sun, 3 Jul 2016 07:44:32 -0500
+Subject: [PATCH] Add -nocheckpid option
+
+Do not check the client attacher process ids. This is an advanced option
+which in general should not be used unless you are using multiple
+process id name spaces and interconnecting sessions with a shared socket
+directory.  Remote "live" sessions in a different name space will have to
+be manually killed after a detach.
+
+The intended purpose of this option is to allow a container to spawn
+a remote screen command via a socket which is shared from another
+context.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ attacher.c   | 17 +++++++++++------
+ doc/screen.1 |  7 +++++++
+ help.c       |  1 +
+ screen.c     | 16 +++++++++++++---
+ socket.c     |  3 ++-
+ 5 files changed, 34 insertions(+), 10 deletions(-)
+
+diff --git a/attacher.c b/attacher.c
+index 8847d5d..35431c8 100644
+--- a/attacher.c
++++ b/attacher.c
+@@ -59,6 +59,7 @@ extern char HostName[];
+ extern struct passwd *ppp;
+ extern char *attach_tty, *attach_term, *LoginName, *preselect;
+ extern int xflag, dflag, rflag, quietflag, adaptflag;
++extern int nopidcheckflag;
+ extern struct mode attach_Mode;
+ extern struct NewWindow nwin_options;
+ extern int MasterPid, attach_fd;
+@@ -300,11 +301,14 @@ int how;
+ 
+   debug2("Attach: uid %d euid %d\n", (int)getuid(), (int)geteuid());
+   MasterPid = 0;
+-  for (s = SockName; *s; s++)
++  if (!nopidcheckflag) 
+     {
+-      if (*s > '9' || *s < '0')
+-	break;
+-      MasterPid = 10 * MasterPid + (*s - '0');
++      for (s = SockName; *s; s++)
++        {
++	  if (*s > '9' || *s < '0')
++	    break;
++	  MasterPid = 10 * MasterPid + (*s - '0');
++	}
+     }
+   debug1("Attach decided, it is '%s'\n", SockPath);
+   debug1("Attach found MasterPid == %d\n", MasterPid);
+@@ -452,7 +456,8 @@ static sigret_t
+ AttacherSigInt SIGDEFARG
+ {
+   signal(SIGINT, AttacherSigInt);
+-  Kill(MasterPid, SIGINT);
++  if (MasterPid)
++    Kill(MasterPid, SIGINT);
+   SIGRETURN;
+ }
+ 
+@@ -620,7 +625,7 @@ Attacher()
+       alarm(15);
+       pause();
+       alarm(0);
+-      if (kill(MasterPid, 0) < 0 && errno != EPERM)
++      if (MasterPid && kill(MasterPid, 0) < 0 && errno != EPERM)
+         {
+ 	  debug1("attacher: Panic! MasterPid %d does not exist.\n", MasterPid);
+ 	  AttacherPanic++;
+diff --git a/doc/screen.1 b/doc/screen.1
+index 6adb1eb..48cf205 100644
+--- a/doc/screen.1
++++ b/doc/screen.1
+@@ -295,6 +295,13 @@ Do not terminate the screen session when the final window is closed.  The
+ quit command must be used from with in the screen session to terminate
+ the screen session.
+ .TP 5
++.BI \-nopidcheck
++Do not check the client attacher process ids. This is an advanced option
++which in general should not be used unless you are using multiple
++process id name spaces and interconnecting sessions with a shared socket
++directory.  Remote "live" sessions in a different name space will have to
++be manually killed after a detach.
++.TP 5
+ .BI "\-p " number_or_name|-|=|+
+ Preselect a window. This is useful when you want to reattach to a
+ specific window or you want to send a command via the \*Q-X\*U
+diff --git a/help.c b/help.c
+index cc24bc8..929a7a2 100644
+--- a/help.c
++++ b/help.c
+@@ -90,6 +90,7 @@ char *myname, *message, *arg;
+   printf("-list         Do nothing, just list our SockDir [on possible matches].\n");
+   printf("-L            Turn on output logging.\n");
+   printf("-noexit       Do not exit when the last screen window terminates.\n");
++  printf("-nopidcheck   Do not validate attacher process ids.\n");
+   printf("-m            ignore $STY variable, do create a new screen session.\n");
+   printf("-O            Choose optimal output rather than exact vt100 emulation.\n");
+   printf("-p window     Preselect the named window if it exists.\n");
+diff --git a/screen.c b/screen.c
+index 3bdd632..3e65b88 100644
+--- a/screen.c
++++ b/screen.c
+@@ -210,6 +210,7 @@ char *wlisttit;
+ int auto_detach = 1;
+ int iflag, rflag, dflag, lsflag, quietflag, wipeflag, xflag;
+ int noexitflag;
++int nopidcheckflag;
+ int cmdflag;
+ int queryflag = -1;
+ int adaptflag;
+@@ -685,9 +686,18 @@ char **av;
+ 		  mflag = 1;
+ 		  break;
+ 		case 'n':
+-		  if (strcmp(ap+1, "oexit"))
+-		    exit_with_usage(myname, "Unknown option %s", --ap);
+-		  noexitflag = 1;
++		  if (!strcmp(ap+1, "oexit"))
++		    {
++		      noexitflag = 1;
++		    }
++		  else if (!strcmp(ap+1, "opidcheck"))
++		    {
++		      nopidcheckflag = 1;
++		    }
++		  else
++		    {
++		      exit_with_usage(myname, "Unknown option %s", --ap);
++		    }
+ 		  ap = NULL;
+ 		  break;
+ 		case 'O':		/* to be (or not to be?) deleted. jw. */
+diff --git a/socket.c b/socket.c
+index a03ce24..080b686 100644
+--- a/socket.c
++++ b/socket.c
+@@ -66,6 +66,7 @@ static void  AskPassword __P((struct msg *));
+ extern char *RcFileName, *extra_incap, *extra_outcap;
+ extern int ServerSocket, real_uid, real_gid, eff_uid, eff_gid;
+ extern int dflag, iflag, rflag, lsflag, quietflag, wipeflag, xflag;
++extern int nopidcheckflag;
+ extern int queryflag;
+ extern char *attach_tty, *LoginName, HostName[];
+ extern struct display *display, *displays;
+@@ -878,7 +879,7 @@ struct win *wi;
+ 	return -1;
+     }
+ 
+-  if (CheckPid(pid))
++  if (!nopidcheckflag && CheckPid(pid))
+     {
+       Msg(0, "Attach attempt with bad pid(%d)!", pid);
+       return -1;
+-- 
+1.9.1
+
