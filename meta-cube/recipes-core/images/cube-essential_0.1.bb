@@ -25,6 +25,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  cube-update \
 		  overc-conftools \
 		  rndmac \
+		  screen-getty \
 		  iw \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
