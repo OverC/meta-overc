@@ -11,6 +11,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://ovs-up \
     file://ovs-down \
+    file://silence_no_escape_lxc-console.patch \
     "
 
 do_install_append(){
