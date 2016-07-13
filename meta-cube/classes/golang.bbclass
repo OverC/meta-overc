@@ -11,6 +11,11 @@ do_compile() {
     export GOPATH=${S}:${STAGING_DIR_TARGET}/${prefix}/local/go:${S}/.gopath
     export GOARCH="${TARGET_ARCH}"
     export CGO_ENABLED="1"
+
+    # avoid using the default '/var/tmp'
+    export TMPDIR=${WORKDIR}/build-tmp
+    mkdir -p ${WORKDIR}/build-tmp
+
     # supported amd64, 386, arm
     if [ "${TARGET_ARCH}" = "x86_64" ]; then
         export GOARCH="amd64"
