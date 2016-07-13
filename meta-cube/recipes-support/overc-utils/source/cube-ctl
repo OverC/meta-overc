@@ -184,6 +184,28 @@ check_if_present()
     return 1
 }
 
+# Check if the passed string matches any known container names
+# return false (1) if unknown, true (0) if known
+# additionally sets the global ${containers}
+check_is_known_container()
+{
+    container_name=$1
+
+    if [ -n "${i_am_dom0}" ]; then
+	containers="`cube-cmd lxc-ls`"
+	if [ -n "${containers}" ]; then
+	    echo ${containers} | grep -q -w ${container_name}
+	    if [ $? -ne 0 ]; then
+		return 1
+	    fi
+	fi
+    else
+	return 1
+    fi
+
+    return 0
+}
+
 am_i_a_container
 if [ $? -eq 0 ]; then
     echo "ERROR: host detected, cube-ctl only works in a monitored container."
@@ -236,18 +258,11 @@ case "${cmd}" in
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
-	if [ -n "${i_am_dom0}" ]; then
-	    containers="`cube-cmd lxc-ls`"
-	fi
-
-	if [ -n "${containers}" ]; then
-	    echo ${containers} | grep -q -w ${container_name}
-	    if [ $? -ne 0 ]; then
-		echo "[ERROR] Container ${container_name} not found, cannot remove."
-		echo -n "Valid containers are: "
-		echo ${containers}
-		exit 1
-	    fi
+	if ! check_is_known_container ${container_name}; then
+	    echo "[ERROR] Container ${container_name} not found, cannot remove."
+	    echo -n "Valid containers are: "
+	    echo ${containers}
+	    exit 1
 	fi
 
 	echo "[INFO] stopping container ${container_name}"
@@ -296,6 +311,14 @@ case "${cmd}" in
 
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
+
+	if ! check_is_known_container ${container_name}; then
+	    echo "[ERROR] Container ${container_name} not found, cannot stop."
+	    echo -n "Valid containers are: "
+	    echo ${containers}
+	    exit 1
+	fi
+	echo "[INFO] stopping container ${container_name}"
 	${dom0ctl} stop -n ${container_name}
 	;;
     exec)
