@@ -319,7 +319,13 @@ case "${cmd}" in
 	    exit 1
 	fi
 	echo "[INFO] stopping container ${container_name}"
-	${dom0ctl} stop -n ${container_name}
+	if ! ${dom0ctl} stop -n ${container_name}; then
+	    if ${dom0ctl} info -n ${container_name} | grep -q "State:[[:space:]]*STOPPED"; then
+		echo "[ERROR] Stopping ${container_name} encountered issues."
+		echo "[ERROR] Container ${container_name} might have already been stopped."
+	    fi
+	    exit 1
+	fi
 	;;
     exec)
 	# this is execute: <target>:<command>
