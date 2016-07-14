@@ -38,7 +38,6 @@ layers: meta-oe
         meta-gnome
         meta-xfce
         meta-multimedia
-        meta-security
 
 URI: git://git.yoctoproject.org/meta-virtualization
 branch: master
