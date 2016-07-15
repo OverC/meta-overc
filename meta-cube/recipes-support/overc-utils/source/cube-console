@@ -13,7 +13,7 @@ usage()
 {
 cat << EOF
 
-  cube-console [--ns] [--notraps] <console name>
+  cube-console [--ns] [--notraps] [-v] <console name>
 
   console name: a valid console name.
 
@@ -25,11 +25,16 @@ cat << EOF
   --notraps: do not monitor for an exit sequence. If this option is not
              specified.  'ctrl-\': force exits the shell immediately (no clean logout).
 
+  -v: print the console exit return value.
+  
   example:
 
       $ cube-console list    
       $ cube-console cube-essential
       $ cube-console dom0
+      $ cube-console -v dom0
+      $ cube-console --notraps dom0
+      $ cube-console --ns dom0
  
 EOF
 }
@@ -49,6 +54,10 @@ while [ $# -gt 0 ]; do
             ;;
 	--ns) namespace=t
             ;;
+	-h|--help|?)
+	    usage
+	    exit
+	    ;;
         *) break
             ;;
     esac
