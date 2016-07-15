@@ -29,7 +29,7 @@ commands (and options):
 
     stop a container:
 
-       <name>: name of the container to be stoped
+       <name>: name of the container to be stopped
 
  ${0##*/} add [-n <name>] <source tar.bz2>
 
@@ -45,7 +45,7 @@ commands (and options):
  ${0##*/} del [-F] <name>
 
     remove a container from the system. Once this completes, the container is
-    stopped and purged from the fileystem.
+    stopped and purged from the filesystem.
 
        -F force remove container without prompting
 
