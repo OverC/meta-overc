@@ -1,0 +1,61 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Tue, 19 Jul 2016 09:29:38 -0500
+Subject: [PATCH] Add ability to run a client with from a non interactive
+ session.
+
+Because dtach can be used as a generic pipe and command runner across
+name spaces sometimes it will be used in a context where there is no
+controlling tty just to access the output of a command run in a
+different namespace.
+
+New option:
+
+-T  Allow client to run without a controlling terminal
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ main.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/main.c b/main.c
+index 0db0c8a..8d99df3 100644
+--- a/main.c
++++ b/main.c
+@@ -43,6 +43,8 @@ int do_clear = 1;
+ int quiet_flag = 0;
+ /* Timeout for client connect */
+ int alarm_time = 0;
++/* Allow attacher to run without a controlling terminal */
++int allow_no_term = 0;
+ /* Remove all the \r chars from the output stream */
+ int squash_crs = 0;
+ /* Kill server on client disconnect */
+@@ -92,6 +94,7 @@ usage()
+ 		"\t\t   ctrl_l: Send a Ctrl L character to the program.\n"
+ 		"\t\t    winch: Send a WINCH signal to the program.\n"
+ 		"  -R\t\tSquash all \\r chars in output stream.\n"
++		"  -T\t\tAllow execution from a non-interactive session.\n"
+ 		"  -w\t\tWait for client to connect before process exec.\n"
+ 		"  -W <#>\tServer exit after # seconds.\n"
+ 		"  -z\t\tDisable processing of the suspend key.\n"
+@@ -182,6 +185,8 @@ main(int argc, char **argv)
+ 				client_quit = 1;
+ 			else if (*p == 'R')
+ 				squash_crs = 1;
++			else if (*p == 'T')
++				allow_no_term = 1;
+ 			else if (*p == 'w')
+ 				connect_wait = 1;
+ 			else if (*p == 'z')
+@@ -276,7 +281,7 @@ main(int argc, char **argv)
+ 		dont_have_tty = 1;
+ 	}
+ 
+-	if (dont_have_tty && mode != 'n' && mode != 'N')
++	if (dont_have_tty && mode != 'n' && mode != 'N' && !allow_no_term)
+ 	{
+ 		printf("%s: Attaching to a session requires a terminal.\n",
+ 			progname);
+-- 
+1.9.1
+

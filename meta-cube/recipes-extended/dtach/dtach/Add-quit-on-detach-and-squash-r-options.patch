@@ -1,0 +1,162 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Tue, 19 Jul 2016 09:21:45 -0500
+Subject: [PATCH] Add quit on detach and squash \r options
+
+Add new options:
+-Q   Quit server on last client detach
+-R   Squash all \r characters in the output stream
+
+Also cleanup places where no tty handling should occur if
+there is no tty (where stdin of the client is closed).
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ attach.c | 31 +++++++++++++++++++++++++------
+ dtach.h  |  2 +-
+ main.c   | 10 ++++++++++
+ master.c |  3 +++
+ 4 files changed, 39 insertions(+), 7 deletions(-)
+
+diff --git a/attach.c b/attach.c
+index a43268c..4032537 100644
+--- a/attach.c
++++ b/attach.c
+@@ -38,10 +38,12 @@ static int win_changed;
+ static void
+ restore_term(void)
+ {
+-	tcsetattr(0, TCSADRAIN, &orig_term);
++	if (!dont_have_tty)
++		tcsetattr(0, TCSADRAIN, &orig_term);
+ 
+ 	/* Make cursor visible. Assumes VT100. */
+-	printf("\033[?25h");
++	if (do_clear)
++		printf("\033[?25h");
+ 	fflush(stdout);
+ }
+ 
+@@ -108,7 +110,7 @@ static void
+ process_kbd(int s, struct packet *pkt)
+ {
+ 	/* Suspend? */
+-	if (!no_suspend && (pkt->u.buf[0] == cur_term.c_cc[VSUSP]))
++	if (!dont_have_tty && !no_suspend && (pkt->u.buf[0] == cur_term.c_cc[VSUSP]))
+ 	{
+ 		/* Tell the master that we are suspending. */
+ 		pkt->type = MSG_DETACH;
+@@ -212,7 +214,11 @@ attach_main(int noerror)
+ 	cur_term.c_cc[VLNEXT] = VDISABLE;
+ 	cur_term.c_cc[VMIN] = 1;
+ 	cur_term.c_cc[VTIME] = 0;
+-	tcsetattr(0, TCSADRAIN, &cur_term);
++
++	if (!dont_have_tty)
++	{
++		tcsetattr(0, TCSADRAIN, &cur_term);
++	}
+ 
+ 	/* Clear the screen. This assumes VT100. */
+ 	if (do_clear)
+@@ -232,7 +238,7 @@ attach_main(int noerror)
+ 	/* Wait for things to happen */
+ 	while (1)
+ 	{
+-		int n;
++		int n, i, j;
+ 
+ 		FD_ZERO(&readfds);
+ 		FD_SET(0, &readfds);
+@@ -261,8 +267,21 @@ attach_main(int noerror)
+ 				printf(EOS "\r\n[read returned an error]\r\n");
+ 				exit(1);
+ 			}
++			if (squash_crs)
++			{
++				for (i = 0, j = 0; i < len; i++)
++				{
++					if (buf[i] != '\r')
++					{
++						buf[j] = buf[i];
++						j++;
++					}
++				}
++				len = j;
++			}
+ 			/* Send the data to the terminal. */
+-			write(1, buf, len);
++			if (len)
++				write(1, buf, len);
+ 			n--;
+ 		}
+ 		/* stdin activity */
+diff --git a/dtach.h b/dtach.h
+index e369321..bd82495 100644
+--- a/dtach.h
++++ b/dtach.h
+@@ -83,7 +83,7 @@
+ 
+ extern char *progname, *sockname;
+ extern int detach_char, no_suspend, redraw_method;
+-extern int quiet_flag, do_clear, alarm_time;
++extern int quiet_flag, do_clear, alarm_time, squash_crs, client_quit;
+ extern struct termios orig_term;
+ extern int dont_have_tty;
+ 
+diff --git a/main.c b/main.c
+index eb3a6a8..0db0c8a 100644
+--- a/main.c
++++ b/main.c
+@@ -43,6 +43,10 @@ int do_clear = 1;
+ int quiet_flag = 0;
+ /* Timeout for client connect */
+ int alarm_time = 0;
++/* Remove all the \r chars from the output stream */
++int squash_crs = 0;
++/* Kill server on client disconnect */
++int client_quit = 0;
+ 
+ /*
+ ** The original terminal settings. Shared between the master and attach
+@@ -81,11 +85,13 @@ usage()
+ 		"to ^\\.\n"
+ 		"  -E\t\tDisable the detach character.\n"
+ 		"  -q\t\tQuiet on exit from client.\n"
++		"  -Q\t\tQuit server on last client detach.\n"
+ 		"  -r <method>\tSet the redraw method to <method>. The "
+ 		"valid methods are:\n"
+ 		"\t\t     none: Don't redraw at all.\n"
+ 		"\t\t   ctrl_l: Send a Ctrl L character to the program.\n"
+ 		"\t\t    winch: Send a WINCH signal to the program.\n"
++		"  -R\t\tSquash all \\r chars in output stream.\n"
+ 		"  -w\t\tWait for client to connect before process exec.\n"
+ 		"  -W <#>\tServer exit after # seconds.\n"
+ 		"  -z\t\tDisable processing of the suspend key.\n"
+@@ -172,6 +178,10 @@ main(int argc, char **argv)
+ 				do_clear = 0;
+ 			else if (*p == 'q')
+ 				quiet_flag = 1;
++			else if (*p == 'Q')
++				client_quit = 1;
++			else if (*p == 'R')
++				squash_crs = 1;
+ 			else if (*p == 'w')
+ 				connect_wait = 1;
+ 			else if (*p == 'z')
+diff --git a/master.c b/master.c
+index 774cfe6..14ce513 100644
+--- a/master.c
++++ b/master.c
+@@ -375,6 +375,9 @@ client_activity(struct client *p)
+ 			p->next->pprev = p->pprev;
+ 		*(p->pprev) = p->next;
+ 		free(p);
++		/* Quit if last client and client_quit set */
++		if (client_quit && clients == NULL)
++			exit(0);
+ 		return;
+ 	} 
+ 
+-- 
+1.9.1
+
