@@ -3,14 +3,18 @@
 function setup_cmd_pipe() {
 	local target_container=$1
 	local target_path=$2
+	local oldpipes
 
 	if [ -z "${target_path}" ]; then
 	    CMD_PIPE="/opt/container/${target_container}/cmd-pipe"
+	    oldpipes="/opt/container/${target_container}/dcmd-output"
 	else
 	    CMD_PIPE="${target_path}/cmd-pipe"
+	    oldpipes="${target_path}/dcmd-output"
 	fi
 
-	rm -f ${CMD_PIPE}
+	# Cleanup any old pipes
+	rm -f ${CMD_PIPE} $oldpipes
 
 	# Make sure the command fifo exists
 	mkfifo ${CMD_PIPE} >/dev/null 2>&1

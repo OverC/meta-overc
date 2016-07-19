@@ -182,8 +182,8 @@ function do_command()
 
     # We run this within socat to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
-    # if no one is there, the output is lost.
-    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:${command},pty,setsid,stderr,ctty"
+    # if no one is there, the output is lost after 5 seconds
+    /usr/bin/dtach -N /opt/container/${cname}/dcmd-output -r none -w -W 5 ${command}
 }
 
 function do_error()

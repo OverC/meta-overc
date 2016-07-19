@@ -15,6 +15,7 @@ OVERC_COMMON_EXTENDED = " \
      bash-completion \
      cpio \
      dmidecode \
+     dtach \
      ed \
      fbset \
      findutils \
