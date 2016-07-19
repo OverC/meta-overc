@@ -39,21 +39,18 @@ function do_essential_cmd()
 
 	# the command
 	echo "${cmd}" > /opt/container/local/cmd-pipe
-	file=`wait_for_files 200 /opt/container/local/cmd-output /opt/container/local/cmd-error /opt/container/local/dcmd-output`
+	file=`wait_for_files 200 /opt/container/local/cmd-error /opt/container/local/cmd-output`
 	if [ -n "${file}" ]; then
-	  if [ "${file}" = /opt/container/local/dcmd-output ] ; then
+	    if [ "${file}" = /opt/container/local/cmd-output ] ; then
 		/usr/bin/dtach -a ${file} -q -C -z -r none
-	  else
-	    # The output
-	    # TBD: 2>&1 for stderr messages in env's that try and eat it! (systemd)
-	    # TBD: -t5 only when running in systemd, or other slower envs
-	    socat -t5 - ${file}
-	    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
 		exit 0
 	    else
+		# The output
+		# TBD: 2>&1 for stderr messages in env's that try and eat it! (systemd)
+		# TBD: -t5 only when running in systemd, or other slower envs
+		/usr/bin/dtach -a ${file} -q -C -z -r none
 		exit 1
 	    fi
-	  fi
 	else
 	    echo "ERROR: no response recv'd on: /opt/container/local/cmd-pipe"
 	    exit 2

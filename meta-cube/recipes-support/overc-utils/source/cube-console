@@ -68,6 +68,42 @@ if [ -d "/host/proc" ]; then
     we_are_dom0=t
 fi
 
+function exec_console()
+{
+    local file
+
+    file=`wait_for_files 0.1 100 /opt/container/local/cmd-output /opt/container/local/cmd-error`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
+    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
+	/usr/bin/dtach -a ${file} -q -C -z -r none
+	exit 1
+    fi
+    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
+    fi
+
+    file=`wait_for_files 0.1 100 /opt/container/local/${console_device}`
+    if [ -z "${file}" ]; then
+	echo "[ERROR]: No console is available, and no error reported"
+	exit 2
+    fi
+
+    if [ -z "${notraps}" ]; then
+	echo "Escape character is '^\\'."
+    else
+	escape="-E"
+    fi
+
+    /usr/bin/dtach -a /opt/container/local/${console_device} $escape -q -C -z -r none
+    ret=$?
+    if [ -n "${verbose}" ]; then
+	echo "console connection exited with: $ret"
+    fi
+}
+
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
@@ -81,10 +117,11 @@ function am_i_a_container()
 
 function wait_for_files()
 {
+    local wait_increment=${1:-1} # 1 is the default
+    shift
     local wait_count=${1:-200} # 200 is the default
     shift
     local files=$@ # files to wait for
-    local wait_increment=1 # second sleeps
 
     while [ ${wait_count} -gt 0 ]; do
 	for f in ${files}; do
@@ -121,34 +158,7 @@ function do_essential_console()
 
     echo "console essential" > /opt/container/local/cmd-pipe
 
-    file=`wait_for_files 10 /opt/container/local/cmd-output /opt/container/local/cmd-error`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
-	socat -,raw,echo=0 ${file}
-	exit 1
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
-	console_device=`socat open:${file} - | sed 's/\r//g'`
-    fi
-
-    file=`wait_for_files 10 /opt/container/local/${console_device}`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-
-    if [ -z "${notraps}" ]; then
-	escape=",escape=0x1C"
-    fi
-
-    eval socat -,raw,echo=0${escape} ${file}
-    ret=$?
-    if [ -n "${verbose}" ]; then
-	echo "console connection exited with: $ret"
-    fi
+    exec_console
 }
 
 
@@ -172,35 +182,7 @@ function do_console()
 	echo "console ${target}" > /opt/container/local/cmd-pipe
     fi
 
-    file=`wait_for_files 10 /opt/container/local/cmd-output /opt/container/local/cmd-error`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
-	socat -,raw,echo=0 ${file}
-	exit 1
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
-	console_device=`socat open:${file} - | sed 's/\r//g'`
-    fi
-
-    file=`wait_for_files 10 /opt/container/local/${console_device}`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-
-    if [ -z "${notraps}" ]; then
-	escape=",escape=0x1C"
-    fi
-
-    # for escape codes, see: http://www.nthelp.com/ascii.htm
-    eval socat -,raw,echo=0${escape} ${file}
-    ret=$?
-    if [ -n "${verbose}" ]; then
-	echo "console connection exited with: $ret"
-    fi
+    exec_console
 }
 
 # Parms: $1: target container/console

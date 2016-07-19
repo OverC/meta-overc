@@ -114,7 +114,7 @@ function console_listener() {
 
 		    if [ -n "${we_are_dom0}" ]; then
 			if [ "${target}" == "dom0" ]; then
-			    cmd="/sbin/agetty -J"
+			    cmd="/sbin/agetty -J -"
 			else
 			    # we need to go down to essential to get a console to another container so
 			    # we'll call cube-console again .. which goes to the command server that helps
@@ -123,34 +123,26 @@ function console_listener() {
 			fi
 		    else # we are essential
 			if [ "${target}" == "essential" ]; then
-			    cmd="/sbin/agetty -J"
+			    cmd="/sbin/agetty -J -"
 			else
 			    # if the target is another container, we need to run a getty in the console
 			    # and connect to it. We do this to avoid lxc-console, which cannot be exited
-			    # without a control character, and can have only one active at time. To avoid
-			    # the complications of embedding this command into the one liner below, we just
-			    # create a helper script and run that.
-			    rm -f /tmp/console-helper
-cat <<EOF > /tmp/console-helper
-#/bin/sh
-lxc-attach -n ${target} -- socat -,raw,echo=0 "exec:/sbin/agetty -J - linux,pty,setsid,stderr,ctty"
-EOF
-                            chmod +x /tmp/console-helper
-			    cmd="/tmp/console-helper"
+			    # without a control character, and can have only one active at time.
+			    cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
 			fi
 		    fi
 
 		    # send the number of the console to the caller
-		    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+		    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
 		    # exec the console command .. or proxy
-		    socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:${cmd} - linux,pty,setsid,stderr,ctty"
+		    /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
 		fi
 		if [ "${type}" = "namespace" ]; then
 		    if [ "${connectorname}" == "dom0" ]; then
 			# namespace enter!
 			if [ -n "$target" ]; then
-			    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
-			    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/${console_file} "exec:lxc-attach -n ${target} /bin/sh,pty,setsid,stderr,ctty"
+			    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+			    /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q lxc-attach -n ${target} /bin/sh
 			else
 			    do_error "[ERROR]: namespace consoles require a target container"
 			    output_and_log_msg "[ERROR]: namespace consoles require a target container"
@@ -158,9 +150,9 @@ EOF
 		    else
 			cmd="cube-console --ns ${target}"
 			# send the number of the console to the caller
-			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-output "exec:echo ${console_file},pty,setsid,stderr,ctty"
+			/usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
 			# exec the console command .. or proxy
-			socat $debug pty,raw,echo=0,mode=666,link=/opt/container/${cname}/${console_file} "exec:${cmd} - linux,pty,setsid,stderr,ctty"
+			/usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
                    fi
 		fi
 	    ) &
@@ -180,20 +172,20 @@ function do_command()
     # if the command is not in a valid set of root commands, we switch user
     # to something unprivileged
 
-    # We run this within socat to allow for ptys, pipes, etc, to be used
+    # We run this within dtach to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost after 5 seconds
-    /usr/bin/dtach -N /opt/container/${cname}/dcmd-output -r none -w -W 5 ${command}
+    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 ${command}
 }
 
 function do_error()
 {
     local message="$@"
 
-    # We run this within socat to allow for ptys, pipes, etc, to be used
+    # We run this within dtach to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost.
-    socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${cname}/cmd-error "exec:echo \"${message}\",pty,setsid,stderr,ctty"
+    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "${message}"
 }
 
 function output_and_log_msg()
@@ -488,7 +480,7 @@ while (true) do
 		    output_and_log_msg "[INFO]: issuing cmd-server-restart for $requestor"
 		    # dump a message and then flee
 		    if [ -p "/opt/container/${requestor}/cmd-output" ]; then
-			socat $debug pty,raw,echo=0,mode=666,wait-slave,link=/opt/container/${requestor}/cmd-output "exec:echo cmd-server restarting,pty,setsid,stderr,ctty"
+			/usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "cmd-server restarting"
 		    fi
 		    # clean exit, so systemd will restart us
 		    break
