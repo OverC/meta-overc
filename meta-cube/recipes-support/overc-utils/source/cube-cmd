@@ -14,7 +14,7 @@ function wait_for_files()
     local wait_count=${1:-200} # 200 is the default
     shift
     local files=$@ # files to wait for
-    local wait_increment=1 # second sleeps
+    local wait_increment=0.1 # second sleeps
 
     while [ ${wait_count} -gt 0 ]; do
 	for f in ${files}; do
