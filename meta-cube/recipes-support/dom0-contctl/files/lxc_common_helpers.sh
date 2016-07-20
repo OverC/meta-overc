@@ -143,9 +143,7 @@ function exec_lxc_cmd_cn {
     [ $? -eq 0 -a "${cn_name}" != "${HOST_CN_NAME}" ] && lxc_log "Error, container ${cn_name} does not exist." && return 1
 
     is_current_cn ${cn_name}
-    if [ $? -eq 1 ] ; then
-        $@
-    elif [ "${cn_name}" == "${HOST_CN_NAME}" ]; then
+    if [ $? -eq 1 -o "${cn_name}" == "${HOST_CN_NAME}" ]; then
 	do_essential_cmd $@
 	return $?
     else
