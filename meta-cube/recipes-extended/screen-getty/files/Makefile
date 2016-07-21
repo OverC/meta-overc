@@ -9,13 +9,13 @@ clean:
 	rm -f $(OBJS) *.o
 
 %.o: %.c
-	$(CC) -Wall -c $<
+	$(CC) $(CFLAGS) -Wall -c $<
 
 screen-getty: screen-getty.o
-	$(CC) -Wall -o $@ $^
+	$(CC) $(LDFLAGS) -Wall -o $@ $^
 
 agetty-shell: agetty-shell.o
-	$(CC) -Wall -o $@ $^
+	$(CC) $(LDFLAGS) -Wall -o $@ $^
 
 install: $(OBJS)
 	install -d $(DEST)/sbin
