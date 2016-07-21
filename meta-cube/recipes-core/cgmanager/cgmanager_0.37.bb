@@ -19,7 +19,7 @@ DEPENDS += "libnih libnih-native"
 # The test scripts need some extra facilities
 RDEPENDS_${PN} += "libnih bash sudo util-linux"
 
-EXTRA_OECONF += "--with-distro=${DISTRO} --with-init-script=\
+EXTRA_OECONF += "--sbindir=/sbin --with-distro=${DISTRO} --with-init-script=\
 ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit,', '', d)}\
 ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"
 
