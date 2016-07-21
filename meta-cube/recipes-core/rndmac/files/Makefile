@@ -9,10 +9,10 @@ clean:
 	rm -f $(OBJS) hashmac
 
 %.o: %.c
-	$(CC) -Wall -c $<
+	$(CC) $(CFLAGS) -Wall -c $<
 
 hashmac: $(OBJS)
-	$(CC) -Wall -o $@ $^
+	$(CC) $(LDFLAGS) -Wall -o $@ $^
 
 install:
 	install -d $(DEST)
