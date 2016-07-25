@@ -21,3 +21,4 @@ consul_migrate_sysroot_preprocess () {
 }
 
 CLEANBROKEN = "1"
+INSANE_SKIP_${PN} = "ldflags"
