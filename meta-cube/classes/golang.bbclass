@@ -11,6 +11,8 @@ do_compile() {
     export GOPATH=${S}:${STAGING_DIR_TARGET}/${prefix}/local/go:${S}/.gopath
     export GOARCH="${TARGET_ARCH}"
     export CGO_ENABLED="1"
+    export CGO_CFLAGS="${CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
+    export CGO_LDFLAGS="${LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 
     # avoid using the default '/var/tmp'
     export TMPDIR=${WORKDIR}/build-tmp
