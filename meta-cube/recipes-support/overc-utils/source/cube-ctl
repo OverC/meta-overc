@@ -31,7 +31,7 @@ commands (and options):
 
        <name>: name of the container to be stopped
 
- ${0##*/} add [-n <name>] <source tar.bz2>
+ ${0##*/} add [-n <name>] [-u <subuid>] <source tar.bz2>
 
     add a container to the platform. Once added, the container is monitored, but
     not started. Use "cube-ctl start" to launch a container after adding it.
@@ -39,6 +39,11 @@ commands (and options):
        -n <name>: name of the container once added to the system. If this is
                   not supplied, the container source tarball is used to generate
                   a name.
+
+       -u: make this newly added container unprivileged. The subuid field will
+           be used to set the owner of the uid/gid in the root namespace for the
+           newly added container. If no subuid field is provided, a default
+           value of 800000 will be used.
 
        <source>: path to the container source (tar.bz2)
 
@@ -82,6 +87,10 @@ raw_command=($@)
 force=""
 peer=t
 non_dashed=""
+
+# this corresponds to the lxc.id_map items within the container's config file
+DEFAULT_SUBUID=800000
+
 while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
@@ -98,6 +107,19 @@ while [ $# -gt 0 ]; do
 	    parent=${2}
 	    shift
 	    ;;
+	-u)
+		# This is an unprivileged container. We need to config subuid/subgid.
+		if [ "${2}" -eq "${2}" ] 2>/dev/null; then
+			if [ "${2}" -lt 100000 ] 2>/dev/null; then
+				echo "Error: -u requires a subuid number no less than 100000"
+				exit 1
+			fi
+			subuid="${2}"
+			shift
+		else
+			subuid="${DEFAULT_SUBUID}"
+		fi
+		;;
 	-F)
 	    force=-F
 	    ;;
@@ -242,7 +264,17 @@ case "${cmd}" in
 	    container_name="`cubename ${filename}`"
 	fi
 
-	${overc_cctl} add -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
+	# unprivileged. create default subuid/subgids for root and pass the
+	# parameter to overc_ctl for container settings
+	if [ -n ${subuid} ]; then
+		privilege_param="-p -g peer -u ${subuid}"
+		cube-cmd cmd "touch /etc/subuid /etc/subgid"
+		cube-cmd cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
+		cube-cmd cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
+	else
+		privilege_param="-g onboot -a"
+	fi
+	${overc_cctl} add ${privilege_param} -d -c -t 0 -n ${container_name} -f ${container_source}
 	if [ $? != 0 ]; then
 	    echo "Add container failed ..."
 	    exit 1
