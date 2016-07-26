@@ -55,6 +55,8 @@ case "$1" in
 	    exit 0;
 	fi
 
+        cgmanager -m name=systemd --daemon
+
         if [ -n "$BOOTGROUPS" ]; then
             BOOTGROUPS="-g $BOOTGROUPS"
         fi
