@@ -12,6 +12,7 @@ SRC_URI += " \
     file://ovs-up \
     file://ovs-down \
     file://silence_no_escape_lxc-console.patch \
+    file://read-write-file-handles-after-EPOLLHUP.patch \
     "
 
 do_install_append(){
