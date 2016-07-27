@@ -15,6 +15,7 @@ SRC_URI = "git://github.com/crigler/dtach.git \
 	file://Add-additional-functions-to-dtach.patch \
 	file://Add-quit-on-detach-and-squash-r-options.patch \
 	file://Add-ability-to-run-a-client-with-from-a-non-interact.patch \
+	file://Handle-EOF-properly-on-client-without-a-terminal.patch \
 	"
 SRCREV = "7acac922770597f5da5df7b290078770d20dac32"
 
