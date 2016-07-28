@@ -6,7 +6,11 @@ Before=lxc.service
 [Service]
 Type=forking
 Environment=FACTER_ipaddress="192.168.42.2"
-ExecStart=/usr/bin/puppet apply /etc/puppet/manifests/site.pp
+#Run unconditionally 
+#ExecStart=/usr/bin/puppet apply /etc/puppet/manifests/site.pp
+#Only run on first boot and if RPM db has changed
+ExecStart=/bin/sh -c "[ /var/lib/rpm/Packages -nt /var/lib/rpm/puppet_run ] && /usr/bin/puppet apply /etc/puppet/manifests/site.pp && touch /var/lib/rpm/puppet_run"
+
 
 [Install]
 WantedBy=multi-user.target
