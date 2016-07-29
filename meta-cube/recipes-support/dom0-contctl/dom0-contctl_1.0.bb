@@ -4,7 +4,7 @@ DESCRIPTION = "A tool for deploying, querying, etc lxc containers from Domain 0"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
-RDEPENDS_${PN} = "util-linux lxc bash python"
+RDEPENDS_${PN} = "util-linux lxc bash python cgmanager"
 
 SRC_URI = "file://dom0_contctl \
            file://lxc_driver.sh \
