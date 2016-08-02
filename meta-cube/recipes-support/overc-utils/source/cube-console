@@ -40,194 +40,194 @@ EOF
 }
 
 if [ -z "$1" ]; then
-    usage
-    exit
+	usage
+	exit
 fi
 
 while [ $# -gt 0 ]; do
-    case "$1" in
-	-v) verbose=t
-            ;;
-	--force) force=t
-            ;;
-	--notraps) notraps=t
-            ;;
-	--ns) namespace=t
-            ;;
-	-h|--help|?)
-	    usage
-	    exit
-	    ;;
-        *) break
-            ;;
-    esac
-    shift
+	case "$1" in
+		-v) verbose=t
+			;;
+		--force) force=t
+			;;
+		--notraps) notraps=t
+			;;
+		--ns) namespace=t
+			;;
+		-h|--help|?)
+			usage
+			exit
+			;;
+		*) break
+			;;
+	esac
+	shift
 done
 
 if [ -d "/host/proc" ]; then
-    we_are_dom0=t
+	we_are_dom0=t
 fi
 
 function exec_console()
 {
-    local file
+	local file
 
-    file=`wait_for_files 0.1 100 /opt/container/local/cmd-output /opt/container/local/cmd-error`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
-	/usr/bin/dtach -a ${file} -q -C -z -r none
-	exit 1
-    fi
-    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
-	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
-    fi
+	file=`wait_for_files 0.1 100 /opt/container/local/cmd-output /opt/container/local/cmd-error`
+	if [ -z "${file}" ]; then
+		echo "[ERROR]: No console is available, and no error reported"
+		exit 2
+	fi
+	if [ "${file}" = "/opt/container/local/cmd-error" ]; then
+		/usr/bin/dtach -a ${file} -q -C -z -r none
+		exit 1
+	fi
+	if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+		console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
+	fi
 
-    file=`wait_for_files 0.1 100 /opt/container/local/${console_device}`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
+	file=`wait_for_files 0.1 100 /opt/container/local/${console_device}`
+	if [ -z "${file}" ]; then
+		echo "[ERROR]: No console is available, and no error reported"
+		exit 2
+	fi
 
-    if [ -z "${notraps}" ]; then
-	echo "Escape character is '^\\'."
-    else
-	escape="-E"
-    fi
+	if [ -z "${notraps}" ]; then
+		echo "Escape character is '^\\'."
+	else
+		escape="-E"
+	fi
 
-    /usr/bin/dtach -a /opt/container/local/${console_device} $escape -q -C -z -r none
-    ret=$?
-    if [ -n "${verbose}" ]; then
-	echo "console connection exited with: $ret"
-    fi
+	/usr/bin/dtach -a /opt/container/local/${console_device} $escape -q -C -z -r none
+	ret=$?
+	if [ -n "${verbose}" ]; then
+		echo "console connection exited with: $ret"
+	fi
 }
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt=`systemd-detect-virt`
-    if [ "${virt}" = "lxc" ]; then
-	return 1
-    fi
+	local virt=`systemd-detect-virt`
+	if [ "${virt}" = "lxc" ]; then
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
 function wait_for_files()
 {
-    local wait_increment=${1:-1} # 1 is the default
-    shift
-    local wait_count=${1:-200} # 200 is the default
-    shift
-    local files=$@ # files to wait for
+	local wait_increment=${1:-1} # 1 is the default
+	shift
+	local wait_count=${1:-200} # 200 is the default
+	shift
+	local files=$@ # files to wait for
 
-    while [ ${wait_count} -gt 0 ]; do
-	for f in ${files}; do
-	    ls -alF ${f} > /dev/null 2>&1
-	    if [ -e "${f}" ]; then
-		echo "${f}"
-		return 0
-	    fi
+	while [ ${wait_count} -gt 0 ]; do
+		for f in ${files}; do
+			ls -alF ${f} > /dev/null 2>&1
+			if [ -e "${f}" ]; then
+				echo "${f}"
+				return 0
+			fi
+		done
+		sleep ${wait_increment}
+		wait_count=$((wait_count - 1))
 	done
-	sleep ${wait_increment}
-	wait_count=$((wait_count - 1))
-    done
 
-    return 1
+	return 1
 }
 
 # essential is only available from dom0, so we need extra checks
 function do_essential_console()
 {
-    if [ ! -d "/host/proc" ]; then
-	echo "ERROR: essential console can only be entered via dom0"
-	exit 1
-    fi
+	if [ ! -d "/host/proc" ]; then
+		echo "ERROR: essential console can only be entered via dom0"
+		exit 1
+	fi
 
-    if [ ! -d "/essential" ]; then
-	echo "ERROR: essential filesystem is not available on /essential"
-	exit 1
-    fi
+	if [ ! -d "/essential" ]; then
+		echo "ERROR: essential filesystem is not available on /essential"
+		exit 1
+	fi
 
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to essential"
-	exit 1
-    fi
+	if [ ! -e "/opt/container/local/cmd-pipe" ]; then
+		echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to essential"
+		exit 1
+	fi
 
-    echo "console essential" > /opt/container/local/cmd-pipe
+	echo "console essential" > /opt/container/local/cmd-pipe
 
-    exec_console
+	exec_console
 }
 
 
 function do_console()
 {
-    local target=$1
-    local type=$2 # namspace or login
+	local target=$1
+	local type=$2 # namspace or login
 
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console"
-	exit 1
-    fi
+	if [ ! -e "/opt/container/local/cmd-pipe" ]; then
+		echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console"
+		exit 1
+	fi
 
-    if [ -z "${type}" ]; then
-	type=login
-    fi
+	if [ -z "${type}" ]; then
+		type=login
+	fi
 
-    if [ -n "${namespace}" ]; then
-	echo "nsenter ${target}" > /opt/container/local/cmd-pipe
-    else
-	echo "console ${target}" > /opt/container/local/cmd-pipe
-    fi
+	if [ -n "${namespace}" ]; then
+		echo "nsenter ${target}" > /opt/container/local/cmd-pipe
+	else
+		echo "console ${target}" > /opt/container/local/cmd-pipe
+	fi
 
-    exec_console
+	exec_console
 }
 
 # Parms: $1: target container/console
 function enter_console
 {
-    local consolename=$1
+	local consolename=$1
 
-    case $consolename in
-        list)
-	    if [ -n "${we_are_dom0}" ]; then
-		x=`cube-cmd lxc-ls`
-		x="essential $x"
-	    else
-		x="dom0"
-	    fi
-	    echo "$x"
-	    ;;
-	*essential*)
-	    if [ -n "${we_are_dom0}" ]; then
-		do_essential_console
-	    else
-		echo "ERROR: essential console is only available to dom0"
-		exit 1
-	    fi
-	    ;;
-	*dom0*)
-	    do_console dom0 login
-	    ;;
-	*)
-	    if [ -n "${we_are_dom0}" ] || [ -n "${force}" ]; then
-		do_console ${consolename} login
-	    else
-		echo "ERROR: only connections to dom0 are supported from non-system containers"
-		exit 1
-	    fi
-	    ;;
-    esac
+	case $consolename in
+		list)
+			if [ -n "${we_are_dom0}" ]; then
+				x=`cube-cmd lxc-ls`
+				x="essential $x"
+			else
+				x="dom0"
+			fi
+			echo "$x"
+			;;
+		*essential*)
+			if [ -n "${we_are_dom0}" ]; then
+				do_essential_console
+			else
+				echo "ERROR: essential console is only available to dom0"
+				exit 1
+			fi
+			;;
+		*dom0*)
+			do_console dom0 login
+			;;
+		*)
+			if [ -n "${we_are_dom0}" ] || [ -n "${force}" ]; then
+				do_console ${consolename} login
+			else
+				echo "ERROR: only connections to dom0 are supported from non-system containers"
+				exit 1
+			fi
+			;;
+	esac
 }
 
 am_i_a_container
 if [ $? -eq 0 ]; then
-    echo "ERROR: host detected, cube-console only works in a monitored container."
-    echo "       Commands must be directly invoked in essential, control functions"
-    echo "       via the control domain."
-    exit 1
+	echo "ERROR: host detected, cube-console only works in a monitored container."
+	echo "       Commands must be directly invoked in essential, control functions"
+	echo "       via the control domain."
+	exit 1
 fi
 
 enter_console $1
