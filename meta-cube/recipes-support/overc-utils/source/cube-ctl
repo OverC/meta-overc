@@ -77,8 +77,8 @@ EOF
 }
 
 if [ -z "$1" ]; then
-    usage
-    exit
+	usage
+	exit
 fi
 
 # take the entire command into an array
@@ -92,118 +92,118 @@ non_dashed=""
 DEFAULT_SUBUID=800000
 
 while [ $# -gt 0 ]; do
-    case "$1" in
-	-v) verbose=t
-            ;;
-        --peer)
-	    peer=t
-	    nested=
-	    ;;
-	--nested)
-	    nested=t
-	    peer=
-	    ;;
-	--parent)
-	    parent=${2}
-	    shift
-	    ;;
-	-u)
-		# This is an unprivileged container. We need to config subuid/subgid.
-		if [ "${2}" -eq "${2}" ] 2>/dev/null; then
-			if [ "${2}" -lt 100000 ] 2>/dev/null; then
-				echo "Error: -u requires a subuid number no less than 100000"
-				exit 1
-			fi
-			subuid="${2}"
+	case "$1" in
+		-v) verbose=t
+			;;
+		--peer)
+			peer=t
+			nested=
+			;;
+		--nested)
+			nested=t
+			peer=
+			;;
+		--parent)
+			parent=${2}
 			shift
-		else
-			subuid="${DEFAULT_SUBUID}"
-		fi
-		;;
-	-F)
-	    force=-F
-	    ;;
-        --n|-n)
-	    container_name=${2}
-	    shift
-	    ;;
-	-h|--help)
-	    usage
-	    exit
-	    ;;
-	--*)
-	    # if the next argument is dashed, we just add $1 to our collection
-	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
-	    # to the --dashed option, and we grab it as well. Don't try and mix
-	    # dashed and non-dashed, since we'll grab them!
-	    case $2 in
+			;;
+		-u)
+			# This is an unprivileged container. We need to config subuid/subgid.
+			if [ "${2}" -eq "${2}" ] 2>/dev/null; then
+				if [ "${2}" -lt 100000 ] 2>/dev/null; then
+					echo "Error: -u requires a subuid number no less than 100000"
+					exit 1
+				fi
+				subuid="${2}"
+				shift
+			else
+				subuid="${DEFAULT_SUBUID}"
+			fi
+			;;
+		-F)
+			force=-F
+			;;
+		--n|-n)
+			container_name=${2}
+			shift
+			;;
+		-h|--help)
+			usage
+			exit
+			;;
 		--*)
-		    dashed="${dashed} $1"
-		    ;;
-		*)
-		    # sneak a : in between, so we can split it later
-		    dashed="${dashed} $1:$2"
-		    shift
-		    ;;
-	    esac
-	    ;;
-	*:*)
-	    # once we see something of the format <foo>:<var>, we are done processing,
-	    # since all other options are for the embedded command
-	    cmd=exec
-	    exec_cmd=$@
-	    shift $#
-	    ;;
-        *) non_dashed="${non_dashed} $1"
-            ;;
-    esac
-    shift
+			# if the next argument is dashed, we just add $1 to our collection
+			# of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
+			# to the --dashed option, and we grab it as well. Don't try and mix
+			# dashed and non-dashed, since we'll grab them!
+			case $2 in
+				--*)
+					dashed="${dashed} $1"
+					;;
+				*)
+					# sneak a : in between, so we can split it later
+					dashed="${dashed} $1:$2"
+					shift
+					;;
+			esac
+			;;
+		*:*)
+			# once we see something of the format <foo>:<var>, we are done processing,
+			# since all other options are for the embedded command
+			cmd=exec
+			exec_cmd=$@
+			shift $#
+			;;
+		*) non_dashed="${non_dashed} $1"
+			;;
+	esac
+	shift
 done
 
 dom0ctl="/opt/dom0-contctl/dom0_contctl"
 overc_cctl="/opt/overc-installer/overc-cctl"
 
 if [ -f "${dom0ctl}" ]; then
-    i_am_dom0=t
+	i_am_dom0=t
 fi
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt=`systemd-detect-virt`
-    if [ "${virt}" = "lxc" ]; then
-	return 1
-    fi
+	local virt=`systemd-detect-virt`
+	if [ "${virt}" = "lxc" ]; then
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
 if [ -d "/host/proc" ]; then
-    we_are_dom0=t
+	we_are_dom0=t
 fi
 
 # make an array from whatever was non-dashed
 cmd_options_non_dashed=(${non_dashed})
 
 if [ -z "${cmd}" ]; then
-    # the first element is the command
-    cmd=${cmd_options_non_dashed[0]}
+	# the first element is the command
+	cmd=${cmd_options_non_dashed[0]}
 fi
 
 check_required()
 {
-    if [ ! -e "${1}" ]; then
-	echo "[ERROR]: required command ${1} not found, exiting"
-	exit 1
-    fi
+	if [ ! -e "${1}" ]; then
+		echo "[ERROR]: required command ${1} not found, exiting"
+		exit 1
+	fi
 }
 
 check_if_present()
 {
-    if [ -e "${1}" ]; then
-	return 0
-    fi
-    return 1
+	if [ -e "${1}" ]; then
+		return 0
+	fi
+	return 1
 }
 
 # Check if the passed string matches any known container names
@@ -211,184 +211,184 @@ check_if_present()
 # additionally sets the global ${containers}
 check_is_known_container()
 {
-    container_name=$1
+	container_name=$1
 
-    if [ -n "${i_am_dom0}" ]; then
-	containers="`cube-cmd lxc-ls`"
-	if [ -n "${containers}" ]; then
-	    echo ${containers} | grep -q -w ${container_name}
-	    if [ $? -ne 0 ]; then
+	if [ -n "${i_am_dom0}" ]; then
+		containers="`cube-cmd lxc-ls`"
+		if [ -n "${containers}" ]; then
+			echo ${containers} | grep -q -w ${container_name}
+			if [ $? -ne 0 ]; then
+				return 1
+			fi
+		fi
+	else
 		return 1
-	    fi
 	fi
-    else
-	return 1
-    fi
 
-    return 0
+	return 0
 }
 
 am_i_a_container
 if [ $? -eq 0 ]; then
-    echo "ERROR: host detected, cube-ctl only works in a monitored container."
-    echo "       Commands must be directly invoked in essential, control functions"
-    echo "       via the control domain."
-    exit 1
+	echo "ERROR: host detected, cube-ctl only works in a monitored container."
+	echo "       Commands must be directly invoked in essential, control functions"
+	echo "       via the control domain."
+	exit 1
 fi
 
 case "${cmd}" in
-    add)
-	check_required ${overc_cctl}
+	add)
+		check_required ${overc_cctl}
 
-	# the first non dashed argument will be the container source
-	container_source=${cmd_options_non_dashed[1]}
+		# the first non dashed argument will be the container source
+		container_source=${cmd_options_non_dashed[1]}
 
-	for o in ${dashed}; do
-	    case ${o} in
-		-n*)
-		    container_name=`echo $o | cut -d: -f2`
-		    ;;
-		*)
-		    echo "Unknow parameter ..."
-		    usage
-		    exit
-		    ;;
-	    esac
-	done
+		for o in ${dashed}; do
+			case ${o} in
+				-n*)
+					container_name=`echo $o | cut -d: -f2`
+					;;
+				*)
+					echo "Unknow parameter ..."
+					usage
+					exit
+					;;
+			esac
+		done
 
-	# if no name was provided, we just generate one from the source
-	if [ -z "${container_name}" ]; then
-	    filename=$(basename "$container_source")
-	    extension="${filename##*.}"
-	    filename="${filename%%.*}"
-	    container_name="`cubename ${filename}`"
-	fi
+		# if no name was provided, we just generate one from the source
+		if [ -z "${container_name}" ]; then
+			filename=$(basename "$container_source")
+			extension="${filename##*.}"
+			filename="${filename%%.*}"
+			container_name="`cubename ${filename}`"
+		fi
 
-	# unprivileged. create default subuid/subgids for root and pass the
-	# parameter to overc_ctl for container settings
-	if [ -n "${subuid}" ]; then
-		privilege_param="-u ${subuid}"
-		cube-cmd cmd "touch /etc/subuid /etc/subgid"
-		cube-cmd cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
-		cube-cmd cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
-	fi
-	${overc_cctl} add ${privilege_param} -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
-	if [ $? != 0 ]; then
-	    echo "Add container failed ..."
-	    exit 1
-	fi
-	# now we need to restart the command server, so the new container can be monitored
-	# echo "exit" /tmp/container/self/cmd-pipe"
-	systemctl restart cube-cmd-server
-	;;
-    del|delete|remove)
-	check_required ${overc_cctl}
-	check_required ${dom0ctl}
+		# unprivileged. create default subuid/subgids for root and pass the
+		# parameter to overc_ctl for container settings
+		if [ -n "${subuid}" ]; then
+			privilege_param="-u ${subuid}"
+			cube-cmd cmd "touch /etc/subuid /etc/subgid"
+			cube-cmd cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
+			cube-cmd cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
+		fi
+		${overc_cctl} add ${privilege_param} -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
+		if [ $? != 0 ]; then
+			echo "Add container failed ..."
+			exit 1
+		fi
+		# now we need to restart the command server, so the new container can be monitored
+		# echo "exit" /tmp/container/self/cmd-pipe"
+		systemctl restart cube-cmd-server
+		;;
+	del|delete|remove)
+		check_required ${overc_cctl}
+		check_required ${dom0ctl}
 
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
+		# the second non dashed argument will be the container name
+		container_name=${cmd_options_non_dashed[1]}
 
-	if ! check_is_known_container ${container_name}; then
-	    echo "[ERROR] Container ${container_name} not found, cannot remove."
-	    echo -n "Valid containers are: "
-	    echo ${containers}
-	    exit 1
-	fi
+		if ! check_is_known_container ${container_name}; then
+			echo "[ERROR] Container ${container_name} not found, cannot remove."
+			echo -n "Valid containers are: "
+			echo ${containers}
+			exit 1
+		fi
 
-	echo "[INFO] stopping container ${container_name}"
-	${dom0ctl} stop -n ${container_name}
+		echo "[INFO] stopping container ${container_name}"
+		${dom0ctl} stop -n ${container_name}
 
-	# now nuke it
-	echo "[INFO] removing container ${container_name}"
-	${overc_cctl} delete ${force} -n ${container_name}
-	;;
-    start)
-	check_required ${dom0ctl}
+		# now nuke it
+		echo "[INFO] removing container ${container_name}"
+		${overc_cctl} delete ${force} -n ${container_name}
+		;;
+	start)
+		check_required ${dom0ctl}
 
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
-	if [ -n "${peer}" ]; then
-	    ${dom0ctl} launch-peer -n ${container_name}
-	else
-	    if [ -n "${parent}" ]; then
-		opts="-p ${parent}"
-	    fi
-	    ${dom0ctl} launch-nested ${opts} -n ${container_name}
-	fi
-	;;
-    status|list)
-	check_if_present ${dom0ctl}
-	if [ $? -eq 0 ]; then
-	    ${dom0ctl} list
-	else
-	    cube-cmd lxc-ls
-	fi
-	;;
-    info)
-	check_required ${dom0ctl}
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
-	${dom0ctl} info -n ${container_name}
-	;;
-    restart)
-	check_required ${dom0ctl}
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
-	${dom0ctl} relaunch -n ${container_name}
-	;;
-    stop)
-	check_required ${dom0ctl}
+		# the second non dashed argument will be the container name
+		container_name=${cmd_options_non_dashed[1]}
+		if [ -n "${peer}" ]; then
+			${dom0ctl} launch-peer -n ${container_name}
+		else
+			if [ -n "${parent}" ]; then
+				opts="-p ${parent}"
+			fi
+			${dom0ctl} launch-nested ${opts} -n ${container_name}
+		fi
+		;;
+	status|list)
+		check_if_present ${dom0ctl}
+		if [ $? -eq 0 ]; then
+			${dom0ctl} list
+		else
+			cube-cmd lxc-ls
+		fi
+		;;
+	info)
+		check_required ${dom0ctl}
+		# the second non dashed argument will be the container name
+		container_name=${cmd_options_non_dashed[1]}
+		${dom0ctl} info -n ${container_name}
+		;;
+	restart)
+		check_required ${dom0ctl}
+		# the second non dashed argument will be the container name
+		container_name=${cmd_options_non_dashed[1]}
+		${dom0ctl} relaunch -n ${container_name}
+		;;
+	stop)
+		check_required ${dom0ctl}
 
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
+		# the second non dashed argument will be the container name
+		container_name=${cmd_options_non_dashed[1]}
 
-	if ! check_is_known_container ${container_name}; then
-	    echo "[ERROR] Container ${container_name} not found, cannot stop."
-	    echo -n "Valid containers are: "
-	    echo ${containers}
-	    exit 1
-	fi
-	echo "[INFO] stopping container ${container_name}"
-	if ! ${dom0ctl} stop -n ${container_name}; then
-	    if ${dom0ctl} info -n ${container_name} | grep -q "State:[[:space:]]*STOPPED"; then
-		echo "[ERROR] Stopping ${container_name} encountered issues."
-		echo "[ERROR] Container ${container_name} might have already been stopped."
-	    fi
-	    exit 1
-	fi
-	;;
-    exec)
-	# this is execute: <target>:<command>
+		if ! check_is_known_container ${container_name}; then
+			echo "[ERROR] Container ${container_name} not found, cannot stop."
+			echo -n "Valid containers are: "
+			echo ${containers}
+			exit 1
+		fi
+		echo "[INFO] stopping container ${container_name}"
+		if ! ${dom0ctl} stop -n ${container_name}; then
+			if ${dom0ctl} info -n ${container_name} | grep -q "State:[[:space:]]*STOPPED"; then
+				echo "[ERROR] Stopping ${container_name} encountered issues."
+				echo "[ERROR] Container ${container_name} might have already been stopped."
+			fi
+			exit 1
+		fi
+		;;
+	exec)
+		# this is execute: <target>:<command>
 
-	# remove the : separator
-	non_dashed_no_colon=`echo ${exec_cmd[@]} | sed 's/:/ /g'`
-	# make an array so we can yank out the name and command
-	cmd_options_non_dashed=(${non_dashed_no_colon})
+		# remove the : separator
+		non_dashed_no_colon=`echo ${exec_cmd[@]} | sed 's/:/ /g'`
+		# make an array so we can yank out the name and command
+		cmd_options_non_dashed=(${non_dashed_no_colon})
 
-	# the container name is the first element
-	container_name=${cmd_options_non_dashed[0]}
+		# the container name is the first element
+		container_name=${cmd_options_non_dashed[0]}
 
-	# remove the first option from the command, we'll be passing it along, unprocessed
-	cmd_to_exec=("${cmd_options_non_dashed[@]:1}")
+		# remove the first option from the command, we'll be passing it along, unprocessed
+		cmd_to_exec=("${cmd_options_non_dashed[@]:1}")
 
-	if [ "${container_name}" = "host" ] || [ "${container_name}" = "essential" ]; then
-	    if [ -n "${verbose}" ]; then
-		echo "running: cube-cmd ${cmd_to_exec[@]}"
-	    fi
+		if [ "${container_name}" = "host" ] || [ "${container_name}" = "essential" ]; then
+			if [ -n "${verbose}" ]; then
+				echo "running: cube-cmd ${cmd_to_exec[@]}"
+			fi
 
-	    cube-cmd cmd ${cmd_to_exec[@]}
-	else
-	    check_required ${dom0ctl}
+			cube-cmd cmd ${cmd_to_exec[@]}
+		else
+			check_required ${dom0ctl}
 
-	    if [ -n "${verbose}" ]; then
-		echo "running: ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}"
-	    fi
+			if [ -n "${verbose}" ]; then
+				echo "running: ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}"
+			fi
 
-	    ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}
-	fi
-	;;
-    *)
-	echo "Unknown command ..."
-	usage
-	;;
+			${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}
+		fi
+		;;
+	*)
+		echo "Unknown command ..."
+		usage
+		;;
 esac

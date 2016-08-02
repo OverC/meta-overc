@@ -47,48 +47,48 @@ fi
 
 # See how we were called.
 case "$1" in
-    start)
-        [ "x$DOM0_AUTO" = "xtrue" ] || { exit 0; }
+	start)
+		[ "x$DOM0_AUTO" = "xtrue" ] || { exit 0; }
 
-        if [ -f "$lockdir"/dom0 ]; then
-	    echo "ERROR: dom0 start is locked, exiting"
-	    exit 0;
-	fi
+		if [ -f "$lockdir"/dom0 ]; then
+			echo "ERROR: dom0 start is locked, exiting"
+			exit 0;
+		fi
 
-        cgmanager -m name=systemd --daemon
+		cgmanager -m name=systemd --daemon
 
-        if [ -n "$BOOTGROUPS" ]; then
-            BOOTGROUPS="-g $BOOTGROUPS"
-        fi
+		if [ -n "$BOOTGROUPS" ]; then
+			BOOTGROUPS="-g $BOOTGROUPS"
+		fi
 
-        # Start autoboot containers first then the NULL group "peer".
-        exec "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
-        touch "$lockdir"/dom0
-    ;;
+		# Start autoboot containers first then the NULL group "peer".
+		exec "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
+		touch "$lockdir"/dom0
+		;;
 
-    stop)
-        if [ -n "$SHUTDOWNDELAY" ]; then
-            SHUTDOWNDELAY="-t $SHUTDOWNDELAY"
-        fi
+	stop)
+		if [ -n "$SHUTDOWNDELAY" ]; then
+			SHUTDOWNDELAY="-t $SHUTDOWNDELAY"
+		fi
 
-        # The stop is serialized and can take excessive time.  We need to avoid
-        # delaying the system shutdown / reboot as much as we can since it's not
-        # parallelized...  Even 5 second timout may be too long.
+		# The stop is serialized and can take excessive time.  We need to avoid
+		# delaying the system shutdown / reboot as much as we can since it's not
+		# parallelized...  Even 5 second timout may be too long.
 
-	## TODO: implement stop for a group
-        #"$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
-        rm -f "$lockdir"/dom0
-    ;;
+		## TODO: implement stop for a group
+		#"$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
+		rm -f "$lockdir"/dom0
+		;;
 
-    restart|reload|force-reload)
-        $0 stop
-        $0 start
-    ;;
+	restart|reload|force-reload)
+		$0 stop
+		$0 start
+		;;
 
-    *)
-        echo "Usage: $0 {start|stop|restart|reload|force-reload}"
-        exit 2
-    ;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload|force-reload}"
+		exit 2
+		;;
 esac
 
 exit $?

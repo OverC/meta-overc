@@ -23,48 +23,48 @@ EOF
 }
 
 if [ -z "$1" ]; then
-    usage
-    exit
+	usage
+	exit
 fi
 
 command=$1
 
 while [ $# -gt 0 ]; do
-    case "$1" in
-	-v) verbose=t
-            ;;
-        *) break
-            ;;
-    esac
-    shift
+	case "$1" in
+		-v) verbose=t
+			;;
+		*) break
+			;;
+	esac
+	shift
 done
 
 PATH=${PATH}:${BASEDIR}
 
 case ${command} in
-    ctl)
-	# yank the "ctl" off
-	shift
-	cube-ctl $@
-	;;
-    console)
-	# yank the "console" off
-	shift
-	cube-console $@
-	;;
-    cmd)
-	shift
-	cube-cmd $@
-	;;
-    add)
-        cube-ctl $@
-        ;;
-    del|delete|remove)
-	cube-ctl $@
-	;;
-    run)
-        ;;
-    *)
-	echo "[ERROR]: unknown command ${command}"
-	;;
+	ctl)
+		# yank the "ctl" off
+		shift
+		cube-ctl $@
+		;;
+	console)
+		# yank the "console" off
+		shift
+		cube-console $@
+		;;
+	cmd)
+		shift
+		cube-cmd $@
+		;;
+	add)
+		cube-ctl $@
+		;;
+	del|delete|remove)
+		cube-ctl $@
+		;;
+	run)
+		;;
+	*)
+		echo "[ERROR]: unknown command ${command}"
+		;;
 esac
