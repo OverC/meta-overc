@@ -86,9 +86,11 @@ mkdir -p $ROOT_MOUNT/
 
 sleep ${ROOT_DELAY}
 
-if ! mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT ; then
-    fatal "Could not mount rootfs device \"$ROOT_DEVICE\"."
-fi
+echo "Waiting for root device to be ready..."
+while [ 1 ] ; do
+    mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT && break
+    sleep 0.1
+done
 
 # Move the mount points of some filesystems over to
 # the corresponding directories under the real root filesystem.
