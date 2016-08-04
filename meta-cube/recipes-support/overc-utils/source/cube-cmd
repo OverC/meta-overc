@@ -65,37 +65,37 @@ usage()
 {
 cat << EOF
 
-  cube-cmd <cmd>
+  cube-cmd <options> <cmd>
 
   Execute <cmd> against a monitoring layer of the system. Note that
   this command does no sanity checking or other processing. It is
   the responsibility of the caller to ensure that the commands are
   valid at the essential layer.
 
+  Options:
+
+    -v: Print the verbose messages.
 EOF
 }
 
-if [ -z "$1" ]; then
-    usage
-    exit
-fi
-
-# take the entire command into an array
-raw_command=($@)
 while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
+            ;;
+        *) break
             ;;
     esac
     shift
 done
 
-check_required()
-{
-    if [ ! -e "${1}" ]; then
-	echo "[ERROR]: required command ${1} not found, exiting"
-	exit 1
-    fi
-}
+# take the remaining command into an array
+raw_command=($@)
+
+if [ "${#raw_command[*]}" -eq 0 ]; then
+    usage
+    exit
+fi
+
+[ -n "$verbose" ] && echo "INFO: command line: ${raw_command[@]}"
 
 do_essential_cmd ${raw_command[@]}
