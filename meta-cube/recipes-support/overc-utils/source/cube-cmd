@@ -75,27 +75,12 @@ cat << EOF
 EOF
 }
 
-if [ -z "$1" ]; then
+# take the remaining command into an array
+raw_command=($@)
+
+if [ ${#raw_command[*]} -lt 1 ]; then
     usage
     exit
 fi
-
-# take the entire command into an array
-raw_command=($@)
-while [ $# -gt 0 ]; do
-    case "$1" in
-	-v) verbose=t
-            ;;
-    esac
-    shift
-done
-
-check_required()
-{
-    if [ ! -e "${1}" ]; then
-	echo "[ERROR]: required command ${1} not found, exiting"
-	exit 1
-    fi
-}
 
 do_essential_cmd ${raw_command[@]}
