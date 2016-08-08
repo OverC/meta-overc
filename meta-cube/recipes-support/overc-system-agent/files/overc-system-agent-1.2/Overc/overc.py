@@ -87,6 +87,7 @@ class Overc(object):
                             print "*** Failed to rollback container %s" % cn
                         else:
                             need_reboot=True
+                        break
 
 
         self.host_rollback()
