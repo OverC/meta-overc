@@ -208,7 +208,7 @@ rollback_container() {
 		fi
 	    fi
 	fi
-	$OVERC_CCTL rollback -n $container -F
+	$OVERC_CCTL rollback -n $container -F -r
 }
 
 list_snapshots() {
