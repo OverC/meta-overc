@@ -3,14 +3,62 @@
 # Copyright (C) 2015 Wind River Systems, Inc.
 #
 
-smart update
-pkglist=`smart newer | awk '$NF ~ /^[0-9]+$/ { print $1 }'`
-if [ "$pkglist" != '' ]; then
+function updatepkg_info()
+{
+    SYSContainerName="$1"
+
     touch /etc/motd
     grep -v '^CUBEUPDATE: ' /etc/motd > /tmp/$$.motd
-    echo 'CUBEUPDATE: ' >> /tmp/$$.motd
-    echo 'CUBEUPDATE: NOTICE: Updates are available' >> /tmp/$$.motd
-    echo "CUBEUPDATE: $pkglist" >> /tmp/$$.motd
-    echo 'CUBEUPDATE: ' >> /tmp/$$.motd
+    
+    echo "CUBEUPDATE: " >> /tmp/$$.motd
+    #Update the essential packages information #
+    cube-cmd cmd smart update
+    if [ "`cube-cmd cmd smart newer | grep 'No interesting upgrades available'`" != "" ]; then
+        echo "CUBEUPDATE: The essential no interesting upgrades available" >> /tmp/$$.motd
+    elif [ "`cube-cmd cmd smart newer | grep 'User name:'`" != "" ]; then
+        echo "CUBEUPDATE: The essentail's smart channels required user account and password!" >> /tmp/$$.motd
+    else
+        pkglist=`cube-cmd cmd smart newer | awk -F"|" '{print $1,$2}'`
+        echo "$pkglist" > /tmp/smart-update.pkglist
+        echo 'CUBEUPDATE: NOTICE: essentail Updates are available' >> /tmp/$$.motd
+        echo "CUBEUPDATE: The essentail channels have `cat /tmp/smart-update.pkglist | wc -l` new packages" >> /tmp/$$.motd
+    fi
+
+    #Update the dom0 container packages information #
+    smart update
+    if [ "`smart newer | grep 'No interesting upgrades available'`" != "" ]; then
+        echo "CUBEUPDATE: The Dom0 no interesting upgrades available" >> /tmp/$$.motd
+    elif [ "`cube-cmd cmd smart newer | grep 'User name:'`" != "" ]; then
+        echo "CUBEUPDATE: The Dom0's smart channels required user account and password!" >> /tmp/$$.motd
+    else
+        pkglist=`smart newer | awk -F"|" '{print $1,$2}'`
+        echo "$pkglist" > /tmp/smart-update.pkglist
+        echo 'CUBEUPDATE: NOTICE: Dom0 Updates are available' >> /tmp/$$.motd
+        echo "CUBEUPDATE: The Dom0 channels have `cat /tmp/smart-update.pkglist | wc -l` new packages" >> /tmp/$$.motd
+    fi
+
+    #Update the system container packages information #
+    cube-cmd lxc-attach -n $SYSContainerName smart update 
+    if [ "`cube-cmd lxc-attach -n $SYSContainerName smart newer | grep 'No interesting upgrades available'`" != "" ]; then
+        echo "CUBEUPDATE: The $SYSContainerName no interesting upgrades available" >> /tmp/$$.motd
+    elif [ "`cube-cmd cmd smart newer | grep 'User name:'`" != "" ]; then
+        echo "CUBEUPDATE: The $SYSContainerName's smart channels required user account and password!" >> /tmp/$$.motd
+    else
+        pkglist=`cube-cmd lxc-attach -n $SYSContainerName smart newer | awk -F"|" '{print $1,$2}'`
+        echo "$pkglist" > /tmp/smart-update.pkglist
+        echo 'CUBEUPDATE: NOTICE: Updates are available' >> /tmp/$$.motd
+        echo "CUBEUPDATE: The $SYSContainerName channels have `cat /tmp/smart-update.pkglist | wc -l` new packages" >> /tmp/$$.motd
+    fi
+    echo "CUBEUPDATE: " >> /tmp/$$.motd
+    echo "CUBEUPDATE: Login the cube dom0 to execute system upgrade command:" >> /tmp/$$.motd
+    echo "CUBEUPDATE: /opt/overc-system-agent/overc system upgrade dom0 -r" >> /tmp/$$.motd
+    echo "CUBEUPDATE: When all container upgrades are done, the system reboots to the upgraded version." >> /tmp/$$.motd
+    echo "CUBEUPDATE: " >> /tmp/$$.motd
     mv /tmp/$$.motd /etc/motd
-fi
+
+    grep -v '^CUBEUPDATE: ' /var/lib/lxc/$SYSContainerName/rootfs/etc/motd > /tmp/$SYSContainerName.motd
+    grep '^CUBEUPDATE: ' /etc/motd >> /tmp/$SYSContainerName.motd
+    mv /tmp/$SYSContainerName.motd /var/lib/lxc/$SYSContainerName/rootfs/etc/motd
+}
+
+updatepkg_info $1
