@@ -36,4 +36,4 @@ POLLING_FREQUENCY=600000
 #	  fact that updates are available is put in /etc/motd.
 SERVER_AUTO_UPDATE=false
 
-SERVER_UPDATE_COMMAND="/opt/overc-system-agent/overc host upgrade"
+SERVER_UPDATE_COMMAND="/opt/overc-system-agent/overc system upgrade dom0 -r"

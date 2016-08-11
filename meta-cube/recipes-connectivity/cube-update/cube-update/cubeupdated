@@ -23,6 +23,22 @@ fi
 test -x "${SMARTPM_DIR}/config.default" && source "${SMARTPM_DIR}/config.default"
 test -x "${SMARTPM_DIR}/config.local" && source "${SMARTPM_DIR}/config.local"
 
+SystemContainer=""
+function system_container() {
+    ContainerNames=`cube-ctl list | awk '{print $1}' | xargs`
+    #At present, system container includes cube-desktop cube-server cube-gw#
+    SystemContainers="cube-desktop cube-server cube-gw"
+    for cn in $SystemContainers;
+    do
+        echo $ContainerNames | grep "$cn"
+    
+        if [ $? -eq 0 ]; then
+            SystemContainer="$cn"
+            break
+        fi
+    done
+}
+
 function cube-update_service_is_running() {
     if [ -f "${SERVER_DIR}/${SERVER_PID_FILE}" ]; then
         PID=`cat "${SERVER_DIR}/${SERVER_PID_FILE}"`
@@ -56,30 +72,26 @@ function start_cube-update_service() {
     #  not be expanded must be flagged by escaping the dollar sign with
     #  a backslash as if they were only surrounded by double quotes.
     #
-    bash -c "                                                                                   \
-        echo \$\$ > '${SERVER_DIR}/${SERVER_PID_FILE}' ;                                        \
-        rm '${SERVER_DIR}/${SERVER_PENDING}' ;                                                  \
-        while true ; do                                                                         \
-            test -x '${SMARTPM_DIR}/config.default' && source '${SMARTPM_DIR}/config.default' ; \
-            test -x '${SMARTPM_DIR}/config.local' && source '${SMARTPM_DIR}/config.local' ;     \
-            if ${SERVER_AUTO_UPDATE} ; then                                                     \
-                eval ${SERVER_UPDATE_COMMAND} ;                                                 \
-	    else                                                                                \
-		${SMARTPM_DIR}/cubepkgcheck ;                                                   \
-            fi ;                                                                                \
-            sleep ${POLLING_FREQUENCY} ;                                                        \
-        done                                                                                    \
-        " >> ${SERVER_DIR}/${SERVER_LOG_FILE} 2>&1 &
+    system_container
+    bash -c "                                                                               \
+        echo \$\$ > '${SERVER_DIR}/${SERVER_PID_FILE}' ;                                    \
+        rm '${SERVER_DIR}/${SERVER_PENDING}' ;                                              \
+        test -x '${SMARTPM_DIR}/config.default' && source '${SMARTPM_DIR}/config.default' ; \
+        test -x '${SMARTPM_DIR}/config.local' && source '${SMARTPM_DIR}/config.local' ;     \
+        if ${SERVER_AUTO_UPDATE} ; then                                                     \
+            grep -v '^CUBEUPDATE: ' /etc/motd > /tmp/$$.upgrade.motd ;                      \
+            echo 'CUBEUPDATE: System upgrade on `date`' >> /tmp/$$.upgrade.motd ;           \
+            mv /tmp/$$.upgrade.motd /etc/motd ;                                             \
+            grep -v '^CUBEUPDATE: ' /var/lib/lxc/${SystemContainer}/rootfs/etc/motd >       \
+                                    /tmp/$$.upgrade.motd ;                                  \
+            echo 'CUBEUPDATE: System upgrade on `date`' >> /tmp/$$.upgrade.motd ;           \
+            mv /tmp/$$.upgrade.motd /var/lib/lxc/${SystemContainer}/rootfs/etc/motd ;       \
+            eval ${SERVER_UPDATE_COMMAND} ;                                                 \
+        else                                                                                \
+            ${SMARTPM_DIR}/cubepkgcheck ${SystemContainer} ;                                \
+        fi ;                                                                                \
+        " >> ${SERVER_DIR}/${SERVER_LOG_FILE} 2>&1
 
-    # Wait for the daemon to start
-    timeout=10
-    while [ -f "${SERVER_DIR}/${SERVER_PENDING}" ]; do
-        sleep 1
-	timeout=`expr $timeout - 1`
-	if [ "${timeout}" -le 0 ]; then
-	    break
-	fi
-    done
 }
 
 function stop_cube-update_service() {

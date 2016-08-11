@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily SmartPM update daemon
+DefaultDependencies=no
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
