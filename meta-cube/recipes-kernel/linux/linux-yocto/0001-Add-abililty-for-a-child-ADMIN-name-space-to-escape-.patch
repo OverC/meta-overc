@@ -1,0 +1,219 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Thu, 11 Aug 2016 06:57:41 -0500
+Subject: [PATCH 1/2] Add abililty for a child "ADMIN" name space to escape to
+ the root name space
+
+The following are the restritions in place for allowing a child name
+space to access the root PID name space.
+
+1) setns() must be called from use space with the CLONE_PARENT flag
+2) The calling name space must be a 1st level child from the root name space
+3) The calling name space must have the capability CAP_ADMIN_NS
+4) The calling name space process cannot call wait_pid() with the
+   child pid returned from fork(), if a wait is needed, it must be
+   with wait_pid(-1,...).  This is because the kernel will still
+   enforce the rule that the children name spaces cannot access
+   ancestors.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ include/uapi/linux/capability.h |  5 ++-
+ kernel/exit.c                   | 23 ++++++++++++++
+ kernel/fork.c                   |  7 +++++
+ kernel/nsproxy.c                | 67 +++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 98 insertions(+), 4 deletions(-)
+
+diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
+--- a/include/uapi/linux/capability.h
++++ b/include/uapi/linux/capability.h
+@@ -351,8 +351,11 @@ struct vfs_cap_data {
+ 
+ #define CAP_AUDIT_READ		37
+ 
++/* Allow a one level deep NS to return to the init_task NS */
+ 
+-#define CAP_LAST_CAP         CAP_AUDIT_READ
++#define CAP_ADMIN_NS		38
++
++#define CAP_LAST_CAP         CAP_ADMIN_NS
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
+diff --git a/kernel/exit.c b/kernel/exit.c
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -78,6 +78,22 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+ }
+ 
+ /*
++ * The tasklist_lock read lock must be held in.  This function returns
++ * root level namespace pid in a case where the parent is in a higher
++ * level name space than the child.
++ */
++static pid_t init_ns_child_not_parent(struct task_struct *tsk)
++{
++	if (tsk->pids[PIDTYPE_PID].pid &&
++	    tsk->parent &&
++	    tsk->parent->pids[PIDTYPE_PID].pid &&
++	    tsk->pids[PIDTYPE_PID].pid->level == 0 &&
++	    tsk->parent->pids[PIDTYPE_PID].pid->level == 1)
++		return tsk->pid;
++	return 0;
++}
++
++/*
+  * This function expects the tasklist_lock write-locked.
+  */
+ static void __exit_signal(struct task_struct *tsk)
+@@ -982,6 +998,9 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	uid_t uid = from_kuid_munged(current_user_ns(), task_uid(p));
+ 	struct siginfo __user *infop;
+ 
++	if (unlikely(!pid))
++		pid = init_ns_child_not_parent(p);
++
+ 	if (!likely(wo->wo_flags & WEXITED))
+ 		return 0;
+ 
+@@ -1201,6 +1220,8 @@ unlock_sig:
+ 	 */
+ 	get_task_struct(p);
+ 	pid = task_pid_vnr(p);
++	if (unlikely(!pid))
++		pid = init_ns_child_not_parent(p);
+ 	why = ptrace ? CLD_TRAPPED : CLD_STOPPED;
+ 	read_unlock(&tasklist_lock);
+ 	sched_annotate_sleep();
+@@ -1264,6 +1285,8 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+ 	spin_unlock_irq(&p->sighand->siglock);
+ 
+ 	pid = task_pid_vnr(p);
++	if (unlikely(!pid))
++		pid = init_ns_child_not_parent(p);
+ 	get_task_struct(p);
+ 	read_unlock(&tasklist_lock);
+ 	sched_annotate_sleep();
+diff --git a/kernel/fork.c b/kernel/fork.c
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1716,6 +1716,13 @@ long do_fork(unsigned long clone_flags,
+ 
+ 		pid = get_task_pid(p, PIDTYPE_PID);
+ 		nr = pid_vnr(pid);
++		if (unlikely(!nr)) {
++			struct pid *cpid;
++			cpid = get_task_pid(current, PIDTYPE_PID);
++			if (pid->level == 0 && cpid->level == 1)
++				nr = task_pid_nr(p);
++			put_pid(cpid);
++		}
+ 
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -17,6 +17,7 @@
+ #include <linux/export.h>
+ #include <linux/nsproxy.h>
+ #include <linux/init_task.h>
++#include "../fs/mount.h"
+ #include <linux/mnt_namespace.h>
+ #include <linux/utsname.h>
+ #include <linux/pid_namespace.h>
+@@ -217,13 +218,30 @@ void exit_task_namespaces(struct task_struct *p)
+ {
+ 	switch_task_namespaces(p, NULL);
+ }
++static int pidns_install_override(struct nsproxy *nsproxy,
++				  struct ns_common *ns)
++{
++	struct pid_namespace *new = container_of(ns, struct pid_namespace,
++						 ns);
++	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
++	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
++		return -EPERM;
++	put_pid_ns(nsproxy->pid_ns_for_children);
++	if (new == &init_pid_ns)
++		nsproxy->pid_ns_for_children = &init_pid_ns;
++	else
++		nsproxy->pid_ns_for_children = get_pid_ns(new);
++	return 0;
++}
+ 
+ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ {
+ 	struct task_struct *tsk = current;
+-	struct nsproxy *new_nsproxy;
++	struct nsproxy *new_nsproxy, *nsp;
+ 	struct file *file;
+ 	struct ns_common *ns;
++	int (*alt_install)(struct nsproxy *nsproxy,
++			   struct ns_common *ns) = NULL;
+ 	int err;
+ 
+ 	file = proc_ns_fget(fd);
+@@ -231,7 +249,47 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 		return PTR_ERR(file);
+ 
+ 	err = -EINVAL;
+-	ns = get_proc_ns(file_inode(file));
++	if (nstype & CLONE_PARENT) {
++		nstype &= ~CLONE_PARENT;
++		if (!init_task.nsproxy ||
++		    !ns_capable(current_user_ns(), CAP_ADMIN_NS)) {
++			err = -EPERM;
++			goto out;
++		}
++		nsp = init_task.nsproxy;
++		switch(nstype) {
++		case CLONE_NEWNS:
++			if (!nsp->mnt_ns)
++				goto out;
++			ns = &nsp->mnt_ns->ns;
++			break;
++		case CLONE_NEWPID:
++			if (!nsp->pid_ns_for_children)
++				goto out;
++			ns = &nsp->pid_ns_for_children->ns;
++			alt_install = pidns_install_override;
++			break;
++		case CLONE_NEWNET:
++			if (!nsp->net_ns)
++				goto out;
++			ns = &nsp->net_ns->ns;
++			break;
++		case CLONE_NEWUTS:
++			if (!nsp->uts_ns)
++				goto out;
++			ns = &nsp->uts_ns->ns;
++			break;
++		case CLONE_NEWIPC:
++			if (!nsp->ipc_ns)
++				goto out;
++			ns = &nsp->ipc_ns->ns;
++			break;
++		default:
++			goto out;
++		}
++	} else {
++		ns = get_proc_ns(file_inode(file));
++	}
+ 	if (nstype && (ns->ops->type != nstype))
+ 		goto out;
+ 
+@@ -241,7 +299,10 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 		goto out;
+ 	}
+ 
+-	err = ns->ops->install(new_nsproxy, ns);
++	if (alt_install)
++		err = alt_install(new_nsproxy, ns);
++	else
++		err = ns->ops->install(new_nsproxy, ns);
+ 	if (err) {
+ 		free_nsproxy(new_nsproxy);
+ 		goto out;
+-- 
+1.9.1
+

@@ -7,6 +7,7 @@ SRC_URI += "file://xt-checksum.scc \
             file://lxc.scc \
             file://docker.scc \
             file://criu.scc \
+	    file://uncontain.scc \
             "
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES_append = " cfg/systemd.scc"

@@ -17,6 +17,7 @@ SRC_URI += "file://xt-checksum.scc \
             file://lxc.scc \
             file://docker.scc \
             file://criu.scc \
+	    file://uncontain.scc \
             "
 
 # was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
