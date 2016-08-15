@@ -41,7 +41,7 @@ python package_name_hook_append() {
         #and audit-libs, audit-libs-devel rpm packages, which will be buildrequired 
         #by some other packages, in order to meet this type of build requirement,
         #let the ${pn}-dev also provide ${pn}-libs ${pn}-libs-devel if both of them
-        #are not provded by other rpms.
+        #are not provided by other rpms.
         #
         if pkg.endswith("-dev"):
             newpkg = d.getVar('PKG_' + pkg, True)
@@ -59,7 +59,7 @@ python package_name_hook_append() {
             #and audit-libs, audit-libs-devel rpm packages, which will be buildrequired 
             #by some other packages, in order to meet this type of build requirement,
             #let the ${pn}-dev also provide ${pn}-libs ${pn}-libs-devel if both of them
-            #are not provded by other rpms.
+            #are not provided by other rpms.
             #
             if newpkg and newpkg.startswith("lib"):
                 pass

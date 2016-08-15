@@ -265,7 +265,7 @@ case "${cmd}" in
 	fi
 
 	# unprivileged. create default subuid/subgids for root and pass the
-	# parameter to overc_ctl for container settings
+	# parameter to overc_cctl for container settings
 	if [ -n "${subuid}" ]; then
 		privilege_param="-u ${subuid}"
 		cube-cmd cmd "touch /etc/subuid /etc/subgid"
