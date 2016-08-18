@@ -56,6 +56,7 @@ class Overc(object):
 
     def _system_upgrade(self, template, reboot, force):
         containers = self.container.get_container(template)
+        overlay_flag = 0
 	#By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
         for cn in containers:
@@ -68,9 +69,29 @@ class Overc(object):
                             print "*** Failed to upgrade container %s" % cn
                             print "*** Abort the system upgrade action"
                             sys.exit(self.retval)
+                        else:
+                            if self.container.pre_upgrade(cn, template) == 1:
+                                overlay_flag = 1
                         break
 
         self._host_upgrade(reboot, force)
+
+        if overlay_flag == 1:
+            # Enable lxc-overlay service in essential
+            lxc = open("/essential/lib/systemd/system/lxc.service", 'r')
+            lines = lxc.readlines()
+            lxc.close()
+            for line in lines:
+                if line.find("lxc_overlay") != -1:
+                    sys.exit(self.retval)
+            for line in lines:
+                if line.find("ExecStart") != -1:
+                    index = lines.index(line)
+                    break
+            lines.insert(index, "ExecStartPre=/etc/lxc/lxc-overlayscan\n")
+            lxc = open("/essential/lib/systemd/system/lxc.service", 'w')
+            lxc.writelines(lines)
+            lxc.close()
 
     def system_rollback(self):
         containers = self.container.get_container(self.args.template)
