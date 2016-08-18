@@ -70,6 +70,15 @@ class Container(object):
             self.message += "\nUpdate failed"
         return retval
 
+    def pre_upgrade(self, name, template):
+        fstabfile="/var/lib/lxc/%s/fstab" % name
+        fstab=open(fstabfile, 'r')
+        for line in fstab:
+            member=line.split()
+            if member[0]=="overlay":
+                return 1
+        return 0
+
     def upgrade(self, name, template, rpm_upgrade=True, image_upgrade=False):
         if image_upgrade and not rpm_upgrade:
             retval = self.update(template)
