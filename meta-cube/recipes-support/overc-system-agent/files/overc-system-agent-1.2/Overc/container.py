@@ -2,6 +2,7 @@ import sys, os
 import subprocess
 import os.path
 from Overc.utils import Process
+from Overc.utils  import CONTAINER_MOUNT
 
 # containers template named scripts
 CONTAINER_SCRIPT_PATH = "/etc/overc/container/"
@@ -69,6 +70,22 @@ class Container(object):
         else:
             self.message += "\nUpdate failed"
         return retval
+
+    def get_overlay(self, name):
+        fstabfile="%s/%s/fstab" % (CONTAINER_MOUNT,name)
+        fstab=open(fstabfile, 'r')
+        dirlist=[]
+        for line in fstab:
+            member=line.split()
+            if member[0]=="overlay":
+                strpre="%s/%s/rootfs" % (CONTAINER_MOUNT,name)
+                strdir=member[1][member[1].find(strpre) + len(strpre):len(member[1])]
+                dirlist.append(strdir)
+        return dirlist
+
+    def is_overlay(self, name):
+        dirlist=self.get_overlay(name)
+        return len(dirlist)
 
     def upgrade(self, name, template, rpm_upgrade=True, image_upgrade=False):
         if image_upgrade and not rpm_upgrade:

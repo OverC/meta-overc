@@ -230,7 +230,15 @@ class Overc(object):
         self.message = self.container.message
 
     def container_upgrade(self):
-        self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
+        # Perform overlay check fist
+        overlaylist = self.container.get_overlay(self.args.name)
+        if len(overlaylist)>0:
+            print "Container %s got overlayed dir, including" % self.args.name
+            print(overlaylist)
+            print "Must use system upgrade."
+            self.retval = 0
+        else:
+            self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
         sys.exit(self.retval)
     def _container_upgrade(self, container, template, rpm=True, image=False):
         self.retval = self.container.upgrade(container, template, rpm, image)
