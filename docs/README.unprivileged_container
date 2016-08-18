@@ -1,0 +1,73 @@
+Unprivileged container support
+------------------------------
+
+OverC supports unprivileged containers along side privileged containers, as
+this is more convenient and secure for application-specific containers that
+don't have bindings to the actual target runtime environment.
+
+By default, unprivileged containers added by the OverC system will be allocated
+a set of subordinative uids/gids belonging to the root user. These newly
+created unprivileged containers run under the subordinative uids/gids'
+namespace without having any root privileges. The mapped uid can be see by
+looking at /proc/self/uid_map and /proc/self/gid_map, which will show
+"0 0 4294967295" when read from the root namespace and show "0 ${subuid} 65536"
+when read from the unprivileged container. The list of assigned subids can be
+seen in the files /etc/subuid and /etc/subgid. When we are assigning subuids
+or subgids, we need to assign carefully in order to keep the boundary between
+containers clear.
+
+
+Configuration during container installation
+-------------------------------------------
+If you want to install an unprivileged container during install, you just need
+to add the subuid property to your container specified in the
+HDINSTALL_CONTAINERS configure line, e.g.
+
+HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2:mergepath=/usr,essential \
+                      ${ARTIFACTS_DIR}/cube-dom1-genericx86-64.tar.bz2:vty=3:mergepath=/usr,essential,dom0 \
+                      ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2:vty=4:net=1:mergepath=/usr,essential,dom0,dom1 \
+                      ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:subuid=800000"
+
+The value of the subuid will be the subuid used by the root user within the
+container.
+
+
+Install unprivileged container after system startup
+---------------------------------------------------
+When a OverC system has already been deployed onto a system, you can also
+add unprivileged containers through commandline. When you are in a running
+OverC system, switch to dom0 first through tty2 or "cube-console dom0" within
+other cubes. Then add "-u" parameter when adding a container, e.g.
+
+ root@cube-dom0:~# cube-ctl add -u [subuid] cube-server-genericx86-64.tar.bz2
+
+The subuid field followed by the -u parameter is optional. If not specified,
+the value to be defaulted to 800000.
+
+
+NOTES
+-----
+
+1. No matter what method are used when creating the unprivileged container, a
+range of 65536 subuids starting from the specified subuid value will be mapped
+to the corresponding users within the container. The subuid/subgid value
+requires a minimum value of 100000 in order to avoid conflicting with system
+users.
+
+2. For unprivileged containers, some resources might not be usable. So other
+properties specified in the HDINSTALL_CONTAINERS might not be valid. Currently
+the combinations are not fully tested. You might need to add the required
+device capability accordingly.
+
+3. For kernel 4.5 and later, cgroup2 hierarchy is used by default. The cgroup
+namespace is supported by default, which means the cgmanager is no longer
+required. So if you are using kernel 4.5 or later, you can simply remove
+cgmanager from startup script or even from filesystem. If you want to use the
+cgroup2 hierarchy on a pre-4.5 kernel, what you need is to mount the cgroup
+filesystem using __DEVEL__sane_behavior option such as:
+
+ $ mount -t cgroup -o __DEVEL__sane_behavior cgroup $MOUNT_POINT
+
+If you are using a systemd-managed system, the systemd 229 version will do that
+for you automatically.
+
