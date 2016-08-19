@@ -5,6 +5,7 @@ from Overc.container import Container
 from Overc.utils import Utils
 from Overc.utils import ROOTMOUNT
 from Overc.utils import HOSTPID
+from Overc.utils  import SYSROOT
 
 def Is_btrfs():
     return not os.system('btrfs subvolume show %s >/dev/null 2>&1' % ROOTMOUNT)
@@ -56,6 +57,7 @@ class Overc(object):
 
     def _system_upgrade(self, template, reboot, force):
         containers = self.container.get_container(template)
+        overlay_flag = 0
 	#By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
         for cn in containers:
@@ -68,9 +70,30 @@ class Overc(object):
                             print "*** Failed to upgrade container %s" % cn
                             print "*** Abort the system upgrade action"
                             sys.exit(self.retval)
+                        else:
+                            if self.container.is_overlay(cn) > 0:
+                                overlay_flag = 1
                         break
 
         self._host_upgrade(reboot, force)
+
+        if overlay_flag == 1:
+            # Enable lxc-overlay service in essential
+            lxcfile = '%s/%s/lib/systemd/system/lxc.service' % (SYSROOT, self.agency.next_rootfs)
+            lxc = open(lxcfile, 'r')
+            lines = lxc.readlines()
+            lxc.close()
+            for line in lines:
+                if line.find("lxc_overlay") != -1:
+                    sys.exit(self.retval)
+            for line in lines:
+                if line.find("ExecStart") != -1:
+                    index = lines.index(line)
+                    break
+            lines.insert(index, "ExecStartPre=/etc/lxc/lxc-overlayscan\n")
+            lxc = open(lxcfile, 'w')
+            lxc.writelines(lines)
+            lxc.close()
 
     def system_rollback(self):
         containers = self.container.get_container(self.args.template)
@@ -230,7 +253,15 @@ class Overc(object):
         self.message = self.container.message
 
     def container_upgrade(self):
-        self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
+        # Perform overlay check fist
+        overlaylist = self.container.get_overlay(self.args.name)
+        if len(overlaylist)>0:
+            print "Container %s got overlayed dir, including" % self.args.name
+            print(overlaylist)
+            print "Must use system upgrade."
+            self.retval = 0
+        else:
+            self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
         sys.exit(self.retval)
     def _container_upgrade(self, container, template, rpm=True, image=False):
         self.retval = self.container.upgrade(container, template, rpm, image)

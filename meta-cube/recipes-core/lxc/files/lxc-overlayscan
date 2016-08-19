@@ -1,0 +1,66 @@
+#!/bin/sh -
+
+# /usr/lib64/lxc/lxc/lxc-overlayscan
+# Scan duplicate file in overlay dir for every container
+
+scandir()
+{
+# Search each entry in base_path, delete same file in target_path.
+for entry in $(ls $1 -A); do
+    if [ -e "$2/${entry}" ]; then
+        if [ -d "$2/${entry}" ] && [ ! -L "$2/${entry}" ] && \
+            [ -d "$1/${entry}" ] && [ ! -L "$1/${entry}" ]; then
+            # Only enter dir when both $1/entry & $2/entry are directory
+            scandir "$1/$entry" "$2/$entry"
+        elif [ -f "$2/${entry}" ] && [ ! -L "$2/${entry}" ] && \
+              [ -f "$1/${entry}" ] && [ ! -L "$1/${entry}" ]; then
+            # Delete when both $1/entry & $2/entry are regular file
+            # Check md5sum
+	    md5sum1=`md5sum $1/${entry}|awk '{print $1}'`
+	    md5sum2=`md5sum $2/${entry}|awk '{print $1}'`
+	    if [ $md5sum1 = $md5sum2 ]; then
+                rm "$2/${entry}"
+            fi
+        elif [ -L "$2/${entry}" ] && [ -L "$1/${entry}" ]; then
+            # Delete when both $1/entry & $2/entry are sympol-link
+            link1=`readlink $1/${entry}`
+            link2=`readlink $2/${entry}`
+	    if [ $link1 = $link2 ]; then
+                rm "$2/${entry}"
+	    fi
+        fi
+        # Ignore other conditions
+    fi
+done;
+# Remove empty diretory in target_path
+if [ $(ls -Al "$2"|wc -l) -eq 1 ]; then
+    rmdir "$2"
+fi
+}
+
+# 1.List all containers
+for cn in $(lxc-ls); do
+# 2.Open /var/lib/lxc/$container/fstab, list all overlay mount entry
+	options=`cat /var/lib/lxc/${cn}/fstab|awk '{if ( $1=="'overlay'" )print $4}'`
+	for option in $options; do
+		dirs=`echo ${option}|sed 's/,/\n/g'`
+		for dir in $dirs; do
+			dirout=`echo ${dir}|awk -F "=" '{if ( $1=="'lowerdir'" )print $2}'`
+			if [ ! -z ${dirout} ]; then
+				dirlow=$dirout
+			fi
+			dirout=`echo ${dir}|awk -F "=" '{if ( $1=="'upperdir'" )print $2}'`
+			if [ ! -z ${dirout} ]; then
+				dirup=$dirout
+			fi
+		done;
+# 3.For each entry, list all lowerdir, scandir $1=lowerdir, $2=uppderdir
+		dirlows=`echo ${dirlow}|sed 's/:/\n/g'`
+		for low in ${dirlows}; do
+			scandir ${low} ${dirup}
+		done;
+	done;
+done;
+
+# Remove service from lxc.service
+sed -i "/lxc-overlayscan/d" /lib/systemd/system/lxc.service

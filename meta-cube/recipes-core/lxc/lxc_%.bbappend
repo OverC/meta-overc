@@ -11,6 +11,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://ovs-up \
     file://ovs-down \
+    file://lxc-overlayscan \
     file://silence_no_escape_lxc-console.patch \
     file://read-write-file-handles-after-EPOLLHUP.patch \
     "
@@ -34,4 +35,7 @@ do_install_append(){
 	install -d ${D}/etc/lxc/
 	install -m 755 ${WORKDIR}/ovs-up ${D}/etc/lxc/ovs-up
 	install -m 755 ${WORKDIR}/ovs-down ${D}/etc/lxc/ovs-down
+
+	# add script to scan dir mount with overlay to delete duplicate file
+	install -m 755 ${WORKDIR}/lxc-overlayscan ${D}/etc/lxc/lxc-overlayscan
 }
