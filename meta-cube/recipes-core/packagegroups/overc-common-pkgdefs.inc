@@ -120,4 +120,5 @@ OVERC_COMMON_TOOLS = "\
      tcl \
      time \
      overc-utils \
+     nanoio \
     "
