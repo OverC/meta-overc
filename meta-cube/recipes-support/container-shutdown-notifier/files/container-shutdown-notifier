@@ -1,7 +1,5 @@
 #!/bin/bash
 
-sending_mechanism_output_stream="/opt/container/local/cmd-pipe"
-
 target_state=$( systemctl list-units --type=target )
 echo ${target_state} | grep -qi reboot
 if [ $? == 0 ]; then
@@ -13,4 +11,4 @@ else
 	fi
 fi
 
-timeout 5s bash -c "echo ${command} >${sending_mechanism_output_stream}"
+timeout 5s bash -c "cube-cmd ${command}"
