@@ -114,6 +114,7 @@ OVERC_COMMON_TOOLS = "\
      pstree \
      setserial \
      socat \
+     nanomsg \
      strace \
      sudo \
      tcl \

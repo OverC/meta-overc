@@ -170,7 +170,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     rpm \
     setserial \
     smartmontools \
-    socat \
+    nanomsg \
     sudo \
     sysstat \
     tar \

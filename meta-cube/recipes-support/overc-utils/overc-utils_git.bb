@@ -34,4 +34,4 @@ do_install() {
 
 FILES_${PN} += "/opt/${BPN} \
                ${bindir} ${sbindir}"
-RDEPENDS_${PN} += "bash socat"
+RDEPENDS_${PN} += "bash"
