@@ -156,7 +156,9 @@ function do_essential_console()
 	exit 1
     fi
 
-    echo "console essential" > /opt/container/local/cmd-pipe
+    [ -n "$verbose" ] && debug="-v "
+
+    (echo "console essential" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
 
     exec_console
 }
@@ -176,10 +178,12 @@ function do_console()
 	type=login
     fi
 
+    [ -n "$verbose" ] && debug="-v "
+
     if [ -n "${namespace}" ]; then
-	echo "nsenter ${target}" > /opt/container/local/cmd-pipe
+        (echo "nsenter ${target}" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
     else
-	echo "console ${target}" > /opt/container/local/cmd-pipe
+	(echo "console ${target}" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
     fi
 
     exec_console
