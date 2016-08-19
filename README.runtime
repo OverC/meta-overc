@@ -36,7 +36,7 @@ Console access is available through several mechanisms:
 	    or avahi configuration is changed, these defaults no longer
 	    apply.
 
- - vt: The assignents of VTs to cubes are specified in the configuration files
+ - vt: The assignments of VTs to cubes are specified in the configuration files
        described in the README documentation. For example:
 
        HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2 \
@@ -50,7 +50,7 @@ Console access is available through several mechanisms:
 		     access to VTs is not possible, OverC provides inter-cube pipe
 		     based console access.
 
-		     Since this capbility requires a cube-cmd-server running on the
+		     Since this capability requires a cube-cmd-server running on the
 		     target cube, it is only available from user/application cubes
 		     to dom0.
 
@@ -81,7 +81,7 @@ cube-01-12-15-cube-desktop
 console:
 
  Consoles are accessed through standard VT switching mechanisms, such as
- <ctrl>-<alt>-f1 (for cube-essentia), <ctrl>-<alt>-f2 (for dom0), etc, depending
+ <ctrl>-<alt>-f1 (for cube-essential), <ctrl>-<alt>-f2 (for dom0), etc, depending
  on the configuration (as described above).
 
 inter-container pipes:

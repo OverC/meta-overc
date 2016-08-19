@@ -19,7 +19,7 @@ cat << EOF
 
                 If "list" is passed, available consoles are displayed.
 
-  --ns: enter a namespace shell. Only available from priviledged control
+  --ns: enter a namespace shell. Only available from privileged control
         domains.
 
   --notraps: do not monitor for an exit sequence. If this option is not

@@ -179,11 +179,11 @@ function stop_container {
 
     current_cn_name=$(get_cn_name_from_init_pid 1)
 
-    # Should not stop container while its childs is running.
+    # Should not stop container while its child is running.
     # So first find out if this container has any child.
     cn_list=$(lxc-ls)
     for i in ${cn_list}; do
-        # Dont count this stopping container or the container
+        # Don't count this stopping container or the container
         # this function is invoked.
         [ "${current_cn_name}" == "${i}" ] && continue
         [ "${cn_name}" == "${i}" ] && continue

@@ -86,7 +86,7 @@ function lxc_set_net_cn_end_options {
             # Check any of additional dpdk kernel modules might need to have a
             # dev node created.
             dpdk_kernmod_list=$(get_lxc_config_option "wr.network.${conn}.dpdk.kernmod" ${cfg_file} | sed 's/;/ /g')
-            # Right now only dpk rte_kni requires /dev/kni to be created
+            # Right now only dpdk rte_kni requires /dev/kni to be created
             res=$(echo ${dpdk_kernmod_list} | grep -F 'rte_kni')
             if [ -n "${res}" ]; then
                 sys_kni_path=$(${nsenter_ext} find ${root_fs_mount}/sys/ -name "kni" | grep -F "devices")
@@ -269,7 +269,7 @@ function lxc_setup_net_remote_end {
                 case "${remote_type}" in
                     ovs)
                         # As openvswitch client controls ovs switch through sock under /var/run/openvswitch
-                        # so its neccessary to jump into mount namespace with option -m.  Also there are rare cases
+                        # so its necessary to jump into mount namespace with option -m.  Also there are rare cases
                         # ovs get into bad state and this causes ovs-vsctl not to return, so use timeout here.  30s
                         # seems to be reasonable.
                         res=$(nsenter -m -n -t ${cn_pid} -- find /sys/class/net -name ${remote_link})
@@ -462,7 +462,7 @@ function lxc_remove_net {
                 case "${remote_type}" in
                     ovs)
                         # As openvswitch client control ovs switch through sock under /var/run/openvswitch
-                        # so its neccessary to jump into mount namespace with option -m. Also there are rare cases
+                        # so its necessary to jump into mount namespace with option -m. Also there are rare cases
                         # ovs get into bad state, this causes ovs-vsctl to not return, so use timeout here.  30s
                         # seem to be reasonable.
                         timeout 30 nsenter -m -n -t ${cn_pid} -- ovs-vsctl del-port ${remote_link} ${remote_eth_name}
