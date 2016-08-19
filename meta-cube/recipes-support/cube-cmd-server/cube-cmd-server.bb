@@ -9,7 +9,7 @@ SRC_URI = "file://cube-cmd-server \
            file://cube-cmd-server.conf \
            file://cube-cmd-server-functions \
 "
-RDEPENDS_${PN} = "bash gawk cube-cmd-server-functions"
+RDEPENDS_${PN} = "bash gawk dtach cube-cmd-server-functions"
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"

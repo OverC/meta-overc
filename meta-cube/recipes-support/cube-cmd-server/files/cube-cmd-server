@@ -10,7 +10,7 @@
 #  See the GNU General Public License for more details.
 
 ## Set up trap handler
-## On exit, we kill our entire process group (socats, tail .. etc)
+## On exit, we kill our entire process group (dtach, tail .. etc)
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 # dump the values for a variable
