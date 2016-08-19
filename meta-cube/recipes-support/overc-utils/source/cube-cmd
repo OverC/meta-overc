@@ -36,18 +36,15 @@ function do_essential_cmd()
     local cmd=$@
 
     if [ -e "/opt/container/local/cmd-pipe" ]; then
-
-	# the command
-	echo "${cmd}" > /opt/container/local/cmd-pipe
+	# send the command
+	(echo "${cmd}" | nanoclient -q -R "ipc:///opt/container/local/cmd-pipe") &
 	file=`wait_for_files 200 /opt/container/local/cmd-error /opt/container/local/cmd-output`
 	if [ -n "${file}" ]; then
 	    if [ "${file}" = /opt/container/local/cmd-output ] ; then
 		/usr/bin/dtach -a ${file} -q -C -z -T -R -r none
 		exit 0
 	    else
-		# The output
 		# TBD: 2>&1 for stderr messages in env's that try and eat it! (systemd)
-		# TBD: -t5 only when running in systemd, or other slower envs
 		/usr/bin/dtach -a ${file} -q -C -z -T -R -r none
 		exit 1
 	    fi
