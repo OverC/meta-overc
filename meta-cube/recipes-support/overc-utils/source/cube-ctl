@@ -278,7 +278,6 @@ case "${cmd}" in
 	    exit 1
 	fi
 	# now we need to restart the command server, so the new container can be monitored
-	# echo "exit" /tmp/container/self/cmd-pipe"
 	systemctl restart cube-cmd-server
 	;;
     del|delete|remove)
