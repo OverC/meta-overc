@@ -53,9 +53,10 @@ class Overc(object):
             self.command = None
 
     def system_upgrade(self):
-        self._system_upgrade(self.args.template, self.args.reboot, self.args.force)
+        self._system_upgrade(self.args.template, self.args.reboot, self.args.force, self.args.skipscan)
 
-    def _system_upgrade(self, template, reboot, force):
+    def _system_upgrade(self, template, reboot, force, skipscan):
+	print "skipscan %d" % skipscan
         containers = self.container.get_container(template)
         overlay_flag = 0
 	#By now only support "Pulsar" and "overc" Linux upgrading
@@ -77,7 +78,7 @@ class Overc(object):
 
         self._host_upgrade(reboot, force)
 
-        if overlay_flag == 1:
+        if ((overlay_flag == 1) and (skipscan == 0)):
             # Enable lxc-overlay service in essential
             lxcfile = '%s/%s/lib/systemd/system/lxc.service' % (SYSROOT, self.agency.next_rootfs)
             lxc = open(lxcfile, 'r')
