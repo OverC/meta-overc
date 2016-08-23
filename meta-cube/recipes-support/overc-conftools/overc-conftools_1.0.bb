@@ -30,6 +30,7 @@ SRC_URI = " \
     file://source/network_prime/manifests/init.pp \
     file://source/network_prime/templates/network_prime.sh.erb \
     file://source/network_prime/templates/network_prime_port_forward.sh.erb \
+    file://source/system/systemid-set.sh \
 "
 
 S = "${WORKDIR}"
@@ -56,6 +57,14 @@ do_install() {
          install -m 644 ${WORKDIR}/source/network_prime/templates/$template \
                    ${D}/${sysconfdir}/puppet/modules/network_prime/templates/
     done
+
+    install -d ${D}/${sysconfdir}/puppet/modules/system
+    install -m 755 ${WORKDIR}/source/system/systemid-set.sh ${D}/${sysconfdir}/puppet/modules/system
+
+    #to create an empty system-id file to tell overc-installer
+    #to bind mount it to dom0/cube-desktop to share one system
+    #id between them.
+    touch ${D}/${sysconfdir}/system-id
 
     # Puppet manifests
     install -d ${D}/${sysconfdir}/puppet/manifests
