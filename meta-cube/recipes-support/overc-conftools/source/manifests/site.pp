@@ -37,3 +37,8 @@ exec { 'restart-networking':
 exec { 'restart-dnsmasq':
   command => '/bin/systemctl restart dnsmasq',
 }
+
+exec {
+    'set system id':
+    command => '/etc/puppet/modules/system/systemid-set.sh',
+}
