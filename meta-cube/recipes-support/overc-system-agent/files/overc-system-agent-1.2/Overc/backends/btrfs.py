@@ -134,6 +134,7 @@ class Btrfs(Utils):
         subvolid = self._get_btrfs_value('%s/%s' % (SYSROOT, self.next_rootfs), 'Subvolume ID')
         argv = 'subvolume set-default %s %s' % (subvolid, SYSROOT)
         if not self._btrfs(argv):
+            os.system('cp -f %s/%s/boot/* /boot/' % (SYSROOT, FACTORY_SNAPSHOT))
             return True
         else:
             self.message += "Cannot set default mount subvolume to %s" % self.next_rootfs
