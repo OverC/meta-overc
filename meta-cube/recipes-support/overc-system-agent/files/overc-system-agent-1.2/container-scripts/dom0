@@ -371,6 +371,7 @@ rpm_upgrade() {
 	runcmd_in_container $container "umount /var/lib/rpm"
 	runcmd_in_container $container "cp -r $tempdir/rpm /var/lib/"
 	runcmd_in_container $container "rm -rf $tempdir"
+	runcmd_in_container $container "sed -i /^CUBEUPDATE:/d /etc/motd"
 }
 
 delete_container() {
