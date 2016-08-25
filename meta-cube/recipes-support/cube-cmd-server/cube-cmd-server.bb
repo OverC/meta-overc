@@ -5,6 +5,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
 SRC_URI = "file://cube-cmd-server \
+           file://cube-cmd-handler \
            file://cube-cmd-server.service \
            file://cube-cmd-server.conf \
            file://cube-cmd-server-functions \
@@ -24,6 +25,7 @@ do_install_append() {
 
     install -d ${D}${base_sbindir}
     install -m 0755 ${WORKDIR}/cube-cmd-server ${D}${base_sbindir}
+    install -m 0755 ${WORKDIR}/cube-cmd-handler ${D}${base_sbindir}
 
     install -d ${D}${sysconfdir}
     install -m 0644 ${WORKDIR}/cube-cmd-server.conf ${D}${sysconfdir}/cube-cmd-server.conf-host
@@ -31,7 +33,9 @@ do_install_append() {
     install -m 0644 ${WORKDIR}/cube-cmd-server-functions ${D}${sysconfdir}/cube-cmd-server-functions
 }
 
-FILES_${PN} = "${base_sbindir}/cube-cmd-server lib/systemd/system/cube-cmd-server.service"
+FILES_${PN} = "${base_sbindir}/cube-cmd-server \
+	       ${base_sbindir}/cube-cmd-handler \
+	       lib/systemd/system/cube-cmd-server.service"
 
 FILES_${PN}-dom0-conf = "${sysconfdir}/cube-cmd-server.conf-dom0"
 FILES_${PN}-host-conf = "${sysconfdir}/cube-cmd-server.conf-host"

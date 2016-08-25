@@ -1,0 +1,347 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+## Set up trap handler
+## On exit, we kill our entire process group (dtach .. etc)
+
+generate_console_name() {
+    local max=${1} # max number we'll generate
+    local dir=${2} # directory to check for existing files
+    local prefix=${3} # optional
+
+    local number=$RANDOM
+
+    let "number %= ${max}"
+    console_name="console-$prefix-$number"
+    while [ -e ${dir}/${console_name} ]; do
+        number=$RANDOM
+        let "number %= ${max}"
+        console_name="console-$prefix-$number"
+    done
+
+    echo ${console_name}
+}
+
+function console_listener() {
+    local listenername=$1
+    local connectorname=$2
+    local type=$3 # console or namespace
+    local target=$4
+    local matches=""
+    local console_file=""
+
+    # only lxc is currently supported
+    for c in `ls -df /var/lib/lxc/*`; do
+        grep -q ${connectorname} $c 2>/dev/null
+        if [ "${connectorname}" = "${c#/var/lib/lxc/}" ]; then
+            matches="$matches $c"
+        fi
+    done
+
+    if [ -n "$matches" ]; then
+        for m in $matches; do
+            cname=`echo "$m" | cut -d/ -f5`
+
+            debug=""
+            if [ -n "${verbose}" ]; then
+                debug="-d -d"
+            fi
+
+            if [ -z "$type" ]; then
+                type=console
+            fi
+
+            console_file=`generate_console_name 200 /opt/container/${cname}/`
+	    (
+            if [ "${type}" = "console" ]; then
+                # The target of the console matters. If it is "us", then we start agetty. If it is another
+                # container, we proxy the appropriate mechanism (cube-console or lxc-console)
+
+                if [ -n "${we_are_dom0}" ]; then
+                    if [ "${target}" == "dom0" ]; then
+                        cmd="/sbin/agetty -J -"
+                    else
+                        # we need to go down to essential to get a console to another container so
+                        # we'll call cube-console again .. which goes to the command server that helps
+                        # us out .. aka "cube-essential"
+                        cmd="cube-console ${target}"
+                    fi
+                else # we are essential
+                    if [ "${target}" == "essential" ]; then
+                        cmd="/sbin/agetty -J -"
+                    else
+                        # if the target is another container, we need to run a getty in the console
+                        # and connect to it. We do this to avoid lxc-console, which cannot be exited
+                        # without a control character, and can have only one active at time.
+                        cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
+                    fi
+                fi
+                # send the number of the console to the caller
+                /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                # exec the console command .. or proxy
+                /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
+            fi
+            if [ "${type}" = "namespace" ]; then
+                if [ "${connectorname}" == "dom0" ]; then
+                    # namespace enter!
+                    if [ -n "$target" ]; then
+                        /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                        /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q lxc-attach -n ${target} /bin/sh
+                    else
+                        do_error "${requestor}" "[ERROR]: namespace consoles require a target container"
+                        log_msg "[ERROR]: namespace consoles require a target container"
+                    fi
+                else
+                    cmd="cube-console --ns ${target}"
+                    # send the number of the console to the caller
+                    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                    # exec the console command .. or proxy
+                    /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
+                fi
+            fi
+            ) &
+        done
+    else
+        do_error "${requestor}" "[ERROR]: no requestor matching ${connectorname} found, no console created"
+        log_msg "[ERROR]: no requestor matching ${connectorname} found, no console created"
+    fi
+}
+
+function do_command()
+{
+    local cname=$1
+    shift
+    local command=$@
+
+    # if the command is not in a valid set of root commands, we switch user
+    # to something unprivileged
+
+    # We run this within dtach to allow for ptys, pipes, etc, to be used
+    # in the future. For now, we just dump the output to the waiting pipe.
+    # if no one is there, the output is lost after 5 seconds
+    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 ${command}
+}
+
+function do_error()
+{
+    local cname=$1
+    shift
+    local message="$@"
+
+    # We run this within dtach to allow for ptys, pipes, etc, to be used
+    # in the future. For now, we just dump the output to the waiting pipe.
+    # if no one is there, the output is lost.
+    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "${message}"
+}
+
+function log_msg()
+{
+    local msg=$1
+
+    # this goes to the logfile if configured. We add a timestamp for better tracking as well
+    if [ -n "${logfile}" ]; then
+	date | tr -d '\n' >> ${logfile}
+	echo -n ": " >> ${logfile}
+	echo ${msg} >> ${logfile}
+    fi
+}
+
+##############  Mainline begins here ################################
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -r)
+            requestor=$2
+	    shift
+	    ;;
+	-l|--logfile)
+	    logfile=$2
+	    shift
+	    ;;
+        *) break
+            ;;
+    esac
+    shift
+done
+
+CONF_FILE=/etc/cube-cmd-server.conf
+
+. /etc/cube-cmd-server-functions
+
+if [ -d "/host/proc" ]; then
+    we_are_dom0=t
+fi
+
+# create arrays of the values found in the yamle config file
+eval $(parse_yaml_conf_file $CONF_FILE)
+if [ -n "${verbose}" ]; then
+    # if verbose, this will just dump the variables and their values to stdout
+    parse_yaml_conf_file $CONF_FILE
+fi
+
+whoami=`cube_whoami`
+
+while IFS= read -r line; do
+    log_msg "[INFO]: cube-cmd-handler ($$): $line"
+
+    case "${line}" in
+        cmd\ *)
+            echo ${commands_host_cmd_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                # remove the first option from the command, we'll be passing it along, unprocessed
+                line_array=( ${line} )
+                line=("${line_array[@]:1}")
+
+                if [ -n "${verbose}" ]; then
+                    echo "[INFO]: host command: ${line[@]}"
+                fi
+                do_command ${requestor} ${line[@]}
+            else
+                do_error "${requestor}" "ERROR: requestor ($requestor) is not allowed to host commands"
+                log_msg "[INFO]: requestor ($requestor) is not allowed to issue host commands"
+            fi
+            ;;
+        lxc*)
+            lxc_cmd=`echo $line | awk '{print $1}'`
+            echo ${commands_lxc_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                if [ -n "${verbose}" ]; then
+                    echo "[INFO]: lxc command: $line"
+                fi
+                do_command ${requestor} $line
+            else
+                # check to see if the more specific command is needed
+                cmd_allowed=
+
+                # dashes are stored as _ in the ACL, so make the substition
+                lxc_cmd=`echo ${lxc_cmd} | sed 's/-/_/g'`
+                eval echo "\"\${commands_${lxc_cmd}_acl[@]}\"" | grep -q "${requestor}"
+                if [ $? -eq 0 ]; then
+                    cmd_allowed=t
+                fi
+                eval echo "\"\${commands_${lxc_cmd}_acl[@]}\"" | grep -q "\*"
+                if [ $? -eq 0 ]; then
+                    cmd_allowed=t
+                fi
+                if [ -n "${cmd_allowed}" ]; then
+                    do_command ${requestor} $line
+                else
+                    do_error "${requestor}" "ERROR: cube is not allowed to issue this command"
+                    log_msg "[INFO]: requestor ($requestor) is not allowed to issue lxc commands"
+                fi
+            fi
+            ;;
+        nsenter*)
+            nsenter_allowed=
+
+            target=`echo $line | cut -d' ' -f2`
+            echo ${commands_nsenter_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                nsenter_allowed=t
+            fi
+            echo ${commands_nsenter_acl[@]} | grep -q "\*"
+            if [ $? -eq 0 ]; then
+                nsenter_allowed=t
+            fi
+            if [ -n "${nsenter_allowed}" ]; then
+                echo "[INFO]: entering namespace: $line"
+                if [ -n "${target}" ]; then
+                    console_listener ${whoami} ${requestor} namespace ${target}
+                else
+                    log_msg "[INFO]: a valid target container is required"
+                fi
+            else
+                do_error "${requestor}" "ERROR: cube is not allowed direct console access. log into dom0 first."
+                log_msg "[INFO]: requestor ($requestor) is not allowed to issue nsenter"
+            fi
+            ;;
+        console*)
+            log_msg "[INFO]: console creation request: $line"
+            if [ -z "${requestor}" ]; then
+                log_msg "[ERROR]: console command requires a requestor hostname"
+            fi
+            target=`echo $line | cut -d' ' -f2`
+            if [ -n "${target}" ]; then
+                console_listener ${whoami} ${requestor} console ${target}
+            else
+                do_error "${requestor}" "ERROR: cube unknown target cube"
+                log_msg "[INFO]: a valid target container is required"
+            fi
+            ;;
+        poweroff)
+            if [ -z "${requestor}" ]; then
+                log_msg "[ERROR]: shutdown command requires a requestor hostname"
+            fi
+
+            echo ${commands_shutdown_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                log_msg "[INFO]: issuing shutdown for $requestor"
+
+                case "${commands_shutdown_action}" in
+                    ignore)
+                        ;;
+                    shutdown)
+                        shutdown -h now
+                        ;;
+                    *)
+                        log_msg "Unknown shutdown action ${commands_shutdown_action}, ignoring"
+                        ;;
+                esac
+            else
+                do_error "${requestor}" "ERROR: requestor ($requestor) is not allowed to issue shutdown"
+                log_msg "[INFO]: requestor ($requestor) is not allowed to issue shutdown"
+            fi
+            ;;
+        reboot)
+            if [ -z "${requestor}" ]; then
+                log_msg "[ERROR]: shutdown command requires a requestor hostname"
+            fi
+
+            echo ${commands_reboot_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                log_msg "[INFO]: issuing reboot for $requestor"
+
+                case "${commands_reboot_action}" in
+                    ignore)
+                        ;;
+                    reboot)
+                        reboot
+                        ;;
+                    *)
+                        log_msg "Unknown reboot action ${commands_reboot_action}, ignoring"
+                        ;;
+                esac
+            else
+                do_error "${requestor}" "ERROR: requestor ($requestor) is not allowed to issue reboot"
+                log_msg "[INFO]: requestor ($requestor) is not allowed to issue reboot"
+            fi
+            ;;
+        restart|exit)
+            # restart the cmd-server itself
+            if [ -z "${requestor}" ]; then
+               log_msg "[ERROR]: cmd-server-restart command requires a requestor hostname"
+            fi
+
+            echo ${commands_restart_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+                log_msg "[INFO]: issuing cmd-server-restart for $requestor"
+                # dump a message and then flee
+                if [ -p "/opt/container/${requestor}/cmd-output" ]; then
+                    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "cmd-server restarting"
+                fi
+                # clean exit, so systemd will restart us
+                break
+            fi
+            ;;
+    esac
+done
+
+log_msg "[INFO]: cube-cmd-handler ($$): exiting ..."
