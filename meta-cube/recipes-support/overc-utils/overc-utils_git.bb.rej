@@ -1,0 +1,25 @@
+diff a/meta-cube/recipes-support/overc-utils/overc-utils_git.bb b/meta-cube/recipes-support/overc-utils/overc-utils_git.bb	(rejected hunks)
+@@ -30,8 +34,22 @@ do_install() {
+     install -m755 ${WORKDIR}/source/cube-ctl ${D}${sbindir}
+     install -m755 ${WORKDIR}/source/cube-cmd ${D}${sbindir}
+     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
++
++    # device manamage support
++    install -m755 ${WORKDIR}/source/cube-device ${D}${sbindir}
++    install -d ${D}${sysconfdir}/udev/scripts
++    install -d ${D}${sysconfdir}/udev/rules.d
++    install -d ${D}${sysconfdir}/cube-device
++    install -m755 ${WORKDIR}/source/cube-device.sh ${D}${sysconfdir}/udev/scripts
++    install -m644 ${WORKDIR}/source/13-cube-device.rules ${D}${sysconfdir}/udev/rules.d
++    install -m644 ${WORKDIR}/source/cube-device-functions ${D}${sysconfdir}/cube-device
+ }
+ 
++PACKAGES =+ "overc-device-utils"
++
+ FILES_${PN} += "/opt/${BPN} \
+                ${bindir} ${sbindir}"
+-RDEPENDS_${PN} += "bash socat"
++
++FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
++
++RDEPENDS_${PN} += "bash socat udev"

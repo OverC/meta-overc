@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+
+usage()
+{
+cat << EOF
+
+  Assign|remove a device to|from a container.
+
+  cube-device <action> <device node> <container name>
+
+  action: add or del
+  device node: a valid (block) device node
+  container name: a valid container name.
+
+  example:
+
+      $ cube-device add /dev/sdb vc1
+      $ cube-device del /dev/sdb vc1
+
+EOF
+}
+
+if [ $# -ne 3 ]; then
+    usage
+    exit
+fi
+
+. /etc/cube-device/cube-device-functions
+
+action=$1
+device=$2
+container=$3
+
+# we support priv container for now
+is_unpriv $3
+
+if [ $? -eq 0 ]; then
+	echo "cube device management can't support unpriv containers!"
+	exit 1
+fi
+
+if [ ! -e $DEVICECONF ]; then
+	touch $DEVICECONF
+fi
+
+
+case "${action}" in
+add)
+	grep -q "^$device@$container" $DEVICECONF  2>/dev/null
+	if [ $? != 0 ]; then
+		echo "${device}@${container}" >> ${DEVICECONF}
+	fi
+
+	is_container_running $container
+	if [ $? -eq 0 ]; then
+		block_device_add $container $device
+		block_device_add_partitions $container $device
+	fi
+	;;
+del|delete|remove)
+	is_container_running $container
+	if [ $? -eq 0 ]; then
+		block_device_remove_partitions $container $device
+		block_device_remove $container $device
+	fi
+	item=$device@$container
+	sed -i 's#'$item'#EXCLUSIVE#;/EXCLUSIVE/d' $DEVICECONF
+	;;
+*)
+	echo "Unsupported argument!"
+	exit 4
+esac
+

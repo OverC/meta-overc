@@ -1,0 +1,3 @@
+# udev rules to manage block devices mapped to containers
+#
+ACTION=="add|remove", KERNEL=="sd*|nvme*|vd*|hd*|xvd*|mmcblk*|loop*|nbd*", SUBSYSTEM=="block", RUN+="/etc/udev/scripts/cube-device.sh"
