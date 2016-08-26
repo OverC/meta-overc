@@ -76,9 +76,9 @@ class Overc(object):
                                 overlay_flag = 1
                         break
 
-        self._host_upgrade(reboot, force)
+        rc = self._host_upgrade(0, force)
 
-        if ((overlay_flag == 1) and (skipscan == 0)):
+        if ((overlay_flag == 1) and (skipscan == 0) and (rc == 1)):
             # Enable lxc-overlay service in essential
             lxcfile = '%s/%s/lib/systemd/system/lxc.service' % (SYSROOT, self.agency.next_rootfs)
             lxc = open(lxcfile, 'r')
@@ -95,6 +95,11 @@ class Overc(object):
             lxc = open(lxcfile, 'w')
             lxc.writelines(lines)
             lxc.close()
+
+        if ((rc == 1) and (reboot != 0)):
+            self.message += "\nrebooting..."
+            print self.message
+            os.system('reboot')
 
     def system_rollback(self):
         containers = self.container.get_container(self.args.template)
@@ -163,12 +168,13 @@ class Overc(object):
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
-	    return 
+	    return 0
 
 	if reboot:
 	    self.message += "\nrebooting..."
 	    print self.message
 	    os.system('reboot')
+	return 1
 	         
     def host_rollback(self):
         if self.bakup_mode:
