@@ -1,0 +1,68 @@
+Device management support
+-------------------------
+This document describes how to pass a block device to a privileged container[1].
+With this feature, a privileged container can be granted exclusive access to a
+block device.
+
+This exclusive access is based on leveraging udev rules to capture udev
+add/remove events, then corresponding scripts are called to deal with these
+events.
+
+This feature introduces a new package named "overc-device-utils", which is
+installed on dom0 by default. This means dom0 is the device manager. To allow
+a container (dom0) to be device manager, modifications to the kernel are
+required to grant access to a parent namespace [linux-yocto: Extend setns()
+and do_fork() to allow entry to root name space]. Without this kernel
+modification, device management functionality could be moved to essential as
+follows:  
+
+1) Install cube-device-utils on essential:
+
+	# rpm -i /path/to/overc-device-utils-git-r0.core2_64.rpm
+
+2) Comment the following in /etc/cube-device/cube-device-functions:
+
+	# dev_mgr="dom0"
+
+
+Command lines for device management
+----------------------------------
+A block device can be added to or removed from a container when the container
+is running or stopped:
+
+1) add a block devcie(/dev/sdb) to a privileged container(std):
+
+	cube-dom0:/# cube-device add /dev/sdb std
+
+2) remove a block device from a privileged container:
+
+	cube-dom0:/# cube-device del /dev/sdb std
+
+
+Notes
+-----------
+1) This feature is for block devices(sata, usb stick, nvme, mmc, etc) only.
+Character or network devices are not currently supported.
+
+2) There is a patch for systemd-udev in meta-overc layer, which enables a
+privileged container have the same access right to devices as essential, see:
+
+commit 75d65359ac2c88fdad7e4921c7f732e3e7e8afcb
+Author: fupan li <fupan.li@windriver.com>
+Date:   Tue Nov 24 17:12:07 2015 +0800
+
+     systemd: make udev create or delete device nodes
+
+If a container is built with the patch above, then device management is not
+necessary, as the container already has the access right to block devices.
+So this feature is supposed to be verified with a container built without
+the systemd-udevd patch above.
+
+3) Unprivileged container[2] is not supported yet, as kernel doesn't allow
+managing devices from a non-init user name space, see
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=975d6b3932d43b87a48d2107264ed0c9a7541d8d
+
+
+Reference
+----------
+[1],[2] https://linuxcontainers.org/lxc/security/
