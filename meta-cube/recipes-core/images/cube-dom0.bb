@@ -36,7 +36,8 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 
-IMAGE_FSTYPES = "tar.bz2"
+IMAGE_FSTYPES ?= "tar.bz2"
+IMAGE_FSTYPES_remove = "live"
 
 TARGETNAME ?= "cube-dom0"
 
