@@ -42,7 +42,4 @@ RDEPENDS_packagegroup-essential-networking = "\
 RDEPENDS_packagegroup-essential-only = "\
      linux-firmware \
      watchdog \
-     cube-cmd-server \
-     cube-cmd-server-host-conf \
-     overc-utils \
     "
