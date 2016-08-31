@@ -68,6 +68,24 @@ if [ -d "/host/proc" ]; then
     we_are_dom0=t
 fi
 
+generate_console_name() {
+    local max=${1} # max number we'll generate
+    local dir=${2} # directory to check for existing files
+    local prefix=${3} # optional
+
+    local number=$RANDOM
+
+    let "number %= ${max}"
+    console_name="console-$prefix-$number"
+    while [ -e ${dir}/${console_name} ]; do
+        number=$RANDOM
+        let "number %= ${max}"
+        console_name="console-$prefix-$number"
+    done
+
+    echo ${console_name}
+}
+
 function exec_console()
 {
     local file
@@ -84,7 +102,12 @@ function exec_console()
     if [ "${file}" = "/opt/container/local/cmd-output" ]; then
 	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
     fi
+    connect_console
 
+}
+
+function connect_console()
+{
     file=`wait_for_files 0.1 100 /opt/container/local/${console_device}`
     if [ -z "${file}" ]; then
 	echo "[ERROR]: No console is available, and no error reported"
@@ -151,16 +174,16 @@ function do_essential_console()
 	exit 1
     fi
 
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console to essential"
+    if [ -n "${we_are_dom0}" ]; then
+	console_device=`generate_console_name 200 /opt/container/${target}/`
+	cmd="/sbin/agetty -J -"
+	nsenter -P -t 1 -p -n -i -u -m /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	connect_console
+	return
+    else
+	echo "ERROR: essential console can only spawn from dom0"
 	exit 1
     fi
-
-    [ -n "$verbose" ] && debug="-v "
-
-    (echo "console essential" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
-
-    exec_console
 }
 
 
@@ -168,6 +191,14 @@ function do_console()
 {
     local target=$1
     local type=$2 # namspace or login
+
+    if [ -n "${we_are_dom0}" ]; then
+	console_device=`generate_console_name 200 /opt/container/${target}/`
+	cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
+	nsenter -P -t 1 -p -n -i -u -m /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	connect_console
+	return
+    fi
 
     if [ ! -e "/opt/container/local/cmd-pipe" ]; then
 	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console"

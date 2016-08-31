@@ -121,6 +121,10 @@ function do_command()
     shift
     local command=$@
 
+    if [ -n "${DIRECT}" ] ; then
+	nsenter -P -t 1 -p -n -i -u -m ${command}
+	return
+    fi
     # if the command is not in a valid set of root commands, we switch user
     # to something unprivileged
 
@@ -136,6 +140,9 @@ function do_error()
     shift
     local message="$@"
 
+    if [ -n "${DIRECT}" ] ; then
+	echo -n "${message}"
+    fi
     # We run this within dtach to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost.
@@ -189,7 +196,8 @@ fi
 
 whoami=`cube_whoami`
 
-while IFS= read -r line; do
+function read_loop()
+{
     log_msg "[INFO]: cube-cmd-handler ($$): $line"
 
     case "${line}" in
@@ -342,6 +350,15 @@ while IFS= read -r line; do
             fi
             ;;
     esac
-done
+}
+
+if [ -n "${DIRECT}" ] ; then
+    line="$DIRECT"
+    read_loop
+else
+    while IFS= read -r line; do
+	read_loop
+    done
+fi
 
 log_msg "[INFO]: cube-cmd-handler ($$): exiting ..."

@@ -35,6 +35,13 @@ function do_essential_cmd()
 {
     local cmd=$@
 
+    # When in dom0 we use the direct route and just exec the command
+    # with no checking
+    if [ -d /host ]; then
+	DIRECT="${cmd}" /sbin/cube-cmd-handler -r dom0
+	exit $?
+    fi
+
     if [ -e "/opt/container/local/cmd-pipe" ]; then
 	# send the command
 	(echo "${cmd}" | nanoclient -q -R "ipc:///opt/container/local/cmd-pipe") &
