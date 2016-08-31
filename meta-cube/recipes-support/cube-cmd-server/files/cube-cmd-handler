@@ -297,7 +297,11 @@ function read_loop()
                     ignore)
                         ;;
                     shutdown)
-                        shutdown -h now
+                        if [ -n "${DIRECT}" ]; then
+                            do_command dom0 shutdown -h now
+                        else
+                            shutdown -h now
+                        fi
                         ;;
                     *)
                         log_msg "Unknown shutdown action ${commands_shutdown_action}, ignoring"
@@ -321,7 +325,11 @@ function read_loop()
                     ignore)
                         ;;
                     reboot)
-                        reboot
+                        if [ -n "${DIRECT}" ]; then
+                            do_command dom0 reboot
+                        else
+                            reboot
+                        fi
                         ;;
                     *)
                         log_msg "Unknown reboot action ${commands_reboot_action}, ignoring"
@@ -333,6 +341,10 @@ function read_loop()
             fi
             ;;
         restart|exit)
+            if [ -n "${DIRECT}" ] ; then
+                # No restart we are already done
+		exit 0
+            fi
             # restart the cmd-server itself
             if [ -z "${requestor}" ]; then
                log_msg "[ERROR]: cmd-server-restart command requires a requestor hostname"
@@ -346,7 +358,8 @@ function read_loop()
                     /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "cmd-server restarting"
                 fi
                 # clean exit, so systemd will restart us
-                break
+                log_msg "[INFO]: cube-cmd-handler ($$): exiting ..."
+                exit 0
             fi
             ;;
     esac
