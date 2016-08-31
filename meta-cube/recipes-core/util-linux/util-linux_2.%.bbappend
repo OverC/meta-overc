@@ -4,6 +4,7 @@ NSENTER_PATCH = "${@bb.utils.contains('PV', '2.24.2', 'file://nsenter-to-be-more
 
 SRC_URI += " \
 	file://pam.d \
+	file://nsenter-Add-P-option-for-access-to-root-parent-name-.patch \
 	${NSENTER_PATCH} \
 "
 

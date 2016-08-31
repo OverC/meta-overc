@@ -13,8 +13,10 @@ support this, the following is added:
 
 Signed-off-by: Vu Tran <vu.tran@windriver.com>
 
-diff --git a/sys-utils/nsenter.c b/sys-utils/nsenter.c
-index d8690db367ea..a65341e5589b 100644
+---
+ sys-utils/nsenter.c |   64 ++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 55 insertions(+), 9 deletions(-)
+
 --- a/sys-utils/nsenter.c
 +++ b/sys-utils/nsenter.c
 @@ -28,6 +28,7 @@
@@ -45,7 +47,7 @@ index d8690db367ea..a65341e5589b 100644
  	fputs(_(" -m, --mount[=<file>]   enter mount namespace\n"), out);
  	fputs(_(" -u, --uts[=<file>]     enter UTS namespace (hostname etc)\n"), out);
  	fputs(_(" -i, --ipc[=<file>]     enter System V IPC namespace\n"), out);
-@@ -91,6 +96,8 @@ static void usage(int status)
+@@ -92,6 +97,8 @@ static void usage(int status)
  #ifdef HAVE_LIBSELINUX
  	fputs(_(" -Z, --follow-context   set SELinux context according to --target PID\n"), out);
  #endif
@@ -54,7 +56,7 @@ index d8690db367ea..a65341e5589b 100644
  
  	fputs(USAGE_SEPARATOR, out);
  	fputs(USAGE_HELP, out);
-@@ -100,7 +107,9 @@ static void usage(int status)
+@@ -101,7 +108,9 @@ static void usage(int status)
  	exit(status);
  }
  
@@ -64,8 +66,8 @@ index d8690db367ea..a65341e5589b 100644
 +static char namespace_target_pid_path[PATH_MAX] = {'\0'};
  static int root_fd = -1;
  static int wd_fd = -1;
- 
-@@ -108,9 +117,9 @@ static void open_target_fd(int *fd, const char *type, const char *path)
+ static int use_parent_ns = 0;
+@@ -110,9 +119,9 @@ static void open_target_fd(int *fd, cons
  {
  	char pathbuf[PATH_MAX];
  
@@ -78,7 +80,7 @@ index d8690db367ea..a65341e5589b 100644
  		path = pathbuf;
  	}
  	if (!path)
-@@ -202,7 +211,7 @@ int main(int argc, char *argv[])
+@@ -214,7 +223,7 @@ int main(int argc, char *argv[])
  	};
  
  	struct namespace_file *nsfile;
@@ -87,7 +89,7 @@ index d8690db367ea..a65341e5589b 100644
  	bool do_rd = false, do_wd = false, force_uid = false, force_gid = false;
  	int do_fork = -1; /* unknown yet */
  	uid_t uid = 0;
-@@ -210,14 +219,16 @@ int main(int argc, char *argv[])
+@@ -222,14 +231,16 @@ int main(int argc, char *argv[])
  #ifdef HAVE_LIBSELINUX
  	bool selinux = 0;
  #endif
@@ -100,12 +102,12 @@ index d8690db367ea..a65341e5589b 100644
 +	memset(bind_mount_maps, 0, sizeof(bind_mount_maps));
  
  	while ((c =
--		getopt_long(argc, argv, "+hVt:m::u::i::n::p::C::U::S:G:r::w::FZ",
-+		getopt_long(argc, argv, "+hVt:m::u::i::n::p::C::U::S:G:r::w::FZb:",
+-		getopt_long(argc, argv, "+hVt:m::u::i::n::Pp::C::U::S:G:r::w::FZ",
++		getopt_long(argc, argv, "+hVt:m::u::i::n::Pp::C::U::S:G:r::w::FZb:",
  			    longopts, NULL)) != -1) {
  		switch (c) {
  		case 'h':
-@@ -226,8 +237,17 @@ int main(int argc, char *argv[])
+@@ -238,8 +249,17 @@ int main(int argc, char *argv[])
  			printf(UTIL_LINUX_VERSION);
  			return EXIT_SUCCESS;
  		case 't':
@@ -125,7 +127,7 @@ index d8690db367ea..a65341e5589b 100644
  			break;
  		case 'm':
  			if (optarg)
-@@ -302,6 +322,18 @@ int main(int argc, char *argv[])
+@@ -317,6 +337,18 @@ int main(int argc, char *argv[])
  			selinux = 1;
  			break;
  #endif
@@ -144,7 +146,7 @@ index d8690db367ea..a65341e5589b 100644
  		default:
  			usage(EXIT_FAILURE);
  		}
-@@ -399,6 +431,20 @@ int main(int argc, char *argv[])
+@@ -414,6 +446,20 @@ int main(int argc, char *argv[])
  		wd_fd = -1;
  	}
  

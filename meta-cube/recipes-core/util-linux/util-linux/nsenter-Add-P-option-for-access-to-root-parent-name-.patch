@@ -1,0 +1,86 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Thu, 11 Aug 2016 13:21:45 -0500
+Subject: [PATCH] nsenter: Add "-P" option for access to root/parent name space
+
+The idea behind this patch is that the kernel will extend the setns()
+system call to allow for CLONE_PARENT to be masked into the flags.  If
+the caller has the right permissions based on the kernel capability
+flags at run time, it will be granted access to the root name space.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ sys-utils/nsenter.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
+
+--- a/sys-utils/nsenter.c
++++ b/sys-utils/nsenter.c
+@@ -80,6 +80,7 @@ static void usage(int status)
+ 	fputs(_(" -i, --ipc[=<file>]     enter System V IPC namespace\n"), out);
+ 	fputs(_(" -n, --net[=<file>]     enter network namespace\n"), out);
+ 	fputs(_(" -p, --pid[=<file>]     enter pid namespace\n"), out);
++	fputs(_(" -P  --parent           enter parent name space\n"), out);
+ 	fputs(_(" -C, --cgroup[=<file>]  enter cgroup namespace\n"), out);
+ 	fputs(_(" -U, --user[=<file>]    enter user namespace\n"), out);
+ 	fputs(_(" -S, --setuid <uid>     set uid in entered namespace\n"), out);
+@@ -103,6 +104,7 @@ static void usage(int status)
+ static pid_t namespace_target_pid = 0;
+ static int root_fd = -1;
+ static int wd_fd = -1;
++static int use_parent_ns = 0;
+ 
+ static void open_target_fd(int *fd, const char *type, const char *path)
+ {
+@@ -155,7 +157,16 @@ static void continue_as_child(void)
+ 		return;
+ 
+ 	for (;;) {
+-		ret = waitpid(child, &status, WUNTRACED);
++		/*
++		 * The child name space cannot wait on the parent with
++		 * a pid because it can never be an ancestor, but it
++		 * can wait for a generic event
++		 */
++		if (use_parent_ns)
++			ret = waitpid(-1, &status, WUNTRACED);
++		else
++			ret = waitpid(child, &status, WUNTRACED);
++
+ 		if ((ret == child) && (WIFSTOPPED(status))) {
+ 			/* The child suspended so suspend us as well */
+ 			kill(getpid(), SIGSTOP);
+@@ -187,6 +198,7 @@ int main(int argc, char *argv[])
+ 		{ "ipc", optional_argument, NULL, 'i' },
+ 		{ "net", optional_argument, NULL, 'n' },
+ 		{ "pid", optional_argument, NULL, 'p' },
++		{ "parent", no_argument, NULL, 'P' },
+ 		{ "user", optional_argument, NULL, 'U' },
+ 		{ "cgroup", optional_argument, NULL, 'C' },
+ 		{ "setuid", required_argument, NULL, 'S' },
+@@ -217,7 +229,7 @@ int main(int argc, char *argv[])
+ 	atexit(close_stdout);
+ 
+ 	while ((c =
+-		getopt_long(argc, argv, "+hVt:m::u::i::n::p::C::U::S:G:r::w::FZ",
++		getopt_long(argc, argv, "+hVt:m::u::i::n::Pp::C::U::S:G:r::w::FZ",
+ 			    longopts, NULL)) != -1) {
+ 		switch (c) {
+ 		case 'h':
+@@ -265,6 +277,9 @@ int main(int argc, char *argv[])
+ 			else
+ 				namespaces |= CLONE_NEWCGROUP;
+ 			break;
++		case 'P':
++			use_parent_ns = CLONE_PARENT;
++			break;
+ 		case 'U':
+ 			if (optarg)
+ 				open_namespace_fd(CLONE_NEWUSER, optarg);
+@@ -360,7 +375,7 @@ int main(int argc, char *argv[])
+ 			continue;
+ 		if (nsfile->nstype == CLONE_NEWPID && do_fork == -1)
+ 			do_fork = 1;
+-		if (setns(nsfile->fd, nsfile->nstype))
++		if (setns(nsfile->fd, nsfile->nstype | use_parent_ns))
+ 			err(EXIT_FAILURE,
+ 			    _("reassociate to namespace '%s' failed"),
+ 			    nsfile->name);
