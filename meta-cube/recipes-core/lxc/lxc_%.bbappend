@@ -14,6 +14,7 @@ SRC_URI += " \
     file://lxc-overlayscan \
     file://silence_no_escape_lxc-console.patch \
     file://read-write-file-handles-after-EPOLLHUP.patch \
+    file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch \
     "
 
 do_install_append(){
