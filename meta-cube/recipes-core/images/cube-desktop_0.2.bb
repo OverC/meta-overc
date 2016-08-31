@@ -10,7 +10,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 IMAGE_FEATURES += "package-management doc-pkgs x11-base"
-IMAGE_FSTYPES = "tar.bz2"
+IMAGE_FSTYPES ?= "tar.bz2"
+IMAGE_FSTYPES_remove = "live"
 
 PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later

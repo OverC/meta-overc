@@ -45,7 +45,8 @@ ALTERNATIVE_PRIORITY_xfce4-session[x-session-manager] = "60"
 IMAGE_FEATURES += "x11-base"
 IMAGE_FEATURES += "package-management doc-pkgs"
 
-IMAGE_FSTYPES = "tar.bz2"
+IMAGE_FSTYPES ?= "tar.bz2"
+IMAGE_FSTYPES_remove = "live"
 
 inherit core-image
 inherit builder-base

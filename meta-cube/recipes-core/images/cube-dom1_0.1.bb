@@ -24,7 +24,8 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 
-IMAGE_FSTYPES = "tar.bz2"
+IMAGE_FSTYPES ?= "tar.bz2"
+IMAGE_FSTYPES_remove = "live"
 
 inherit core-image
 inherit builder-base
