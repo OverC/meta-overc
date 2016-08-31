@@ -17,7 +17,7 @@ function launch_group {
         fi
 
         cfg_file=$(get_lxc_default_config_file ${cn})
-        cn_autostart=$(get_lxc_config_option "wr.start.auto" ${cfg_file})
+        cn_autostart=$(get_lxc_config_option "overc.start.auto" ${cfg_file})
         cn_group=$(get_lxc_config_option "lxc.group" ${cfg_file} | sed 's/,/ /g')
         cn_order=$(get_lxc_config_option "lxc.start.order" ${cfg_file})
         [ -z "${cn_order}" ] && cn_order="1"
