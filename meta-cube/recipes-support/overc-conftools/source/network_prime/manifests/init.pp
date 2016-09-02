@@ -103,6 +103,24 @@ class network_prime
     content => "nameserver 192.168.42.1\n",
     mode => '0666',
   }
+  # Setup dnsmasq on -networkprime to bind to 192.168.42.1
+  file_line { 'dnsmasq-netprime':
+    path => "/var/lib/lxc/$container/rootfs/etc/dnsmasq.conf",
+    match => '^listen-address=*',
+    line => 'listen-address=192.168.42.1',
+  }
+  # Ensure dnsmasq starts the first time by touching the /etc/resolv.conf
+  file { 'resolve-conf-netprime':
+    path => "/var/lib/lxc/$container/rootfs/etc/resolv.conf",
+    ensure => present,
+    mode => '0666',
+  }
+  # turn off dnsmasq on dom0 if netprime is not dom0
+  exec { 'dnsmasq-dom0':
+    command => "/bin/rm -f /var/lib/lxc/dom0/rootfs/etc/systemd/system/multi-user.target.wants/dnsmasq.service",
+    onlyif => "/usr/bin/test $container != dom0",
+  }
+
   file { 'network_prime.sh':
     path => "/var/lib/lxc/$container/rootfs/etc/overc/network_prime.sh",
     content => template('network_prime/network_prime.sh.erb'),
@@ -134,7 +152,7 @@ class network_prime
       path => "/var/lib/lxc/${offset[0]}/rootfs/etc/systemd/network/20-wired.network",
       line => 'Gateway=192.168.42.1',
     }
-    file { '/etc/resolv.conf':
+    file { "/var/lib/lxc/${offset[0]}/rootfs/etc/resolv.conf":
       path => "/var/lib/lxc/${offset[0]}/rootfs/etc/resolv.conf",
       content => "nameserver 192.168.42.2",
       mode => '0666',
