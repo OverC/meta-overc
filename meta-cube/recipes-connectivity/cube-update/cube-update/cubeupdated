@@ -73,6 +73,7 @@ function start_cube-update_service() {
     #  a backslash as if they were only surrounded by double quotes.
     #
     system_container
+    SysCNs="essential dom0 ${SystemContainer}"
     bash -c "                                                                               \
         echo \$\$ > '${SERVER_DIR}/${SERVER_PID_FILE}' ;                                    \
         rm '${SERVER_DIR}/${SERVER_PENDING}' ;                                              \
@@ -88,7 +89,7 @@ function start_cube-update_service() {
             mv /tmp/$$.upgrade.motd /var/lib/lxc/${SystemContainer}/rootfs/etc/motd ;       \
             eval ${SERVER_UPDATE_COMMAND} ;                                                 \
         else                                                                                \
-            ${SMARTPM_DIR}/cubepkgcheck ${SystemContainer} ;                                \
+            ${SMARTPM_DIR}/cubepkgcheck '${SysCNs}' ;                                       \
         fi ;                                                                                \
         " >> ${SERVER_DIR}/${SERVER_LOG_FILE} 2>&1
 
