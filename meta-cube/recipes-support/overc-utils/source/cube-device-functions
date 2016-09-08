@@ -6,7 +6,11 @@ virt="lxc"
 dev_mgr="dom0"
 
 if [ "$dev_mgr" = "dom0" ]; then
-	LXC_CMD_PREFIX="nsenter -P -p -m -i -n -u -t 1"
+	local nsargs=""
+	if [ -e /proc/1/ns/cgroup ] ; then
+		nsargs=-C
+	fi
+	LXC_CMD_PREFIX="nsenter -P $nsargs -p -m -i -n -u -t 1"
 else
 	LXC_CMD_PREFIX=""
 fi

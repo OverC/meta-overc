@@ -120,9 +120,13 @@ function do_command()
     local cname=$1
     shift
     local command=$@
+    local nsargs=""
 
     if [ -n "${DIRECT}" ] ; then
-	nsenter -P -t 1 -p -n -i -u -m ${command}
+	if [ -e /proc/1/ns/cgroup ] ; then
+	    nsargs=-C
+	fi
+	nsenter -P -t 1 -p -n -i -u -m $nsargs ${command}
 	return
     fi
     # if the command is not in a valid set of root commands, we switch user

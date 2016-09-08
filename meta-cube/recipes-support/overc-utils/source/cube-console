@@ -177,7 +177,11 @@ function do_essential_console()
     if [ -n "${we_are_dom0}" ]; then
 	console_device=`generate_console_name 200 /opt/container/${target}/`
 	cmd="/sbin/agetty -J -"
-	nsenter -P -t 1 -p -n -i -u -m /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	local nsargs=""
+	if [ -e /proc/1/ns/cgroup ] ; then
+	    nsargs=-C
+	fi
+	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
 	connect_console
 	return
     else
@@ -195,7 +199,11 @@ function do_console()
     if [ -n "${we_are_dom0}" ]; then
 	console_device=`generate_console_name 200 /opt/container/${target}/`
 	cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
-	nsenter -P -t 1 -p -n -i -u -m /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	local nsargs=""
+	if [ -e /proc/1/ns/cgroup ] ; then
+	    nsargs=-C
+	fi
+	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
 	connect_console
 	return
     fi
