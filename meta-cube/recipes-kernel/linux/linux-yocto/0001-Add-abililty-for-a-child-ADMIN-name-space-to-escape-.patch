@@ -18,15 +18,15 @@ space to access the root PID name space.
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
  include/uapi/linux/capability.h |  5 ++-
- kernel/exit.c                   | 23 ++++++++++++++
- kernel/fork.c                   |  7 +++++
- kernel/nsproxy.c                | 67 +++++++++++++++++++++++++++++++++++++++--
- 4 files changed, 98 insertions(+), 4 deletions(-)
+ kernel/exit.c                   | 23 ++++++++++++
+ kernel/fork.c                   |  7 ++++
+ kernel/nsproxy.c                | 78 +++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 109 insertions(+), 4 deletions(-)
 
 diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
 --- a/include/uapi/linux/capability.h
 +++ b/include/uapi/linux/capability.h
-@@ -351,8 +351,11 @@ struct vfs_cap_data {
+@@ -349,8 +349,11 @@ struct vfs_cap_data {
  
  #define CAP_AUDIT_READ		37
  
@@ -42,7 +42,7 @@ diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
 diff --git a/kernel/exit.c b/kernel/exit.c
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
-@@ -78,6 +78,22 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+@@ -77,6 +77,22 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
  }
  
  /*
@@ -65,7 +65,7 @@ diff --git a/kernel/exit.c b/kernel/exit.c
   * This function expects the tasklist_lock write-locked.
   */
  static void __exit_signal(struct task_struct *tsk)
-@@ -982,6 +998,9 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+@@ -1061,6 +1077,9 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
  	uid_t uid = from_kuid_munged(current_user_ns(), task_uid(p));
  	struct siginfo __user *infop;
  
@@ -75,7 +75,7 @@ diff --git a/kernel/exit.c b/kernel/exit.c
  	if (!likely(wo->wo_flags & WEXITED))
  		return 0;
  
-@@ -1201,6 +1220,8 @@ unlock_sig:
+@@ -1279,6 +1298,8 @@ unlock_sig:
  	 */
  	get_task_struct(p);
  	pid = task_pid_vnr(p);
@@ -84,7 +84,7 @@ diff --git a/kernel/exit.c b/kernel/exit.c
  	why = ptrace ? CLD_TRAPPED : CLD_STOPPED;
  	read_unlock(&tasklist_lock);
  	sched_annotate_sleep();
-@@ -1264,6 +1285,8 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+@@ -1342,6 +1363,8 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
  	spin_unlock_irq(&p->sighand->siglock);
  
  	pid = task_pid_vnr(p);
@@ -96,7 +96,7 @@ diff --git a/kernel/exit.c b/kernel/exit.c
 diff --git a/kernel/fork.c b/kernel/fork.c
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
-@@ -1716,6 +1716,13 @@ long do_fork(unsigned long clone_flags,
+@@ -1792,6 +1792,13 @@ long _do_fork(unsigned long clone_flags,
  
  		pid = get_task_pid(p, PIDTYPE_PID);
  		nr = pid_vnr(pid);
@@ -121,7 +121,7 @@ diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
  #include <linux/mnt_namespace.h>
  #include <linux/utsname.h>
  #include <linux/pid_namespace.h>
-@@ -217,13 +218,30 @@ void exit_task_namespaces(struct task_struct *p)
+@@ -232,13 +233,30 @@ void exit_task_namespaces(struct task_struct *p)
  {
  	switch_task_namespaces(p, NULL);
  }
@@ -153,7 +153,7 @@ diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
  	int err;
  
  	file = proc_ns_fget(fd);
-@@ -231,7 +249,47 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+@@ -246,7 +264,58 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
  		return PTR_ERR(file);
  
  	err = -EINVAL;
@@ -178,21 +178,32 @@ diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
 +			ns = &nsp->pid_ns_for_children->ns;
 +			alt_install = pidns_install_override;
 +			break;
++#ifdef CONFIG_NET
 +		case CLONE_NEWNET:
 +			if (!nsp->net_ns)
 +				goto out;
 +			ns = &nsp->net_ns->ns;
 +			break;
++#endif
 +		case CLONE_NEWUTS:
 +			if (!nsp->uts_ns)
 +				goto out;
 +			ns = &nsp->uts_ns->ns;
 +			break;
++#if defined(CONFIG_POSIX_MQUEUE) || defined(CONFIG_SYSVIPC)
 +		case CLONE_NEWIPC:
 +			if (!nsp->ipc_ns)
 +				goto out;
 +			ns = &nsp->ipc_ns->ns;
 +			break;
++#endif
++#ifdef CONFIG_CGROUPS
++		case CLONE_NEWCGROUP:
++			if (!nsp->cgroup_ns)
++				goto out;
++			ns = &nsp->cgroup_ns->ns;
++			break;
++#endif
 +		default:
 +			goto out;
 +		}
@@ -202,7 +213,7 @@ diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
  	if (nstype && (ns->ops->type != nstype))
  		goto out;
  
-@@ -241,7 +299,10 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+@@ -256,7 +325,10 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
  		goto out;
  	}
  
