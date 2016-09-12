@@ -29,8 +29,8 @@ IMAGE_FSTYPES_remove = "live"
 
 INITRD = "True"
 INITRAMFS_IMAGE = "cube-builder-initramfs"
-# We want it separate, and not bundled with the kernel.
-INITRAMFS_IMAGE_BUNDLE = ""
+# We want it separate, and not bundled with the kernel by default.
+INITRAMFS_IMAGE_BUNDLE ?= ""
 
 inherit core-image
 inherit builder-base
