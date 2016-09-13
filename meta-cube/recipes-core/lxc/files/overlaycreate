@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# scandir() create an overlay-ed directory from lowerdir
+# $1 lowerdir for overlay-ed directory
+# $2 directory need create with overlayfs
+# $3 mask directory for overlay-ed directory, contains file used to mask file only belong to lowerdir
+scandir()
+{
+# Search each entry in base_path, delete same file in target_path.
+for entry in $(ls $1 -A); do
+    if [ -e "$2/${entry}" ] || [ -L "$2/${entry}" ]; then
+        if [ -d "$2/${entry}" ] && [ ! -L "$2/${entry}" ] && \
+            [ -d "$1/${entry}" ] && [ ! -L "$1/${entry}" ]; then
+            # Only enter dir when both $1/entry & $2/entry are directory
+            scandir "$1/$entry" "$2/$entry" "$3/$entry"
+        elif [ -f "$2/${entry}" ] && [ ! -L "$2/${entry}" ] && \
+              [ -f "$1/${entry}" ] && [ ! -L "$1/${entry}" ]; then
+            # Delete when both $1/entry & $2/entry are regular file
+            rm "$2/${entry}"
+        elif [ -L "$2/${entry}" ] && [ -L "$1/${entry}" ]; then
+            # Delete when both $1/entry & $2/entry are sympol-link
+            rm "$2/${entry}"
+        fi
+        # Ignore other conditions
+    elif [ ! -e "$3/${entry}" ]; then
+        # Create a mask file in mask_path
+	pathname=`dirname $3/${entry}`
+	if [ ! -d ${pathname} ]; then
+		mkdir -p ${pathname}
+	fi
+	mknod $3/${entry} c 0 0 --mode=000
+    fi
+done;
+# Remove empty diretory in target_path
+if [ $(ls -Al "$2"|wc -l) -eq 1 ]; then
+    rmdir "$2"
+fi
+}
+
+# $1 container name
+# $2 direcotry name
+# $3 source containers
+cn=$1
+dir=$2
+
+LXCBASE=/var/lib/lxc
+
+# Create mask over dir
+mkdir ${LXCBASE}/${cn}${dir}_mask
+mkdir ${LXCBASE}/${cn}${dir}_over
+
+fstab_entry="overlay ${LXCBASE}/${cn}/rootfs${dir} overlay lowerdir=${LXCBASE}/${cn}${dir}_mask"
+
+cns=`echo $3|sed "s/,/ /g"`
+for cn0 in $cns; do
+# locate dir
+	if [ ${cn0} == "essential" ]; then
+		low=${dir}
+	else
+		low=${LXCBASE}/${cn}/rootfs${dir}_temp
+		if [ ! -d ${low} ]; then
+			low=${LXCBASE}/${cn}/rootfs${dir}
+		fi
+	fi
+# scan dir
+	if [ -d ${low} ]; then
+		#scandir ${low} ${LXCBASE}/${cn}/rootfs${dir} ${LXCBASE}/${cn}${dir}_mask
+		fstab_entry="${fstab_entry}:${low}"
+	fi
+done;
+
+if [ -d ${LXCBASE}/${cn}/rootfs${dir} ]; then
+	mv ${LXCBASE}/${cn}/rootfs${dir} ${LXCBASE}/${cn}/rootfs${dir}_temp
+else
+	mkdir ${LXCBASE}/${cn}/rootfs${dir}_temp
+fi
+mkdir ${LXCBASE}/${cn}/rootfs${dir}
+fstab_entry="${fstab_entry},upperdir=${LXCBASE}/${cn}/rootfs${dir}_temp,workdir=${LXCBASE}/${cn}${dir}_over 0       0"
+
+#Hack fstab, remove line in fstab of this container, and update referce in other containers
+for cn0 in $(lxc-ls); do
+	if [ ${cn0} = ${cn} ]; then
+		echo ${fstab_entry} >> ${LXCBASE}/${cn0}/fstab
+	else
+		sed -i "s#${LXCBASE}/${cn}/rootfs${dir}:#${LXCBASE}/${cn}/rootfs${dir}_temp:#" ${LXCBASE}/${cn0}/fstab
+		sed -i "s#${LXCBASE}/${cn}/rootfs${dir},#${LXCBASE}/${cn}/rootfs${dir}_temp,#" ${LXCBASE}/${cn0}/fstab
+	fi
+done;
