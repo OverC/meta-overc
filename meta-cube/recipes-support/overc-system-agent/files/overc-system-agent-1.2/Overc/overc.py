@@ -280,4 +280,23 @@ class Overc(object):
     def _container_delete_snapshots(self, container, template):
         self.retval = self.container.delete_snapshots(container, template)
         self.message = self.container.message
+    def container_overlay(self):
+        # Parser commnand, create or restore
+        if self.args.ollist:
+	    self._container_overlay_list(self.args.name)
+        elif self.args.olstop:
+            self._container_overlay_stop(self.args.name, self.args.oldir)
+        else :
+            self._container_overlay_create(self.args.name, self.args.oldir, self.args.olsource)
+    def _container_overlay_list(self, container):
+	# List overlay dir in container
+        print "overlayed directories in %s including:" % container
+        print ",".join(self.container.get_overlay(container))
+
+    def _container_overlay_create(self, container, dirs, source):
+        # Create overlay dir in container
+        self.retval = self.container.overlay_create(container, dirs, source)
+    def _container_overlay_stop(self, container, dirs):
+        # Restore overlay-ed dir
+        self.retval = self.container.overlay_stop(container, dirs)
 
