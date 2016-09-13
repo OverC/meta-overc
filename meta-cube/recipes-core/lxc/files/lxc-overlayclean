@@ -1,0 +1,6 @@
+#!/bin/sh -
+
+# /usr/lib64/lxc/lxc/lxc-overlayclean
+# Final cleanup for lxc overlay related services
+
+cp /etc/lxc/lxc-overlayrestore.bak /etc/lxc/lxc-overlayrestore
