@@ -168,6 +168,14 @@ if __name__ == '__main__':
     c_delete_snapshots.add_argument('name', help="name of container")
     c_delete_snapshots.add_argument('template', help="template of container")
 
+    c_overlay = container_subparser.add_parser("overlay", help=_("manager overlay dir in container"))
+    c_overlay.set_defaults(func=overc.container_overlay)
+    c_overlay.add_argument('name', help="name of container")
+    c_overlay.add_argument('--stop', dest="olstop", action="store_true", help=_("stop overlay"))
+    c_overlay.add_argument('--dir', dest="oldir", help=_("overlay directories"))
+    c_overlay.add_argument('--source', dest="olsource", help=_("overlay source"))
+    c_overlay.add_argument('--list', dest="ollist", action="store_true", help=_("list directories with overlay"))
+
     try:
         args = parser.parse_args()
         overc.set_args(args)
