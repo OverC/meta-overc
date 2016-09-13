@@ -18,7 +18,7 @@ SYSROOT_PREPROCESS_FUNCS += "hashicorp_errwrap_sysroot_preprocess"
 
 hashicorp_errwrap_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
-    cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
+    cp -a --no-preserve=ownership ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
