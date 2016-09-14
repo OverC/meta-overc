@@ -3,6 +3,7 @@ import subprocess
 import os.path
 from Overc.utils import Process
 from Overc.utils  import CONTAINER_MOUNT
+from Overc.utils  import ROOTMOUNT
 
 # containers template named scripts
 CONTAINER_SCRIPT_PATH = "/etc/overc/container/"
@@ -191,3 +192,74 @@ class Container(object):
                 print "Error! %s failed" % fname
         return retval
 
+    def _overlay(self, cn, template, dirs, restore, sources=None):
+        # Pararmeter check
+        retval = 0
+        if (dirs == None):
+            print "No dirs in parameter"
+            return -1
+        if (restore == False):
+            if (sources == None):
+                print "No sources in parameter"
+                return -1
+            else: # Check source container name
+                for cn0 in sources.split(','):
+                    if (cn0 == cn):
+                        print "Can not set same container in source list"
+                        return -1
+
+        # check if overlay dir exists, ex /var/lib/lxc/dom0/rootfs/usr_temp
+        for oldir in dirs.split(','):
+            temppath="%s/%s/rootfs%s_temp" % (CONTAINER_MOUNT,cn,oldir)
+            fullpath="%s/%s/rootfs%s" % (CONTAINER_MOUNT,cn,oldir)
+            if (restore == True): # Stop an overlay,
+                if (os.path.isdir(temppath) == False): #no such dir
+		    print "%s:not an overlay-ed dir in container" % (oldir)
+                    return -1
+            else: # Create an overlay
+	        if (os.path.isdir(temppath) == True): # already overlay dir
+		    print "%s:already an overlay-ed dir in container" % (oldir)
+	            return -1
+        # Insert request into lxc.service
+        lxcfile = '%s/etc/lxc/lxc-overlayrestore' % (ROOTMOUNT)
+        lxc = open(lxcfile, 'a+')
+        lines=lxc.readlines()
+        found = 0
+        for oldir in dirs.split(','):
+            basepara = "%s %s" % (cn,oldir)
+            for line in lines:
+                if (line.find(basepara) != -1):
+                    found = 1
+                    break
+            if (found == 0):
+                if (restore == True):
+                    cmdline = "/etc/lxc/overlayrestore %s\n" % basepara
+                else:
+                    cmdline = "/etc/lxc/overlaycreate %s %s\n" % (basepara, sources)
+                lxc.write(cmdline)
+                retval = 1
+            else:
+                print "%s already in overlay rebuild list, ignored" % basepara
+        lxc.close()
+        return retval
+
+    def overlay_create(self, cn, template, dirs, source):
+	val = self._overlay(cn, template, dirs, False, source)
+        if (val == -1):
+            return -1
+        if (val == 0):
+            return 0
+        if (val == 1):
+            print "Need reboot to rebuild overlay directories."
+            return 0
+
+    def overlay_stop(self, cn, template, dirs):
+        # Checking container status, overlay available
+        val = self._overlay(cn, template, dirs, True)
+        if (val == -1):
+            return -1
+        if (val == 0):
+            return 0
+        if (val == 1):
+            print "Need reboot to rebuild overlay directories."
+            return 0

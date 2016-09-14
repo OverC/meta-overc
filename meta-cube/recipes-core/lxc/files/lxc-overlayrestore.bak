@@ -1,0 +1,4 @@
+#!/bin/sh -
+
+# /usr/lib64/lxc/lxc/lxc-overlayrestore
+# Rebuild a overlay-ed directory
