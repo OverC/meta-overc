@@ -16,6 +16,7 @@ SRC_URI += " \
     file://lxc-overlayrestore.bak \
     file://lxc-overlayclean \
     file://overlayrestore \
+    file://overlaycreate \
     file://silence_no_escape_lxc-console.patch \
     file://read-write-file-handles-after-EPOLLHUP.patch \
     file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch \
@@ -50,4 +51,5 @@ ExecStartPre=/etc/lxc/lxc-overlayrestore\nExecStartPre=/etc/lxc/lxc-overlayclean
 	install -m 755 ${WORKDIR}/lxc-overlayrestore.bak ${D}/etc/lxc/lxc-overlayrestore.bak
 	install -m 755 ${WORKDIR}/lxc-overlayclean ${D}/etc/lxc/lxc-overlayclean
 	install -m 755 ${WORKDIR}/overlayrestore ${D}/etc/lxc/overlayrestore
+	install -m 755 ${WORKDIR}/overlaycreate ${D}/etc/lxc/overlaycreate
 }
