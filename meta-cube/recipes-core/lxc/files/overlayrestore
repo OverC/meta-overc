@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# restore() restore an overlay-ed directory from lowerdir & maskdir
+# $1 lowerdir for overlay-ed directory
+# $2 overlay-ed directory to be restored
+# $3 mask directory for overlay-ed directory, contains file used to mask file only belong to lowerdir
+restore()
+{
+for entry in $(ls $1 -A); do
+	if [ -d "$3/${entry}" ] && [ ! -L "$3/${entry}" ] && \
+	    [ -d "$1/${entry}" ] && [ ! -L "$1/${entry}" ]; then
+	# Only enter dir when both $1/entry & $3/entry are directory
+		restore "$1/$entry" "$2/$entry" "$3/$entry"
+	elif [ ! -c "$3/${entry}" ]; then
+	# If no mask file in mask directory, copy it into final directory
+		cp -a -n "$1/${entry}" "$2/"
+        fi
+done;
+}
+
+# $1 container name
+# $2 direcotry name
+
+cn=$1
+oldir=$2
+
+LXCBASE=/var/lib/lxc
+
+dirmask=$LXCBASE/${cn}${oldir}_mask
+
+options=`cat ${LXCBASE}/${cn}/fstab|awk '{if (( $1=="'overlay'" ) && ( $2=="'${LXCBASE}/${cn}/rootfs${oldir}'" ))print $4}'`
+for option in $options; do
+	dirs=`echo ${option}|sed 's/,/\n/g'`
+	for dir in $dirs; do
+		dirout=`echo ${dir}|awk -F "=" '{if ( $1=="'lowerdir'" )print $2}'`
+		if [ ! -z ${dirout} ]; then
+			dirlow=$dirout
+		fi
+		dirout=`echo ${dir}|awk -F "=" '{if ( $1=="'upperdir'" )print $2}'`
+		if [ ! -z ${dirout} ]; then
+			dirup=$dirout
+		fi
+	done;
+	dirlows=`echo ${dirlow}|sed 's/:/\n/g'`
+	for low in ${dirlows}; do
+		if [ ${low} = ${dirmask} ]; then # Skip mask
+			continue
+		fi
+		echo "restore ${LXCBASE}/${cn}/rootfs${oldir} from ${low} ..."
+		restore ${low} ${dirup} ${dirmask}
+	done;
+	rm -rf ${dirmask}
+	rm -rf ${LXCBASE}/${cn}${oldir}_over
+	rm -rf ${LXCBASE}/${cn}/rootfs${oldir}
+	mv ${LXCBASE}/${cn}/rootfs${oldir}_temp ${LXCBASE}/${cn}/rootfs${oldir}
+done;
+
+#Hack fstab, remove line in fstab of this container, and update reference in other containers
+for cn0 in $(lxc-ls); do
+	if [ ${cn0} = ${cn} ]; then
+		sed -i "\@^overlay *${LXCBASE}/${cn}/rootfs${oldir}@d" ${LXCBASE}/${cn0}/fstab
+	else
+		sed -i "s#${LXCBASE}/${cn}/rootfs${oldir}_temp#${LXCBASE}/${cn}/rootfs${oldir}#" ${LXCBASE}/${cn0}/fstab
+	fi
+done;
