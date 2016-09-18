@@ -12,6 +12,11 @@ SRC_URI += " \
     file://ovs-up \
     file://ovs-down \
     file://lxc-overlayscan \
+    file://lxc-overlayrestore \
+    file://lxc-overlayrestore.bak \
+    file://lxc-overlayclean \
+    file://overlayrestore \
+    file://overlaycreate \
     file://silence_no_escape_lxc-console.patch \
     file://read-write-file-handles-after-EPOLLHUP.patch \
     file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch \
@@ -23,6 +28,9 @@ do_install_append(){
 
 	sed -i 's/lxc-net.service//g'  ${D}${systemd_unitdir}/system/lxc.service
 	sed -i 's/\(After=.*$\)/\1 openvswitch-nonetwork.service/' ${D}${systemd_unitdir}/system/lxc.service
+	sed -i '1,/ExecStartPre/ {/ExecStartPre/ i\
+ExecStartPre=/etc/lxc/lxc-overlayrestore\nExecStartPre=/etc/lxc/lxc-overlayclean
+}' ${D}${systemd_unitdir}/system/lxc.service
 
 	# disable the dmesg output on the console when booting the containers,
 	# and this will make the system's boot console clean and reduce the boottime.
@@ -39,4 +47,9 @@ do_install_append(){
 
 	# add script to scan dir mount with overlay to delete duplicate file
 	install -m 755 ${WORKDIR}/lxc-overlayscan ${D}/etc/lxc/lxc-overlayscan
+	install -m 755 ${WORKDIR}/lxc-overlayrestore ${D}/etc/lxc/lxc-overlayrestore
+	install -m 755 ${WORKDIR}/lxc-overlayrestore.bak ${D}/etc/lxc/lxc-overlayrestore.bak
+	install -m 755 ${WORKDIR}/lxc-overlayclean ${D}/etc/lxc/lxc-overlayclean
+	install -m 755 ${WORKDIR}/overlayrestore ${D}/etc/lxc/overlayrestore
+	install -m 755 ${WORKDIR}/overlaycreate ${D}/etc/lxc/overlaycreate
 }
