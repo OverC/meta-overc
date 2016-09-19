@@ -9,7 +9,7 @@ Environment=FACTER_ipaddress="192.168.42.2"
 #Run unconditionally 
 #ExecStart=/usr/bin/puppet apply /etc/puppet/manifests/site.pp
 #Only run on first boot and if RPM db has changed
-ExecStart=/bin/sh -c "[ /var/lib/rpm/Packages -nt /var/lib/rpm/puppet_run ] && /usr/bin/puppet apply /etc/puppet/manifests/site.pp && touch /var/lib/rpm/puppet_run"
+ExecStart=/bin/sh -c "[ /var/lib/rpm/Packages -nt /var/lib/rpm/puppet_run ] && /usr/bin/puppet apply /etc/puppet/manifests/site.pp && cp --attributes-only -p /var/lib/rpm/Packages /var/lib/rpm/puppet_run"
 
 
 [Install]
