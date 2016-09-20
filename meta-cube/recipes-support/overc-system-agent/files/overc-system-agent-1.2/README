@@ -82,3 +82,31 @@ in the system.
 
 Notes: it's not allowed to run rollback command just after run upgrades.
 This will put the system into an unkwon status.
+
+4. Overlayfs directories management
+-----------------------------------
+
+Overc use overlayfs to share file among containers to reduce disk space usage,
+use following command to manage overlayfs directories in containers:
+
+$overc container overlay /container/ --list
+
+List all directories shared file with other containers via overlayfs in
+container.
+
+$overc container overlay /container/ --stop --dir /dir1[,dir2,...]/
+
+Copy shared file from source container into dir1,dir2...., then stop mounting
+overlayfs on these directories in container.
+
+Since this operation need changing directory organization in containers, it
+requires reboot to rebuild involved directories.
+
+$overc container overlay /container/ --dir /dir1[,dir2,...]/ --source /[essential,][container0,container0,...]/
+
+Compare content in dir1,dir2... in container and source containers, delete duplicate
+file in container, then mount these directories with overlayfs to share file from 
+source containers.
+
+Since this operation need changing directory organization in containers, it
+requires reboot to rebuild involved directories.
