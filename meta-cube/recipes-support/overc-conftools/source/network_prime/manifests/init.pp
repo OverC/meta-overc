@@ -46,16 +46,16 @@ class network_prime
     ensure => 'absent',
   }
 
-  # If not using NetworkManager, use networkd
+  # If network_device is empty, it means doesn't use networkd
   file { '30-wired.network':
     path => "/var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network",
     content => "[Match]\nName=$network_device\n\n[Network]\nDHCP=ipv4\nIPForward=ipv4\n",
-    before => Exec['check_nm'],
+    before => Exec['check_networkdevice'],
   }
 
-  exec { 'check_nm':
+  exec { 'check_networkdevice':
     command => "/bin/rm -f /var/lib/lxc/$container/rootfs/etc/systemd/network/30-wired.network;/bin/ln -sf /dev/null /var/lib/lxc/$container/rootfs/etc/systemd/system/systemd-resolved.service",
-    onlyif => "/usr/bin/test -h /var/lib/lxc/$container/rootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service",
+    onlyif => "/usr/bin/test -z $network_device",
   }
 
   exec { 'disable_named_service':
