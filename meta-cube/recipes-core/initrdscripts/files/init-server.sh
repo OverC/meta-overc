@@ -88,7 +88,7 @@ sleep ${ROOT_DELAY}
 
 echo "Waiting for root device to be ready..."
 while [ 1 ] ; do
-    mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT && break
+    mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT 2>/dev/null && break
     sleep 0.1
 done
 
