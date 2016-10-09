@@ -88,7 +88,7 @@ class Container(object):
         dirlist=self.get_overlay(name)
         return len(dirlist)
 
-    def upgrade(self, name, template, rpm_upgrade=True, image_upgrade=False):
+    def upgrade(self, name, template, rpm_upgrade=True, image_upgrade=False, skip_del=False):
         if image_upgrade and not rpm_upgrade:
             retval = self.update(template)
             if retval is 0:
@@ -98,7 +98,10 @@ class Container(object):
                 msg2 = self.message
                 self.message = msg1 + "\n" + msg2
         else:
-            args = "-r -n %s" % name
+            if skip_del:
+                args = "-r -n %s -f" % name
+            else:
+                args = "-r -n %s" % name 
             retval = self.run_script(template, args)
 
         if retval is 0:
