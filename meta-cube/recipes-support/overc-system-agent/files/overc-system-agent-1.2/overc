@@ -67,6 +67,9 @@ if __name__ == '__main__':
 	s_upgradep.add_argument("-s", "--skipscan", dest="skipscan",
 				action="store_true",
 				help=_("if an upgrade involve container use overlayfs, skip duplicate file scan after deployment"))
+	s_upgradep.add_argument("-S", "--skipdel", dest="skip_del",
+				action="store_true",
+				help=_("don't delete all of the container's history snapshots before upgrading it"))
 
         s_roolback = system_subparse.add_parser("rollback", help=_("switch to the top of the history rollback list, including host and containers"))
         s_roolback.set_defaults(func=overc.system_rollback)
@@ -140,6 +143,9 @@ if __name__ == '__main__':
     c_upgrade.add_argument('template', help="template of container")
     c_upgrade.add_argument("-r", "--rpm", dest="rpm", action="store_true", help=_("Upgrade container using rpm feeds"))
     c_upgrade.add_argument("-i", "--image", dest="image", action="store_true", help=_("Upgrade container using images"))
+    c_upgrade.add_argument("-S", "--skipdel", dest="skip_del",
+                           action="store_true",
+                           help=_("don't delete all of the container's history snapshots before upgrading it"))
 
     c_activate = container_subparser.add_parser("activate", help=_("activate container"))
     c_activate.set_defaults(func=overc.container_activate)

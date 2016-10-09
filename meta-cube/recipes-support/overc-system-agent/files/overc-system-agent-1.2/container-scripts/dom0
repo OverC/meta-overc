@@ -46,8 +46,12 @@ Usage: $0 [OPTION] ...
 	delete container
 
 	-f: force
-  -r -n <container name>
+  -r -n <container name> [-f]
         update container using rpm packages
+	
+	-f: force not to delete all of the container's history snapshots
+	    before create a latest snapshot of this container, otherwise,
+	    it will delete all of the container's history snapshots by default.
   -p -n <container name>
         creates a snapshot of the container
   -D -n <container name>
@@ -345,6 +349,10 @@ rpm_upgrade() {
 	runcmd_in_container $container "smart newer"
 	if [ ! $? -eq 0 ]; then
 		return 0
+	fi
+
+	if [ ! $force -eq 1 ]; then
+		delete_snapshots $container
 	fi
 
 	c_raw_size=`du -hs /var/lib/lxc/${container}/rootfs | awk '{print $1}'`
