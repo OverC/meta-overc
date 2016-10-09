@@ -53,9 +53,9 @@ class Overc(object):
             self.command = None
 
     def system_upgrade(self):
-        self._system_upgrade(self.args.template, self.args.reboot, self.args.force, self.args.skipscan)
+        self._system_upgrade(self.args.template, self.args.reboot, self.args.force, self.args.skipscan, self.args.skip_del)
 
-    def _system_upgrade(self, template, reboot, force, skipscan):
+    def _system_upgrade(self, template, reboot, force, skipscan, skip_del):
 	print "skipscan %d" % skipscan
         containers = self.container.get_container(template)
         overlay_flag = 0
@@ -66,7 +66,7 @@ class Overc(object):
 	        for dist in DIST.split():
 	            if dist in self.container.get_issue(cn, template).split():
                         print "Updating container %s" % cn
-                        self._container_upgrade(cn, template) #by now only rpm upgrade support
+                        self._container_upgrade(cn, template, True, False, skip_del) #by now only rpm upgrade support
                         if self.retval is not 0:
                             print "*** Failed to upgrade container %s" % cn
                             print "*** Abort the system upgrade action"
@@ -268,10 +268,10 @@ class Overc(object):
             print "This container can only be upgraded via a system upgrade"
             self.retval = 0
         else:
-            self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image)
+            self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image, self.args.skip_del)
         sys.exit(self.retval)
-    def _container_upgrade(self, container, template, rpm=True, image=False):
-        self.retval = self.container.upgrade(container, template, rpm, image)
+    def _container_upgrade(self, container, template, rpm=True, image=False, skip_del=False):
+        self.retval = self.container.upgrade(container, template, rpm, image, skip_del)
         self.message = self.container.message
 
     def container_delete_snapshots(self):
