@@ -85,7 +85,6 @@ OVERC_EXTRA_NETWORKING = "\
 OVERC_COMMON_FS = " \
      quota \
      rsync \
-     samba \
      sysfsutils \
     "
 
