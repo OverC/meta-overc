@@ -2,3 +2,9 @@
 
 # Rebuild an overlay-ed directory
 # Or turn an overlay-ed directroy into orignal state
+
+if [ -e /var/lib/lxc/overlayrestore ]; then
+	chmod +x /var/lib/lxc/overlayrestore
+	/var/lib/lxc/overlayrestore
+	rm -f /var/lib/lxc/overlayrestore
+fi

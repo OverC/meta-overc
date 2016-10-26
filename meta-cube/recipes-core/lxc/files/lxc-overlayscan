@@ -38,6 +38,11 @@ if [ $(ls -Al "$2"|wc -l) -eq 1 ]; then
 fi
 }
 
+#0.Check flag file
+if [ ! -e /var/lib/lxc/need_scan_duplicate ]; then
+	exit 0
+fi
+
 # 1.List all containers
 for cn in $(lxc-ls); do
 # 2.Open /var/lib/lxc/$container/fstab, list all overlay mount entry
@@ -63,4 +68,4 @@ for cn in $(lxc-ls); do
 done;
 
 # Remove service from lxc.service
-sed -i "/lxc-overlayscan/d" /lib/systemd/system/lxc.service
+rm -f /var/lib/lxc/need_scan_duplicate
