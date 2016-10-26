@@ -35,6 +35,7 @@ SRC_URI = " \
     file://source/ansible/overc.yml \
     file://source/ansible/post.yml \
     file://source/ansible/setup_offset.yml \
+    file://source/essential_rw.sh \
 "
 
 S = "${WORKDIR}"
@@ -69,6 +70,9 @@ do_install() {
     # systemd services
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/source/overc-conftools.service ${D}${systemd_unitdir}/system/
+
+    install -d ${D}/${sysconfdir}/profile.d/
+    install -m 0644 ${WORKDIR}/source/essential_rw.sh ${D}/${sysconfdir}/profile.d/
 }
 
 RDEPENDS_${PN} += " \
