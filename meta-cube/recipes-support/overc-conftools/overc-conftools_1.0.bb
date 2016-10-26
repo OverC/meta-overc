@@ -31,6 +31,7 @@ SRC_URI = " \
     file://source/network_prime/templates/network_prime.sh.erb \
     file://source/network_prime/templates/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
+    file://source/essential_rw.sh \
 "
 
 S = "${WORKDIR}"
@@ -75,6 +76,9 @@ do_install() {
     # systemd services
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/source/overc-conftools.service ${D}${systemd_unitdir}/system/
+
+    install -d ${D}/${sysconfdir}/profile.d/
+    install -m 0644 ${WORKDIR}/source/essential_rw.sh ${D}/${sysconfdir}/profile.d/
 }
 
 RDEPENDS_${PN} += " \
