@@ -224,7 +224,7 @@ class Container(object):
 		    print "%s:already an overlay-ed dir in container" % (oldir)
 	            return -1
         # Insert request into lxc.service
-        lxcfile = '%s/etc/lxc/lxc-overlayrestore' % (ROOTMOUNT)
+        lxcfile = '%s/overlayrestore' % (CONTAINER_MOUNT)
         lxc = open(lxcfile, 'a+')
         lines=lxc.readlines()
         found = 0
