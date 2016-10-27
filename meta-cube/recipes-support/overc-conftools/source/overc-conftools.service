@@ -1,11 +1,13 @@
 [Unit]
-Description=OverC system configuration
+Description=OverC system configuration service
 After=local-fs.target openvswitch-nonetwork.service network.target
 Before=lxc.service
 
 [Service]
 Type=forking
 Environment=FACTER_ipaddress="192.168.42.2"
+#Only run on first boot and if RPM db has changed
+ExecStart=/bin/sh -c "[ /var/lib/rpm/Packages -nt /var/lib/rpm/overc-conf_run ] && /usr/bin/ansible-playbook /etc/overc-conf/ansible/overc.yml && cp --attributes-only -p /var/lib/rpm/Packages /var/lib/rpm/overc-conf_run"
 
 [Install]
 WantedBy=multi-user.target
