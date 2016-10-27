@@ -15,7 +15,7 @@ function valid_ip() {
         [[ ${ip[0]} -le 192 && ${ip[1]} -le 168 \
             && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
         stat=$?
-    fi							       
+    fi
     return $stat
 }
 
