@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  vars_files:
+    - overc_config_vars.yml
+
+  tasks:
+  - include: essential.yml
+    when: configure_network_prime is defined
+
+  - include: netprime.yml
+    when: configure_network_prime is defined
+
+  - include: setup_offset.yml
+    when: configure_network_prime is defined
+
+  - include: post.yml

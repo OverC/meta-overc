@@ -1,0 +1,48 @@
+---
+  - name: setup local hosts
+    lineinfile: dest=/etc/hosts line='192.168.42.2    cube-essential'
+
+  - name: Create a bridge named br-int
+    openvswitch_bridge: bridge=br-int state=present
+
+  - name: Copy networkd systemd configuration files for essential
+    copy: src=/etc/overc-conf/network_prime/25-br-int.network.essential dest=/etc/systemd/network/25-br-int.network owner=root group=root mode=0644
+
+  - name: Remove default configuration file for essential
+    file: path=/etc/systemd/network/20-wired.network state=absent
+
+  - name: Remove resolv.conf produced by systemd for essential
+    file: path=/etc/resolv.conf state=absent
+
+  - name: Create new resolv.conf for essential
+    copy: content="nameserver 192.168.42.1\n" dest=/etc/resolv.conf mode=0666
+
+  - name: Setup dnsmasq on essential
+    lineinfile: dest=/etc/dnsmasq.conf line='interface=br-int'
+
+  - name: Setup dhcp-range
+    lineinfile: dest=/etc/dnsmasq.conf regexp='^dhcp-range=*' line='dhcp-range=192.168.42.100,192.168.42.200,2h'
+
+  - name: Setup dnsmasq gateway on essential
+    lineinfile: dest=/etc/dnsmasq.conf line='dhcp-option=option:router,192.168.42.1'
+
+  - name: check if timezone is available and timezone pkg is installed
+    stat: path=/usr/share/zoneinfo/{{timezone}}
+    register: tzinfo
+    when: not((timezone is undefined) or (timezone|trim == '') or (timezone is none))
+
+  - name: setup timezone if it is available
+    copy: content="{{timezone}}\n" dest=/etc/timezone mode=0644
+    when: tzinfo is defined and tzinfo.stat.exists == True
+
+  - name: create symlink for local time
+    file: src=/usr/share/zoneinfo/{{timezone}} dest=/etc/localtime state=link
+    when: tzinfo is defined and tzinfo.stat.exists == True
+
+  - name: create group is initial user is configured
+    group: name={{initial_user}} state=present
+    when: not((initial_user is undefined) or (initial_user|trim == '') or (initial_user is none))
+
+  - name: create initial user
+    user: name={{initial_user}} password={{initial_passwd}}
+    when: not((initial_user is undefined) or (initial_user|trim == '') or (initial_user is none))
