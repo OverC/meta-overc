@@ -1,0 +1,16 @@
+---
+  - name: restart dnsmasq
+    service: name=dnsmasq state=restarted
+
+  - name: restart networking
+    service: name=systemd-networkd state=restarted
+    when: configure_network_prime is defined
+
+  - name: set system id
+    command: /etc/overc-conf/system/systemid-set.sh
+
+  - name: disable configure_network_prime in next boot
+    replace:
+      dest: /etc/overc-conf/ansible/overc_config_vars.yml
+      regexp: '^configure_network_prime: true'
+      replace: '#configure_network_prime: true'

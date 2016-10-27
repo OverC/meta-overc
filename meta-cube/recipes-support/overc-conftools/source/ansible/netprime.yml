@@ -1,0 +1,62 @@
+---
+  - name: Copy networkd systemd configuration files for network-prime
+    copy: src=/etc/overc-conf/network_prime/{{item}} dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/network/{{item}} owner=root group=root mode=0644
+    with_items:
+      - 25-br-int.network
+      - 20-br-int-virt.network
+
+  - name: Remove default configuration file for network-prime
+    file: path=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/network/20-wired.network state=absent
+
+  - name: Add IPForward configuration for network-prime
+    copy: content="[Match]\nName={{network_device}}\n\n[Network]\nDHCP=ipv4\nIPForward=ipv4\n"
+      dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/network/30-wired.network mode=0644
+    when: network_device is defined
+
+  - name: Remove systemd-networkd config when NetworkManager is available
+    file: path=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/network/30-wired.network state=absent
+    when: network_device is undefined
+
+  - name: Remove systemd-networkd service link when NetworkManager is available
+    file: src=/dev/null dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/system/systemd-resolved.service state=link
+    when: network_device is undefined
+
+  - name: Disable network-prime's named service
+    file: src=/dev/null dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/system/named.service state=link
+
+  - name: Prepare services file for network-prime
+    copy: src=/etc/overc-conf/network_prime/{{item}} dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/system/{{item}} owner=root group=root mode=0644
+    with_items:
+    - overc-network-prime.service
+    - overc-network-prime-port-forward.service
+
+  - name: Prepare autonetdev for network-prime
+    copy: src=/etc/overc-conf/network_prime/autonetdev dest=/var/lib/lxc/{{network_prime_container}}/autonetdev owner=root group=root mode=0755
+
+  - name: Run autonetdev
+    command: /var/lib/lxc/{{network_prime_container}}/autonetdev
+
+  - name: Setup service links for network-prime
+    file: src=../{{item}} dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/system/multi-user.target.wants/{{item}} state=link
+    with_items:
+    - overc-network-prime-port-forward.service
+    - overc-network-prime.service
+
+  - name: Create overc directory
+    file: path=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/overc state=directory owner=root group=root mode=0755
+
+  - name: Setup dnsmasq on network-prime
+    lineinfile: dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/dnsmasq.conf regexp='^listen-address=*' line='listen-address=192.168.42.1'
+
+  #- name: Ensure dnsmasq starts the first time by touching the /etc/resolv.conf
+  #  file: path=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/resolv.conf state=touch mode=0666
+
+  - name: turn off dnsmasq on dom0 if netprime is not dom0
+    file: path=/var/lib/lxc/dom0/rootfs/etc/systemd/system/multi-user.target.wants/dnsmasq.service state=absent
+    when: network_prime_container != "dom0"
+
+  - name: copy network_prime.sh
+    copy: src=/etc/overc-conf/network_prime/network_prime.sh.erb dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/overc/network_prime.sh mode=0750
+
+  - name: copy network_prime_port_forward.sh
+    copy: src=/etc/overc-conf/network_prime/network_prime_port_forward.sh.erb dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/overc/network_prime_port_forward.sh mode=0750
