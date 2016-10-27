@@ -9,7 +9,7 @@ DESCRIPTION = "Set of configuration files and systemd services \
   that images can include to allow for customization of images \
   through a set of supported tools. Including this package in an \
   image does not necessarily result in the configurations being \
-  applied."
+  applied. Supported tools currently include: ansible"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
@@ -29,6 +29,12 @@ SRC_URI = " \
     file://source/network_prime/files/network_prime.sh.erb \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
+    file://source/ansible/essential.yml \
+    file://source/ansible/netprime.yml \
+    file://source/ansible/overc_config_vars.yml \
+    file://source/ansible/overc.yml \
+    file://source/ansible/post.yml \
+    file://source/ansible/setup_offset.yml \
 "
 
 S = "${WORKDIR}"
@@ -52,6 +58,9 @@ do_install() {
     install -d ${D}/${sysconfdir}/overc-conf/system
     install -m 755 ${WORKDIR}/source/system/systemid-set.sh ${D}/${sysconfdir}/overc-conf/system/
 
+    install -d ${D}/${sysconfdir}/overc-conf/ansible
+    install -m 644 ${WORKDIR}/source/ansible/* ${D}/${sysconfdir}/overc-conf/ansible/
+
     #to create an empty system-id file to tell overc-installer
     #to bind mount it to dom0/cube-desktop to share one system
     #id between them.
@@ -61,6 +70,10 @@ do_install() {
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/source/overc-conftools.service ${D}${systemd_unitdir}/system/
 }
+
+RDEPENDS_${PN} += " \
+    python-ansible \
+    "
 
 PACKAGES =+ "${PN}-systemd"
 RDEPENDS_${PN}-systemd += "${PN}"
