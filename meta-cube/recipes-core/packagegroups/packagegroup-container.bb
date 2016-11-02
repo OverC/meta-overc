@@ -23,7 +23,7 @@ RDEPENDS_${PN}-setup = " \
     lxc-setup \
 "
 
-RDEPENDS_docker = " \
+RDEPENDS_packagegroup-docker = " \
     docker \
     libvirt \
     libvirt-python \
