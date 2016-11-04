@@ -136,7 +136,11 @@ class Btrfs(Utils):
         if not self._btrfs(argv):
             #factory-reset the kernel image
             self.message += "factory reset kernel %s \n" % self.kernel
-            os.system('cp -rf %s/%s/%s /boot/' % (SYSROOT, FACTORY_SNAPSHOT, self.kernel))
+            real_kernel = '%s/%s/%s' % (SYSROOT, FACTORY_SNAPSHOT, self.kernel)
+            if os.path.islink(real_kernel):
+                real_kernel = '%s/%s/%s' % (SYSROOT, FACTORY_SNAPSHOT, os.path.realpath(real_kernel))
+            os.system('cp -rf %s %s' % (real_kernel, self.kernel))
+
             #if grub-efi exists, factory-reset those files from the original rootfs too.
             if os.path.exists('%s/%s/boot/efi/EFI/BOOT' % (SYSROOT, FACTORY_SNAPSHOT)):
                 self.message += "factory reset grub-efi related files \n"
