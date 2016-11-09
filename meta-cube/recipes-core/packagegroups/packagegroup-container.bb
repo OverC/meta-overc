@@ -10,6 +10,7 @@ PACKAGES = "\
     packagegroup-container \
     packagegroup-container-setup \
     packagegroup-docker \
+    packagegroup-oci \
     "
 
 RDEPENDS_${PN} = " \
@@ -27,4 +28,9 @@ RDEPENDS_packagegroup-docker = " \
     docker \
     libvirt \
     libvirt-python \
+"
+RDEPENDS_packagegroup-oci = " \
+    runc \
+    oci-systemd-hook \
+    oci-runtime-tools \
 "
