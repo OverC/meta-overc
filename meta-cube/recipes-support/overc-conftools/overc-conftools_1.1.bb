@@ -73,6 +73,7 @@ do_install() {
 
 RDEPENDS_${PN} += " \
     python-ansible \
+    bash \
     "
 
 PACKAGES =+ "${PN}-systemd"
