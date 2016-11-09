@@ -17,7 +17,7 @@ PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
-CUBE_DOM_E_EXTRA_INSTALL ?= ""
+CUBE_DESKTOP_EXTRA_INSTALL ?= ""
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-dom0 \
@@ -32,7 +32,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         ntp \
                         ntpdate \
                         ntp-utils \
-                        ${CUBE_DOM_E_EXTRA_INSTALL} \
+                        ${CUBE_DESKTOP_EXTRA_INSTALL} \
                        "
 
 XSERVER_append = "xserver-xorg \
