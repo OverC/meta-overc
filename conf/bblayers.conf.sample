@@ -22,7 +22,6 @@ BBLAYERS ?= " \
   $HOME/poky/meta-cloud-services \
   $HOME/poky/meta-security \
   $HOME/poky/meta-qt4 \
-  $HOME/poky/oe-meta-go \
   $HOME/poky/meta-openembedded/meta-filesystems \
   "
 BBLAYERS_NON_REMOVABLE ?= " \

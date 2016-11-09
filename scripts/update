@@ -5,7 +5,6 @@ LAYERS="meta-openembedded \
 	meta-security \
 	meta-overc \
 	meta-browser \
-	oe-meta-go \
 	meta-cloud-services \
 	"
 
