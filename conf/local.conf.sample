@@ -150,10 +150,13 @@ PACKAGE_CLASSES ?= "package_rpm"
 IMAGE_FSTYPES += "tar.bz2"
 NOISO = "1"
 IMAGE_FSTYPES += "ext3"
+IMAGE_FSTYPES_remove = "wic"
 
 IMAGE_FEATURES += "dev-pkgs"
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
 IMAGE_FEATURES += "ssh-server-openssh package-management"
+# do not install recommendations
+NO_RECOMMENDATIONS = "1"
 
 #
 # Extra image configuration defaults
