@@ -14,6 +14,9 @@ PACKAGE_EXCLUDE = "busybox* "
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
+# do not install recommendations
+NO_RECOMMENDATIONS = "1"
+
 PV = "0.5"
 
 DOM0_MAIN_PKGS = " packagegroup-core-boot \
