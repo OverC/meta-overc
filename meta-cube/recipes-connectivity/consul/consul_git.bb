@@ -48,8 +48,7 @@ CCACHE = ""
 
 inherit systemd golang
 
-ERROR_QA_remove = "ldflags"
-WARN_QA_append = " ldflags"
+INSANE_SKIP_${PN} += "ldflags"
 
 SYSTEMD_SERVICE_${PN} = "consul.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
