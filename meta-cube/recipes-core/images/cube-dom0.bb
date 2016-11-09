@@ -30,6 +30,7 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   packagegroup-container \
+                  packagegroup-oci \
                   packagegroup-service-discovery \
                   cube-cmd-server \
                   cube-cmd-server-dom0-conf \
