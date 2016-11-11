@@ -1,5 +1,0 @@
-#!/bin/sh -
-
-# Remove all served request from lxc-overlayrestore
-
-sed -i "\@/etc/lxc/overlay@d" /etc/lxc/lxc-overlayrestore

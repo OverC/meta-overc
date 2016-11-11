@@ -79,21 +79,9 @@ class Overc(object):
         rc = self._host_upgrade(0, force)
 
         if ((overlay_flag == 1) and (skipscan == 0) and (rc == 1)):
-            # Enable lxc-overlay service in essential
-            lxcfile = '%s/%s/lib/systemd/system/lxc.service' % (SYSROOT, self.agency.next_rootfs)
-            lxc = open(lxcfile, 'r')
-            lines = lxc.readlines()
-            lxc.close()
-            for line in lines:
-                if line.find("lxc_overlay") != -1:
-                    sys.exit(self.retval)
-            for line in lines:
-                if line.find("ExecStart") != -1:
-                    index = lines.index(line)
-                    break
-            lines.insert(index, "ExecStartPre=/etc/lxc/lxc-overlayscan\n")
-            lxc = open(lxcfile, 'w')
-            lxc.writelines(lines)
+            # Enable lxc-overlay service in essential by create a flagfile in CONTAINER_MOUNT
+            lxcfile = '%s/need_scan_duplicate' % (CONTAINER_MOUNT)
+            lxc = open(lxcfile, 'w+')
             lxc.close()
 
         if ((rc == 1) and (reboot != 0)):
