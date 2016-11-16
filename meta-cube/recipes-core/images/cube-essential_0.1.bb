@@ -21,6 +21,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-essential \
                   packagegroup-util-linux \
                   packagegroup-container \
+                  packagegroup-oci \
 		  packagegroup-container-setup \
 		  cube-update \
 		  overc-conftools \
@@ -36,6 +37,9 @@ IMAGE_FSTYPES ?= "tar.bz2"
 IMAGE_FSTYPES_remove = "live"
 
 TARGETNAME ?= "cube-essential"
+
+# do not install recommendations
+NO_RECOMMENDATIONS = "1"
 
 INITRD = "True"
 INITRAMFS_IMAGE = "cube-builder-initramfs"
