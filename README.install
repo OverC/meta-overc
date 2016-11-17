@@ -55,6 +55,16 @@ being build and assembled.
 Once the build (or download) completes, the build artifacts must be assembled
 into an installer image (see the following sections).
 
+By default, rootfs for cube-essential is in read-only mode, changes on
+rootfs will lead failure or lost after system reboot. User may change
+read/write attribute of rootfs when system running after login to
+cube-essenial as root user.
+
+To build a read-write rootfs for cube-essential, please add following line in
+local.conf before building cube-essential:
+
+ OVERC_ESSENTIAL_MODE = "read-write"
+
 OverC installer
 ---------------
 
