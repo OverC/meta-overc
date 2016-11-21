@@ -20,9 +20,6 @@ PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-essential \
                   packagegroup-util-linux \
-                  packagegroup-container \
-                  packagegroup-oci \
-		  packagegroup-container-setup \
 		  cube-update \
 		  overc-conftools \
 		  rndmac \
