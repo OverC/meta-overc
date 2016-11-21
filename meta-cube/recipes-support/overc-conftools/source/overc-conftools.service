@@ -1,7 +1,6 @@
 [Unit]
 Description=OverC system configuration service
 After=local-fs.target openvswitch.service network.target
-Before=lxc.service
 
 [Service]
 Type=forking
