@@ -49,6 +49,7 @@ OVERC_COMMON_EXTENDED = " \
      kbd \
      ${OVERC_COMMON_EXTENDED_ARCH} \
     "
+OVERC_COMMON_EXTENDED += "${@bb.utils.contains('DISTRO_FEATURES','systemd','systemd-extra-utils','',d)}"
 
 OVERC_EXTRA_EXTENDED = "\
      cronie \
