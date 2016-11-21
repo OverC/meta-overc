@@ -45,6 +45,7 @@ OVERC_COMMON_EXTENDED = " \
      e2fsprogs \
      kbd \
     "
+OVERC_COMMON_EXTENDED += "${@bb.utils.contains('DISTRO_FEATURES','systemd','systemd-extra-utils','',d)}"
 
 OVERC_EXTRA_EXTENDED = "\
      cronie \

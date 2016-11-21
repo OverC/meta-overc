@@ -36,6 +36,7 @@ RDEPENDS_packagegroup-essential-extended = "\
     "
 
 RDEPENDS_packagegroup-essential-networking = "\
+     dnsmasq \
      ${OVERC_COMMON_NETWORKING} \
     "
 
