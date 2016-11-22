@@ -86,9 +86,20 @@ mkdir -p $ROOT_MOUNT/
 
 sleep ${ROOT_DELAY}
 
+try_to_mount_rootfs() {
+    local mount_flags="rw,noatime"
+
+    mount -o $mount_flags "${ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
+
+    [ -x /init.cryptfs ] &&
+        /init.cryptfs "${ROOT_MOUNT}" "${ROOT_DEVICE}" $mount_flags "OVERCROOTFS" && return 0
+
+    return 1
+}
+
 echo "Waiting for root device to be ready..."
 while [ 1 ] ; do
-    mount -o rw,noatime $ROOT_DEVICE $ROOT_MOUNT 2>/dev/null && break
+    try_to_mount_rootfs && break
     sleep 0.1
 done
 
