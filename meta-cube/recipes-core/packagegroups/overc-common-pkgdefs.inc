@@ -49,7 +49,15 @@ OVERC_COMMON_EXTENDED = " \
      kbd \
      ${OVERC_COMMON_EXTENDED_ARCH} \
     "
-OVERC_COMMON_EXTENDED += "${@bb.utils.contains('DISTRO_FEATURES','systemd','systemd-extra-utils','',d)}"
+
+OVERC_SYSTEMD_EXTRAS = "systemd-extra-utils \
+                        systemd-vconsole-setup \
+                        systemd-serialgetty \
+                        systemd-compat-units \
+                        udev-hwdb \
+                        os-release"
+
+OVERC_COMMON_EXTENDED += "${@bb.utils.contains('DISTRO_FEATURES','systemd','${OVERC_SYSTEMD_EXTRAS}','',d)}"
 
 OVERC_EXTRA_EXTENDED = "\
      cronie \
