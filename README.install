@@ -22,6 +22,9 @@ container runtimes. These are:
  - cube-builder: This is the image which lists all the packages required to
                  boot the platform. cube-builder is also capable of self
                  hosting and building the platform itself.
+                 Please add following line in local.conf before building
+                 kernel for cube-builder:
+                  OVERC_PLATFORM_TUNING += "builder"
  - cube-essential: This is a minimal runtime which is used for both the
                    installer and cube-essential in the fully assembled system.
 

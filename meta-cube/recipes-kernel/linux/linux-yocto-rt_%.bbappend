@@ -1,6 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}:${THISDIR}/linux-yocto:"
 
-SRC_URI += "file://builder.cfg"
+SRC_URI += '${@bb.utils.contains("OVERC_PLATFORM_TUNING", "builder", "file://builder.cfg ", "",d)}'
 SRC_URI += "file://xt-checksum.scc \
             file://ebtables.scc \
             file://vswitch.scc \
