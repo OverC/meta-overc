@@ -11,9 +11,8 @@ LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=3c03275605209651d6b99457f0b2778e"
 
 SRC_URI = " \
     git://github.com/WindRiver-OpenSourceLabs/nanoio.git \
-    file://lib-Makefile-allow-chars-in-the-uname-output.patch \
 "
-SRCREV = "290ddac99c46371edb721f386771a11cf81bdf0c"
+SRCREV = "cad6ed022d7aa8e0909d50277cba0398b915ae46"
 PV = "0.1.0+git${SRCPV}"
 
 DEPENDS += "nanomsg"
