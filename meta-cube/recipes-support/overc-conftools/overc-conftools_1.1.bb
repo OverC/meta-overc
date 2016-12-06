@@ -20,13 +20,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 SRC_URI = " \
     file://source/COPYING \
     file://source/overc-conftools.service \
-    file://source/network_prime/files/20-br-int-virt.network \
-    file://source/network_prime/files/25-br-int.network \
+    file://source/network_prime/files/25-veth0.network \
     file://source/network_prime/files/25-br-int.network.essential \
-    file://source/network_prime/files/overc-network-prime.service \
     file://source/network_prime/files/overc-network-prime-port-forward.service \
     file://source/network_prime/files/autonetdev \
-    file://source/network_prime/files/network_prime.sh.erb \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
     file://source/ansible/essential.yml \
@@ -46,11 +43,9 @@ do_install() {
     install -m 755 ${WORKDIR}/source/network_prime/files/autonetdev \
         ${D}/${sysconfdir}/overc-conf/network_prime/
 
-    for file in overc-network-prime.service \
-                overc-network-prime-port-forward.service \
-                20-br-int-virt.network 25-br-int.network \
+    for file in overc-network-prime-port-forward.service \
+                25-veth0.network \
 		25-br-int.network.essential \
-                network_prime.sh.erb \
                 network_prime_port_forward.sh.erb; do
         install -m 644 ${WORKDIR}/source/network_prime/files/$file \
 	               ${D}/${sysconfdir}/overc-conf/network_prime/

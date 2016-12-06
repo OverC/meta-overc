@@ -8,7 +8,7 @@ do_install_append() {
 plugins=keyfile
 
 [keyfile]
-unmanaged-devices=interface-name:br-int
+unmanaged-devices=interface-name:veth0
 EOF
 
 }
