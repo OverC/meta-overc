@@ -1,5 +1,5 @@
 [Match]
-Name=br-int
+Name=veth0
 
 [Network]
 Address=192.168.42.1/24
