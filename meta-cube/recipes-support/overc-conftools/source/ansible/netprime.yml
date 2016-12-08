@@ -28,12 +28,6 @@
     with_items:
     - overc-network-prime-port-forward.service
 
-  - name: Prepare autonetdev for network-prime
-    copy: src=/etc/overc-conf/network_prime/autonetdev dest=/var/lib/lxc/{{network_prime_container}}/autonetdev owner=root group=root mode=0755
-
-  - name: Run autonetdev
-    command: /var/lib/lxc/{{network_prime_container}}/autonetdev
-
   - name: Setup service links for network-prime
     file: src=../{{item}} dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/systemd/system/multi-user.target.wants/{{item}} state=link
     with_items:

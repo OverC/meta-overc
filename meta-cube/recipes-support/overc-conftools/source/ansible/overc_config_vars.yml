@@ -2,7 +2,6 @@
 # define vars here
 network_prime_container:
 network_device:
-network_prime_device_class:
 cname: []
 coffset: []
 configure_network_prime: true
