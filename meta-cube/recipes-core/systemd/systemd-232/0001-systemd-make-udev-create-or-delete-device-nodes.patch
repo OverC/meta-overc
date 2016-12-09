@@ -14,14 +14,12 @@ Signed-off-by: fupan li <fupan.li@windriver.com>
 [bva: ported to systemd 225]
 Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 ---
- src/udev/udev-node.c | 104 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 101 insertions(+), 3 deletions(-)
+ src/udev/udev-node.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 100 insertions(+), 2 deletions(-)
 
-Index: git/src/udev/udev-node.c
-===================================================================
---- git.orig/src/udev/udev-node.c
-+++ git/src/udev/udev-node.c
-@@ -32,6 +32,62 @@
+--- a/src/udev/udev-node.c
++++ b/src/udev/udev-node.c
+@@ -33,6 +33,62 @@
  #include "string-util.h"
  #include "udev.h"
  
@@ -84,7 +82,7 @@ Index: git/src/udev/udev-node.c
  static int node_symlink(struct udev_device *dev, const char *node, const char *slink) {
          struct stat stats;
          char target[UTIL_PATH_SIZE];
-@@ -263,8 +319,13 @@
+@@ -264,8 +320,13 @@ static int node_permissions_apply(struct
                  mode |= S_IFCHR;
  
          if (lstat(devnode, &stats) != 0) {
@@ -100,14 +98,14 @@ Index: git/src/udev/udev-node.c
          }
  
          if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum)) {
-@@ -357,13 +418,50 @@
+@@ -359,13 +420,50 @@ void udev_node_add(struct udev_device *d
  }
  
  void udev_node_remove(struct udev_device *dev) {
 +        struct udev *udev = udev_device_get_udev(dev);
          struct udev_list_entry *list_entry;
 +        struct udev_device *dev_check;
-         char filename[UTIL_PATH_SIZE];
+         char filename[sizeof("/dev/block/:") + 2*DECIMAL_STR_MAX(unsigned)];
 +        const char *devnode;
 +        struct stat stats;
 +        int err = 0;
@@ -149,5 +147,5 @@ Index: git/src/udev/udev-node.c
 +            rmdir_parents(udev_device_get_devnode(dev), "/");
 +
          /* remove /dev/{block,char}/$major:$minor */
-         snprintf(filename, sizeof(filename), "/dev/%s/%u:%u",
+         xsprintf(filename, "/dev/%s/%u:%u",
                   streq(udev_device_get_subsystem(dev), "block") ? "block" : "char",
