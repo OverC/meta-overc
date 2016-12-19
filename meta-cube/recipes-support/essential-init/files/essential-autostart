@@ -1,0 +1,30 @@
+#!/bin/bash
+
+container_dir="/opt/container"
+
+# if single_launch is set, then we don't use dtach, but instead let the
+# container go directly at the tty
+single_launch=t
+
+echo "[INFO] auto starting containers ..."
+for c in $(ls "${container_dir}/"); do
+    if [ -d "${container_dir}/${c}" ]; then
+	if [ -e "${container_dir}/${c}/autostart" ]; then
+	    container_names="${container_names} $(basename ${c})"
+	fi
+    fi
+done
+
+echo "[INFO] starting: ${container_names}"
+for container in ${container_names}; do
+    # TODO: add non pflask launches ...
+    if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
+	# pflask launch
+	if [ -n "${single_launch}" ]; then
+	    ${container_dir}/${container}/pflask.cmd
+	else
+	    rm -f /tmp/${container}-console
+	    dtach -n /tmp/${container}-console ${container_dir}/${container}/pflask.cmd
+	fi
+    fi
+done
