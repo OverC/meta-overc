@@ -1,0 +1,373 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+mydir=`dirname $0`
+PATH=$mydir:$PATH
+
+usage()
+{
+cat << EOF
+
+  cube-cfg [--clean] <command> <value>
+
+global options:
+    
+ --clean: remove artifacts before performing <command>
+
+commands (and options):
+
+ ${0##*/} gen <name>:<type>
+
+    generate a base configuration
+
+       <name>:<type> container name and type
+
+ ${0##*/} mount <type>:<name>:<name>
+
+    mount a directory into the container
+
+       <type>:       optional type of mount. 'bind'
+       <name>:<name> source and destination directory
+
+ ${0##*/} mount <type>:<name>:<name>
+
+    clean: clean configuration artifacts
+
+ ${0##*/} add [-n <name>] [-u <subuid>] <source tar.bz2>
+
+    add a container to the platform. Once added, the container is monitored, but
+    not started. Use "cube-ctl start" to launch a container after adding it.
+
+       -n <name>: name of the container once added to the system. If this is
+                  not supplied, the container source tarball is used to generate
+                  a name.
+
+       -u: make this newly added container unprivileged. The subuid field will
+           be used to set the owner of the uid/gid in the root namespace for the
+           newly added container. If no subuid field is provided, a default
+           value of 800000 will be used.
+ 
+       -o: if adding the container locally, the target directory for the rootfs
+
+       -t: container type: lxc, oci or cube (default: oci)
+
+       <source>: path to the container source (tar.bz2)
+
+ ${0##*/} del [-F] <name>
+
+    remove a container from the system. Once this completes, the container is
+    stopped and purged from the filesystem.
+
+       -F force remove container without prompting
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+# take the entire command into an array
+raw_command=($@)
+
+force=""
+peer=t
+non_dashed=""
+
+# this corresponds to the lxc.id_map items within the container's config file
+DEFAULT_SUBUID=800000
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+	--clean)
+	    clean=t
+	    ;;
+        --peer)
+	    peer=t
+	    nested=
+	    ;;
+	--nested)
+	    nested=t
+	    peer=
+	    ;;
+	--parent)
+	    parent=${2}
+	    shift
+	    ;;
+	--name)
+	    container_name_temp=${2}
+	    shift
+	    ;;
+	-u)
+		# This is an unprivileged container. We need to config subuid/subgid.
+		if [ "${2}" -eq "${2}" ] 2>/dev/null; then
+			if [ "${2}" -lt 100000 ] 2>/dev/null; then
+				echo "Error: -u requires a subuid number no less than 100000"
+				exit 1
+			fi
+			subuid="${2}"
+			shift
+		else
+			subuid="${DEFAULT_SUBUID}"
+		fi
+		;;
+	-F)
+	    force=-F
+	    ;;
+        --n|-n)
+	    container_name=${2}
+	    shift
+	    ;;
+        --t|-t)
+	    container_type=${2}
+	    shift
+	    ;;
+        --o|-o)
+	    out_dir=${2}
+	    shift
+	    ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	--*)
+	    # if the next argument is dashed, we just add $1 to our collection
+	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
+	    # to the --dashed option, and we grab it as well. Don't try and mix
+	    # dashed and non-dashed, since we'll grab them!
+	    case $2 in
+		--*)
+		    dashed="${dashed} $1"
+		    ;;
+		*)
+		    # sneak a : in between, so we can split it later
+		    dashed="${dashed} $1:$2"
+		    shift
+		    ;;
+	    esac
+	    ;;
+        *) non_dashed="${non_dashed} $1"
+            ;;
+    esac
+    shift
+done
+
+# returns 1 if we are container, 0 otherwise
+function am_i_a_container()
+{
+    which systemd-detect-virt
+    if [ $? -eq 0 ]; then
+	local virt=`systemd-detect-virt`
+	if [ "${virt}" = "lxc" ]; then
+	    return 1
+	fi
+    fi
+
+    return 0
+}
+
+am_i_a_container
+if [ $? -eq 0 ]; then
+    we_are_a_container=t
+fi
+
+# make an array from whatever was non-dashed
+cmd_options_non_dashed=(${non_dashed})
+
+if [ -z "${cmd}" ]; then
+    # the first element is the command
+    cmd=${cmd_options_non_dashed[0]}
+fi
+
+check_required()
+{
+    if [ ! -e "${1}" ]; then
+	echo "[ERROR]: required command ${1} not found, exiting"
+	exit 1
+    fi
+}
+
+check_if_present()
+{
+    if [ -e "${1}" ]; then
+	return 0
+    fi
+    return 1
+}
+
+#
+# arg1: type of artifacts to clean. if not passed, all will be
+#       cleaned
+#
+clean_config_artifacts()
+{
+    local type=$1
+
+    if [ -z "${type}" ]; then
+	type="all"
+    fi
+
+    if [ "${type}" = "mount" ] || [ "${type}" = "all" ]; then
+	rm -f .cube.mount
+	rm -f .cube.mount.bind
+    fi
+}
+
+#
+# arg1: container name
+#
+# output: config.json in the current directory
+#
+generate_base_config()
+{
+    local container_name=$1
+
+    if [ -e ".cube.mount.bind" ]; then
+	for d in $(cat .cube.mount.bind); do
+	    mount_args="${mount_args} --bind $d"
+	done
+    fi
+
+    capabilities="--cap-add KILL \
+		  --cap-add LINUX_IMMUTABLE \
+                  --cap-add SYS_RAWIO \
+                  --cap-add SYS_ADMIN \
+		  --cap-add SYS_MODULE \
+                  --cap-add SYS_RESOURCE \
+                  --cap-add SYS_TTY_CONFIG"
+
+    # TODO: Vary this for application containers (app and hooks)
+    app="/sbin/init"
+    hooks="--prestart /usr/libexec/oci/hooks.d/netns \
+	   --prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
+	   --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+
+    ## TODO: if there's no oci-runtime-tool, then we should capture a
+    ##       a default config.json and modify it on the fly
+    oci-runtime-tool generate --tty \
+	             ${hooks} \
+		     --args ${app} \
+                     --seccomp-remove-all \
+                     --hostname=${container_name} \
+		     --env container=docker \
+                     ${capabilities} \
+                     ${mount_args} \
+                     > config.json.tmp
+
+    sed -i 's/\"seccomp\"/\"seccomp-ignore\"/g' config.json.tmp
+    # "devices" must be available for mods
+    sed -i 's/\"allow\": false,/\"allow\": true,/g' config.json.tmp
+    # /sys/ needs to be read-write
+    sed -i 's/\"ro\"/\"rw\"/g' config.json.tmp
+
+    mv config.json.tmp config.json
+}
+
+#
+# arg1: container name
+#
+convert_base_config_to_cube()
+{
+    local container_name=$1
+
+    rm -f pflask.config
+
+    # any mounts ?
+    for mount in $(jq -r '.mounts | map("\(.type):\(.source):\(.destination)") | .[]' config.json); do
+	# we only care about bind mounts at the moment
+	echo "$mount" | grep -q bind
+	if [ $? -eq 0 ]; then
+	    echo ${mount} >> pflask.config
+	    pflask_args="${pflask_args} --mount ${mount}"
+	fi
+    done
+
+    # what is the executable we are running ?
+    app=$(jq -r  '.process.args | .[]' config.json)
+
+    # and the root directory (to be appended to the current working dir)
+    rootfs=$(jq -r  '.root.path'  config.json)
+    rootfs="/opt/container/${container_name}/${rootfs}"
+
+    pflask_args="${pflask_args}	--root ${rootfs}"
+
+    echo "#!/bin/bash" > pflask.cmd
+    echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
+    chmod +x pflask.cmd
+}
+
+case "${cmd}" in
+    clean)
+	clean_config_artifacts
+	;;
+    gen)
+	name_temp=${cmd_options_non_dashed[1]}
+	container_name=$(echo ${name_temp} | cut -f1 -d:)
+	container_type=$(echo ${name_temp} | cut -f2 -d:)
+	if [ "${container_name}" == "${container_type}" ]; then
+	    container_type="oci"
+	fi
+	generate_base_config ${container_name}
+
+	if [ "${container_type}" == "cube" ]; then
+	    convert_base_config_to_cube ${container_name}
+	fi
+	;;
+    mount)
+	name_temp=${cmd_options_non_dashed[1]}
+
+	if [ -n "${clean}" ]; then
+	    clean_config_artifacts mount
+	fi
+
+	colons=$(echo ${name_temp} | sed -e 's/\(.\)/\1\n/g' | grep : | wc -l)
+	if [ ${colons} -eq 2 ]; then
+	    # we have <type>:<source>:<dest>
+	    source=$(echo ${name_temp} | cut -f2 -d:)
+	    dest=$(echo ${name_temp} | cut -f3 -d:)
+
+	    # save the mount information for the generation phase
+	    echo "$source:$dest"  >> .cube.mount.bind
+	elif [ ${colons} -eq 1 ]; then
+	    # we have <source>:<dest>
+	    source=$(echo ${name_temp} | cut -f1 -d:)
+	    dest=$(echo ${name_temp} | cut -f2 -d:)
+
+	    # save the mount information for the generation phase
+	    echo "$source:$dest" >> .cube.mount
+	else
+	    echo "ERROR: Invalid mount specified ${name_temp}"
+	    exit 1
+	fi
+	;;
+    add)
+	;;
+    del|delete|remove)
+	;;
+    start)
+	;;
+    status|list)
+	;;
+    info)
+	;;
+    restart)
+	;;
+    stop)
+	;;
+    exec)
+	;;
+    *)
+	echo "Unknown command ..."
+	usage
+	;;
+esac

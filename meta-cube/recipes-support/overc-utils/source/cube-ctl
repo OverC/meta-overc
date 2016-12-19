@@ -17,13 +17,14 @@ cat << EOF
 
 commands (and options):
 
- ${0##*/} start [--peer] [--nested] <name>
+ ${0##*/} start [--peer] [--nested] [--auto] <name>
 
     start (launch) a container:
 
-       --peer (default)
+       --auto: launch autostart containers 
+       --peer
        --nested
-       <name>: name of the container to be launched
+       <name>: name of the container to be launched (if not "--auto")
 
  ${0##*/} stop <name>
 
@@ -44,6 +45,12 @@ commands (and options):
            be used to set the owner of the uid/gid in the root namespace for the
            newly added container. If no subuid field is provided, a default
            value of 800000 will be used.
+ 
+       -o: if adding the container locally, the target directory for the rootfs
+
+       -t: container type: lxc, oci or cube (default: oci)
+
+       --auto: auto start the container
 
        <source>: path to the container source (tar.bz2)
 
@@ -99,6 +106,9 @@ while [ $# -gt 0 ]; do
 	    peer=t
 	    nested=
 	    ;;
+        --auto)
+	    auto=t
+	    ;;
 	--nested)
 	    nested=t
 	    peer=
@@ -125,6 +135,14 @@ while [ $# -gt 0 ]; do
 	    ;;
         --n|-n)
 	    container_name=${2}
+	    shift
+	    ;;
+        --t|-t)
+	    container_type=${2}
+	    shift
+	    ;;
+        --o|-o)
+	    out_dir=${2}
 	    shift
 	    ;;
 	-h|--help)
@@ -160,19 +178,23 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+container_dir="/opt/container"
 dom0ctl="/opt/dom0-contctl/dom0_contctl"
 overc_cctl="/opt/overc-installer/overc-cctl"
 
 if [ -f "${dom0ctl}" ]; then
-    i_am_dom0=t
+    we_are_dom0=t
 fi
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt=`systemd-detect-virt`
-    if [ "${virt}" = "lxc" ]; then
-	return 1
+    which systemd-detect-virt
+    if [ $? -eq 0 ]; then
+	local virt=`systemd-detect-virt`
+	if [ "${virt}" = "lxc" ]; then
+	    return 1
+	fi
     fi
 
     return 0
@@ -180,6 +202,10 @@ function am_i_a_container()
 
 if [ -d "/host/proc" ]; then
     we_are_dom0=t
+fi
+am_i_a_container
+if [ $? -eq 0 ]; then
+    we_are_a_container=t
 fi
 
 # make an array from whatever was non-dashed
@@ -213,7 +239,7 @@ check_is_known_container()
 {
     container_name=$1
 
-    if [ -n "${i_am_dom0}" ]; then
+    if [ -n "${we_are_dom0}" ]; then
 	containers="`cube-cmd lxc-ls`"
 	if [ -n "${containers}" ]; then
 	    echo ${containers} | grep -q -w ${container_name}
@@ -228,18 +254,92 @@ check_is_known_container()
     return 0
 }
 
-am_i_a_container
-if [ $? -eq 0 ]; then
-    echo "ERROR: host detected, cube-ctl only works in a monitored container."
-    echo "       Commands must be directly invoked in essential, control functions"
-    echo "       via the control domain."
-    exit 1
-fi
+tweak_container_fstab()
+{
+    local rootfs=$1
+
+    # Remove the systemd's costly remount of the root partition from /etc/fstab,
+    # and also remove API filesystems mounting from it, as systemd will mount them itself.
+    if [ -e ${rootfs}/etc/fstab ] ; then
+	sed -i '\/dev\/root/d' ${rootfs}/etc/fstab
+	sed -i '/^proc/d' ${rootfs}/etc/fstab
+	sed -i '/^devpts/d' ${rootfs}/etc/fstab
+	sed -i '/^tmpfs/d' ${rootfs}/etc/fstab
+	sed -i '/^usbdevfs/d' ${rootfs}/etc/fstab
+    fi
+}
+
+#
+# arg1: the container type
+# arg2: the container directory (note: *not* the rootfs dir)
+#
+# We generate a base configuration, and then tweak it for the
+# various container formats.
+#
+generate_container_config()
+{
+    local ctype=$1
+    local cdir=$2
+
+    cat << EOF >${pathtocontainer}/config
+lxc.utsname = ${cn}
+lxc.rootfs = ${lxcbase}/${cn}/rootfs
+lxc.autodev = 1
+lxc.kmsg = 0
+lxc.tty = ${tty_num}
+lxc.pts = 0
+lxc.mount = ${lxcbase}/${cn}/fstab
+lxc.network.type = veth
+lxc.network.name = veth0
+lxc.network.script.up = /etc/lxc/ovs-up
+lxc.network.script.down = /etc/lxc/ovs-down
+lxc.group = ${group}
+lxc.start.auto = ${autostart}
+overc.start.auto = ${peerstart}
+EOF
+	if [ ${cn} == "dom0" ]; then
+		echo "lxc.uncontain = 1" >> ${pathtocontainer}/config
+	fi
+	if [ ${bridged_net} == 1 ]; then
+		sed -i '/^lxc.network.script.*$/d' ${pathtocontainer}/config
+		sed -i '/^lxc.network.type.*$/a lxc.network.link = br0' \
+		    ${pathtocontainer}/config
+	fi
+	if [ ${domain0} == 1 ]; then
+		# Domain 0 wants to drive X onto a real console
+		echo "lxc.console = none" >>${pathtocontainer}/config
+	fi
+
+	if [ -n "${subuid}" ]; then
+		# for unprivileged containers, we need to use the mixed structure to
+		# isolate the control of the container itself from the upper layer.
+		echo "lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed" >>${pathtocontainer}/config
+		# subuid/subgid configuration for unprivileged container
+		echo "lxc.id_map = u 0 ${subuid} 65536" >>${pathtocontainer}/config
+		echo "lxc.id_map = g 0 ${subuid} 65536" >>${pathtocontainer}/config
+	else
+		# privileged containers
+		echo "lxc.mount.entry = devpts ${lxcbase}/${cn}/rootfs/dev/pts devpts gid=5,mode=620 0 0" >>${pathtocontainer}/config
+		echo "lxc.mount.entry = proc ${lxcbase}/${cn}/rootfs/proc    proc defaults 0 0" >>${pathtocontainer}/config
+		echo "lxc.mount.entry = sysfs ${lxcbase}/${cn}/rootfs/sys     sysfs defaults 0 0" >>${pathtocontainer}/config
+		echo "lxc.hook.autodev = ${lxcbase}/${cn}/autodev" >>${pathtocontainer}/config
+	fi
+
+	if [ -f "etc/system-id" ] || [ -f "/etc/system-id" ]; then
+		echo "lxc.mount.entry = /etc/system-id ${lxcbase}/${cn}/rootfs/etc/system-id none ro,bind,optional,create=file" >>${pathtocontainer}/config
+	fi
+
+	lxcbase=$temp_lxcbase
+	if [ ${havettyconsole} == 1 ]; then
+		echo "overc.screen-getty = 1" >>${pathtocontainer}/config
+	fi
+}
 
 case "${cmd}" in
     add)
-	check_required ${overc_cctl}
-
+	if [ -z "${container_type}" ]; then
+	    container_type="oci"
+	fi
 	# the first non dashed argument will be the container source
 	container_source=${cmd_options_non_dashed[1]}
 
@@ -267,18 +367,77 @@ case "${cmd}" in
 	# unprivileged. create default subuid/subgids for root and pass the
 	# parameter to overc_cctl for container settings
 	if [ -n "${subuid}" ]; then
+	    if [ -n "${we_are_a_container}" ]; then
 		privilege_param="-u ${subuid}"
 		cube-cmd cmd "touch /etc/subuid /etc/subgid"
 		cube-cmd cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
 		cube-cmd cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
+	    else
+		touch /etc/subuid /etc/subgid
+		usermod --add-subuids ${subuid}-$(( subuid+65536 )) root
+		usermod --add-subgids ${subuid}-$(( subuid+65536 )) root
+	    fi
 	fi
-	${overc_cctl} add ${privilege_param} -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
+
+	# regardless of the container type, we unpack the container source
+	if [ -z "${out_dir}" ]; then
+	    out_dir="${container_dir}/"
+	fi
+
+	echo "[INFO] Installing container ${container_name} to ${out_dir}"
+	echo "[INFO] Extracting rootfs....."
+	mkdir -p "${out_dir}/${container_name}/rootfs"
+	tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
 	if [ $? != 0 ]; then
-	    echo "Add container failed ..."
-	    exit 1
+		echo "[ERROR]: rootfs file extraction failed"
+		exit 1
 	fi
-	# now we need to restart the command server, so the new container can be monitored
-	systemctl restart cube-cmd-server
+	echo "[INFO] Succeeded"
+
+	if [ -n "${subuid}" ]; then
+	    if [ -n "${we_are_a_container}" ]; then
+		cube-cmd cmd "chown -R ${subuid}:${subuid} ${out_dir}/${container_name}/rootfs"
+	    else
+		chown -R ${subuid}:${subuid} ${out_dir}/${container_name}/rootfs
+	    fi
+	fi
+
+	# cube (pflask)
+	if [ "${container_type}" = "cube" ]; then
+	    echo "[INFO] Performing cube configuration ..."
+	    (
+		cd ${out_dir}/${container_name}
+		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
+		${SBINDIR}/cube-cfg gen ${container_name}:cube
+	    )
+
+	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
+
+	    if [ -n "${auto}" ]; then
+		touch ${out_dir}/${container_name}/autostart
+	    fi
+	fi
+
+	# OCI (runc)
+	if [ "${container_type}" = "oci" ]; then
+	    echo "[INFO] Performing OCI configuration ..."
+	fi
+
+	# LXC (lxc)
+	if [ "${container_type}" = "lxc" ]; then
+	    echo "[INFO] Performing lxc configuration ..."
+	    check_required ${overc_cctl}
+	    ${overc_cctl} add ${privilege_param} -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
+	    if [ $? != 0 ]; then
+		echo "Add container failed ..."
+		exit 1
+	    fi
+	fi
+
+	if [ -n "${we_are_dom0}" ]; then
+	    # now we need to restart the command server, so the new container can be monitored
+	    systemctl restart cube-cmd-server
+	fi
 	;;
     del|delete|remove)
 	check_required ${overc_cctl}
@@ -302,18 +461,30 @@ case "${cmd}" in
 	${overc_cctl} delete ${force} -n ${container_name}
 	;;
     start)
-	check_required ${dom0ctl}
-
 	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
-	if [ -n "${peer}" ]; then
-	    ${dom0ctl} launch-peer -n ${container_name}
-	else
-	    if [ -n "${parent}" ]; then
-		opts="-p ${parent}"
-	    fi
-	    ${dom0ctl} launch-nested ${opts} -n ${container_name}
+	container_names=${cmd_options_non_dashed[1]}
+
+	# TODO: this currently only support autostart containers on the local
+	#       machine. remote container need to be added.
+	if [ -n "${auto}" ]; then
+	    echo "[INFO] auto starting containers ..."
+	    for c in $(ls "${container_dir}/"); do
+		if [ -d "${container_dir}/${c}" ]; then
+		    if [ -e "${container_dir}/${c}/autostart" ]; then
+			container_names="${container_names} $(basename ${c})"
+		    fi
+		fi
+	    done
 	fi
+
+	echo "[INFO] starting: ${container_names}"
+	for container in ${container_names}; do
+	    # TODO: add non pflask launches ...
+	    if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
+		# pflask launch	
+		${container_dir}/${container}/pflask.cmd
+	    fi
+	done
 	;;
     status|list)
 	check_if_present ${dom0ctl}
@@ -357,6 +528,13 @@ case "${cmd}" in
 	fi
 	;;
     exec)
+	if [ -n "${we_are_a_container}" ]; then
+	    echo "ERROR: host detected, cube-ctl only works in a monitored container."
+	    echo "       Commands must be directly invoked in essential, control functions"
+	    echo "       via the control domain."
+	    exit 1
+	fi
+
 	# this is execute: <target>:<command>
 
 	# remove the : separator
