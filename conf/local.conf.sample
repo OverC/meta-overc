@@ -150,7 +150,7 @@ PACKAGE_CLASSES ?= "package_rpm"
 IMAGE_FSTYPES += "tar.bz2"
 NOISO = "1"
 IMAGE_FSTYPES += "ext3"
-IMAGE_FSTYPES_remove = "wic"
+IMAGE_FSTYPES_remove = "wic wic.bmap"
 
 IMAGE_FEATURES += "dev-pkgs"
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
