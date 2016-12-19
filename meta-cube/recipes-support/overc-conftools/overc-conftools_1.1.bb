@@ -23,7 +23,6 @@ SRC_URI = " \
     file://source/network_prime/files/25-veth0.network \
     file://source/network_prime/files/25-br-int.network.essential \
     file://source/network_prime/files/overc-network-prime-port-forward.service \
-    file://source/network_prime/files/autonetdev \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
     file://source/ansible/essential.yml \
@@ -40,8 +39,6 @@ S = "${WORKDIR}"
 do_install() {
 
     install -d ${D}/${sysconfdir}/overc-conf/network_prime
-    install -m 755 ${WORKDIR}/source/network_prime/files/autonetdev \
-        ${D}/${sysconfdir}/overc-conf/network_prime/
 
     for file in overc-network-prime-port-forward.service \
                 25-veth0.network \
