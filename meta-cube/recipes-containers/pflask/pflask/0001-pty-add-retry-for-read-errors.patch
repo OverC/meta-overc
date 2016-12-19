@@ -1,0 +1,70 @@
+From 60c2ffa694830da1b799a0ee94b8e1a5bca345be Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Wed, 21 Dec 2016 20:37:58 -0500
+Subject: [PATCH] pty: add retry for read errors
+
+As the comment says:
+
+   /* during the handover on some systems, we'll get a read error
+      But a quick exit kills the container. Instead, lets do a short
+      sleep and retry. If this happens 100 times .. we admit defeat
+      and exit */
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ src/pty.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/src/pty.c b/src/pty.c
+index ca5ab25..f1cb750 100644
+--- a/src/pty.c
++++ b/src/pty.c
+@@ -34,6 +34,9 @@
+ #include <fcntl.h>
+ #include <termios.h>
+ 
++#include <errno.h>
++#include <time.h>
++
+ #include <sys/ioctl.h>
+ #include <sys/epoll.h>
+ #include <sys/signalfd.h>
+@@ -100,7 +103,13 @@ void open_slave_pty(const char *master_name) {
+ void process_pty(int master_fd) {
+ 	int rc;
+ 
++	int error_count = 0;
++	int milliseconds = 15;
+ 	sigset_t mask;
++	struct timespec ts;
++
++	ts.tv_sec = milliseconds / 1000;
++	ts.tv_nsec = (milliseconds % 1000) * 1000000;
+ 
+ 	_close_ int epoll_fd  = -1;
+ 	_close_ int signal_fd = -1;
+@@ -181,8 +190,19 @@ void process_pty(int master_fd) {
+ 
+ 			if (!rc)
+ 				goto done;
+-			else if (rc < 0)
+-				goto done;
++			else if (rc < 0) {
++				/* during the handover on some systems, we'll get a read error
++				   But a quick exit kills the container. Instead, lets do a short
++				   sleep and retry. If this happens 100 times .. we admit defeat
++				   and exit */
++				error_count++;
++				if( error_count > 100 )
++					 goto done;
++				else {
++					nanosleep(&ts, NULL);
++					continue;
++				}
++			  }
+ 
+ 			rc = write(STDOUT_FILENO, buf, rc);
+ 			sys_fail_if(rc < 0, "write()");
+-- 
+2.7.4
+

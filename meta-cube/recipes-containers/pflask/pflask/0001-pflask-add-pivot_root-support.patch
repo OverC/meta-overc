@@ -1,0 +1,422 @@
+From c9d22665abbb09e615ee3edbaf495e3cf886b799 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Mon, 5 Dec 2016 23:45:16 -0500
+Subject: [PATCH] pflask: add pivot_root support
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ src/cmdline.c   |  66 ++++++++++++++++++++++++----------
+ src/cmdline.ggo |   2 ++
+ src/cmdline.h   |   4 +++
+ src/mount.c     | 108 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ src/mount.h     |   1 +
+ src/pflask.c    |  40 ++++++++++++++-------
+ 6 files changed, 181 insertions(+), 40 deletions(-)
+
+diff --git a/src/cmdline.c b/src/cmdline.c
+index 7b54d12..1c8956f 100644
+--- a/src/cmdline.c
++++ b/src/cmdline.c
+@@ -37,6 +37,7 @@ const char *gengetopt_args_info_help[] = {
+   "  -h, --help             Print help and exit",
+   "  -V, --version          Print version and exit",
+   "  -r, --chroot=STRING    Change the root directory inside the container",
++  "  -R, --root=STRING      Pivot container to rootfs",
+   "  -c, --chdir=STRING     Change the current directory inside the container",
+   "  -t, --hostname=STRING  Set the container hostname",
+   "  -m, --mount=STRING     Create a new mount point inside the container",
+@@ -86,6 +87,7 @@ void clear_given (struct gengetopt_args_info *args_info)
+   args_info->help_given = 0 ;
+   args_info->version_given = 0 ;
+   args_info->chroot_given = 0 ;
++  args_info->root_given = 0 ;
+   args_info->chdir_given = 0 ;
+   args_info->hostname_given = 0 ;
+   args_info->mount_given = 0 ;
+@@ -113,6 +115,8 @@ void clear_args (struct gengetopt_args_info *args_info)
+   FIX_UNUSED (args_info);
+   args_info->chroot_arg = NULL;
+   args_info->chroot_orig = NULL;
++  args_info->root_arg = NULL;
++  args_info->root_orig = NULL;
+   args_info->chdir_arg = NULL;
+   args_info->chdir_orig = NULL;
+   args_info->hostname_arg = NULL;
+@@ -152,37 +156,38 @@ void init_args_info(struct gengetopt_args_info *args_info)
+   args_info->help_help = gengetopt_args_info_help[0] ;
+   args_info->version_help = gengetopt_args_info_help[1] ;
+   args_info->chroot_help = gengetopt_args_info_help[2] ;
+-  args_info->chdir_help = gengetopt_args_info_help[3] ;
+-  args_info->hostname_help = gengetopt_args_info_help[4] ;
+-  args_info->mount_help = gengetopt_args_info_help[5] ;
++  args_info->root_help = gengetopt_args_info_help[3] ;
++  args_info->chdir_help = gengetopt_args_info_help[4] ;
++  args_info->hostname_help = gengetopt_args_info_help[5] ;
++  args_info->mount_help = gengetopt_args_info_help[6] ;
+   args_info->mount_min = 0;
+   args_info->mount_max = 0;
+-  args_info->netif_help = gengetopt_args_info_help[6] ;
++  args_info->netif_help = gengetopt_args_info_help[7] ;
+   args_info->netif_min = 0;
+   args_info->netif_max = 0;
+-  args_info->user_help = gengetopt_args_info_help[7] ;
+-  args_info->user_map_help = gengetopt_args_info_help[8] ;
++  args_info->user_help = gengetopt_args_info_help[8] ;
++  args_info->user_map_help = gengetopt_args_info_help[9] ;
+   args_info->user_map_min = 0;
+   args_info->user_map_max = 0;
+-  args_info->ephemeral_help = gengetopt_args_info_help[9] ;
+-  args_info->cgroup_help = gengetopt_args_info_help[10] ;
++  args_info->ephemeral_help = gengetopt_args_info_help[10] ;
++  args_info->cgroup_help = gengetopt_args_info_help[11] ;
+   args_info->cgroup_min = 0;
+   args_info->cgroup_max = 0;
+-  args_info->caps_help = gengetopt_args_info_help[11] ;
++  args_info->caps_help = gengetopt_args_info_help[12] ;
+   args_info->caps_min = 0;
+   args_info->caps_max = 0;
+-  args_info->detach_help = gengetopt_args_info_help[12] ;
+-  args_info->attach_help = gengetopt_args_info_help[13] ;
+-  args_info->setenv_help = gengetopt_args_info_help[14] ;
++  args_info->detach_help = gengetopt_args_info_help[13] ;
++  args_info->attach_help = gengetopt_args_info_help[14] ;
++  args_info->setenv_help = gengetopt_args_info_help[15] ;
+   args_info->setenv_min = 0;
+   args_info->setenv_max = 0;
+-  args_info->keepenv_help = gengetopt_args_info_help[15] ;
+-  args_info->no_userns_help = gengetopt_args_info_help[16] ;
+-  args_info->no_mountns_help = gengetopt_args_info_help[17] ;
+-  args_info->no_netns_help = gengetopt_args_info_help[18] ;
+-  args_info->no_ipcns_help = gengetopt_args_info_help[19] ;
+-  args_info->no_utsns_help = gengetopt_args_info_help[20] ;
+-  args_info->no_pidns_help = gengetopt_args_info_help[21] ;
++  args_info->keepenv_help = gengetopt_args_info_help[16] ;
++  args_info->no_userns_help = gengetopt_args_info_help[17] ;
++  args_info->no_mountns_help = gengetopt_args_info_help[18] ;
++  args_info->no_netns_help = gengetopt_args_info_help[19] ;
++  args_info->no_ipcns_help = gengetopt_args_info_help[20] ;
++  args_info->no_utsns_help = gengetopt_args_info_help[21] ;
++  args_info->no_pidns_help = gengetopt_args_info_help[22] ;
+   
+ }
+ 
+@@ -313,6 +318,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
+ 
+   free_string_field (&(args_info->chroot_arg));
+   free_string_field (&(args_info->chroot_orig));
++  free_string_field (&(args_info->root_arg));
++  free_string_field (&(args_info->root_orig));
+   free_string_field (&(args_info->chdir_arg));
+   free_string_field (&(args_info->chdir_orig));
+   free_string_field (&(args_info->hostname_arg));
+@@ -370,6 +377,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
+     write_into_file(outfile, "version", 0, 0 );
+   if (args_info->chroot_given)
+     write_into_file(outfile, "chroot", args_info->chroot_orig, 0);
++  if (args_info->root_given)
++    write_into_file(outfile, "root", args_info->root_orig, 0);
+   if (args_info->chdir_given)
+     write_into_file(outfile, "chdir", args_info->chdir_orig, 0);
+   if (args_info->hostname_given)
+@@ -679,6 +688,12 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
+       error_occurred = 1;
+     }
+ 
++  if (args_info->chroot_given &&  args_info->root_given)
++    {
++      fprintf (stderr, "%s: '--root' and --chroot cannot both be specified\n", prog_name);
++      error_occurred = 1;
++    }
++
+   return error_occurred;
+ }
+ 
+@@ -977,6 +992,7 @@ cmdline_parser_internal (
+         { "help",	0, NULL, 'h' },
+         { "version",	0, NULL, 'V' },
+         { "chroot",	1, NULL, 'r' },
++        { "root",	1, NULL, 'R' },
+         { "chdir",	1, NULL, 'c' },
+         { "hostname",	1, NULL, 't' },
+         { "mount",	1, NULL, 'm' },
+@@ -1027,6 +1043,18 @@ cmdline_parser_internal (
+             goto failure;
+         
+           break;
++        case 'R':	/* Set the pivot root.  */
++
++
++          if (update_arg( (void *)&(args_info->root_arg),
++                          &(args_info->root_orig), &(args_info->root_given),
++                          &(local_args_info.root_given), optarg, 0, 0, ARG_STRING,
++                          check_ambiguity, override, 0, 0,
++                          "root", 'R',
++                          additional_error))
++            goto failure;
++
++          break;
+         case 'c':	/* Change the current directory inside the container.  */
+         
+         
+diff --git a/src/cmdline.ggo b/src/cmdline.ggo
+index 252b98a..520f6c4 100644
+--- a/src/cmdline.ggo
++++ b/src/cmdline.ggo
+@@ -3,6 +3,8 @@ version "0.2"
+ 
+ option "chroot"    r "Change the root directory inside the container"
+        string optional
++option "root"      R "Set the pivot root"
++       string optional
+ option "chdir"     c "Change the current directory inside the container"
+        string optional
+ option "hostname"  t "Set the container hostname"
+diff --git a/src/cmdline.h b/src/cmdline.h
+index 0010e73..00efb42 100644
+--- a/src/cmdline.h
++++ b/src/cmdline.h
+@@ -42,6 +42,9 @@ struct gengetopt_args_info
+   char * chroot_arg;	/**< @brief Change the root directory inside the container.  */
+   char * chroot_orig;	/**< @brief Change the root directory inside the container original value given at command line.  */
+   const char *chroot_help; /**< @brief Change the root directory inside the container help description.  */
++  char * root_arg;	/**< @brief Set the pivot root  */
++  char * root_orig;	/**< @brief Set the pivot root original value given at command line.  */
++  const char *root_help; /**< @brief Set the pivot root help description.  */
+   char * chdir_arg;	/**< @brief Change the current directory inside the container.  */
+   char * chdir_orig;	/**< @brief Change the current directory inside the container original value given at command line.  */
+   const char *chdir_help; /**< @brief Change the current directory inside the container help description.  */
+@@ -106,6 +109,7 @@ struct gengetopt_args_info
+   unsigned int help_given ;	/**< @brief Whether help was given.  */
+   unsigned int version_given ;	/**< @brief Whether version was given.  */
+   unsigned int chroot_given ;	/**< @brief Whether chroot was given.  */
++  unsigned int root_given ;	/**< @brief Whether root was given.  */
+   unsigned int chdir_given ;	/**< @brief Whether chdir was given.  */
+   unsigned int hostname_given ;	/**< @brief Whether hostname was given.  */
+   unsigned int mount_given ;	/**< @brief Whether mount was given.  */
+diff --git a/src/mount.c b/src/mount.c
+index 84ae303..0868a65 100644
+--- a/src/mount.c
++++ b/src/mount.c
+@@ -36,6 +36,8 @@
+ #include <sys/mount.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <sys/types.h>
++#include <dirent.h>
+ 
+ #include <linux/version.h>
+ 
+@@ -46,20 +48,23 @@
+ #include "printf.h"
+ #include "util.h"
+ 
++#include <sys/syscall.h>
++
++
+ struct mount {
+-	char *src;
+-	char *dst;
+-	char *type;
+-	unsigned long flags;
+-	void *data;
++        char *src;
++        char *dst;
++        char *type;
++        unsigned long flags;
++        void *data;
+ 
+-	struct mount *next, *prev;
++        struct mount *next, *prev;
+ };
+ 
+ struct overlay {
+-	char *overlay;
+-	char *workdir;
+-	char type;
++        char *overlay;
++        char *workdir;
++        char type;
+ };
+ 
+ static void make_bind_dest(struct mount *m, const char *dest);
+@@ -67,6 +72,91 @@ static void make_overlay_opts(struct mount *m, const char *dest);
+ static void mount_add_overlay(struct mount **mounts, const char *overlay,
+                               const char *dst, const char *work);
+ 
++
++/* wrapper for pivot root syscall */
++int pivot_root(char *a,char *b)
++{
++        DIR *dir;
++        if (mount(a,a,"bind",MS_BIND | MS_REC,"")<0){
++                printf("Error mount: %s\n",strerror(errno));
++        }
++        dir = opendir(b);
++        if (dir) {
++                /* Directory exists. */
++                closedir(dir);
++        } else if (ENOENT == errno) {
++                /* Directory does not exist. */
++                if (mkdir(b,0755) <0){
++                        printf("error mkdir %s\n",strerror(errno));
++                }
++        }
++
++        return syscall(SYS_pivot_root,a,b);
++}
++
++
++int setup_rootfs_pivot_root(char *rootfs)
++{
++        int oldroot = -1, newroot = -1;
++
++        oldroot = open("/", O_DIRECTORY | O_RDONLY);
++        if (oldroot < 0) {
++                fail_printf("Error opening old-/ for fchdir");
++                return -1;
++        }
++        newroot = open(rootfs, O_DIRECTORY | O_RDONLY);
++        if (newroot < 0) {
++                fail_printf("Error opening new-/ for fchdir");
++                goto fail;
++        }
++
++        /* change into new root fs */
++        if (fchdir(newroot)) {
++                fail_printf("can't chdir to new rootfs '%s'", rootfs);
++                goto fail;
++        }
++
++        /* pivot_root into our new root fs */
++        if (pivot_root(rootfs,rootfs)) {
++                fail_printf("pivot_root syscall failed\n");
++                goto fail;
++        }
++
++        /*
++         * at this point the old-root is mounted on top of our new-root
++         * To unmounted it we must not be chdir'd into it, so escape back
++         * to old-root
++         */
++        if (fchdir(oldroot) < 0) {
++                fail_printf("Error entering oldroot");
++                goto fail;
++        }
++        if (umount2(".", MNT_DETACH) < 0) {
++                fail_printf("Error detaching old root");
++                goto fail;
++        }
++
++        if (fchdir(newroot) < 0) {
++                fail_printf("Error re-entering newroot");
++                goto fail;
++        }
++
++        close(oldroot);
++        close(newroot);
++
++        //ok_printf("pivot_root syscall to '%s' successful", rootfs);
++
++        return 0;
++
++ fail:
++        if (oldroot != -1)
++                close(oldroot);
++        if (newroot != -1)
++                close(newroot);
++        return -1;
++}
++
++
+ void mount_add(struct mount **mounts, const char *src, const char *dst,
+                       const char *type, unsigned long f, void *d) {
+ 	struct mount *mnt = malloc(sizeof(struct mount));
+diff --git a/src/mount.h b/src/mount.h
+index 19bdb2f..39dc451 100644
+--- a/src/mount.h
++++ b/src/mount.h
+@@ -36,3 +36,4 @@ void mount_add(struct mount **mounts, const char *src, const char *dst,
+ void mount_add_from_spec(struct mount **mounts, const char *spec);
+ 
+ void setup_mount(struct mount *mounts, const char *dest, const char *ephemeral_dir);
++int setup_rootfs_pivot_root(char *rootfs);
+diff --git a/src/pflask.c b/src/pflask.c
+index b9f8cd6..80bc126 100644
+--- a/src/pflask.c
++++ b/src/pflask.c
+@@ -224,20 +224,34 @@ int main(int argc, char *argv[]) {
+ 			sys_fail_if(rc < 0, "Error setting hostname");
+ 		}
+ 
+-		setup_mount(mounts, args.chroot_arg, args.ephemeral_flag ?
+-		                                       ephemeral_dir : NULL);
++                if ( args.chroot_given )
++                        setup_mount(mounts, args.chroot_arg, args.ephemeral_flag ?
++                                    ephemeral_dir : NULL);
++                else
++                        setup_mount(mounts, args.root_arg, args.ephemeral_flag ?
++                                    ephemeral_dir : NULL);
+ 
+-		if (args.chroot_given) {
+-			setup_nodes(args.chroot_arg);
++                if (args.chroot_given) {
++                        setup_nodes(args.chroot_arg);
+ 
+-			setup_ptmx(args.chroot_arg);
++                        setup_ptmx(args.chroot_arg);
+ 
+-			setup_symlinks(args.chroot_arg);
++                        setup_symlinks(args.chroot_arg);
+ 
+-			setup_console(args.chroot_arg, master);
++                        setup_console(args.chroot_arg, master);
+ 
+-			do_chroot(args.chroot_arg);
+-		}
++                        do_chroot(args.chroot_arg);
++                } else if (args.root_given) {
++                        setup_nodes(args.root_arg);
++
++                        setup_ptmx(args.root_arg);
++
++                        setup_symlinks(args.root_arg);
++
++                        setup_console(args.root_arg, master);
++
++                        setup_rootfs_pivot_root(args.root_arg);
++                }
+ 
+ 		if (clone_flags & CLONE_NEWNET)
+ 			config_netif();
+@@ -253,7 +267,7 @@ int main(int argc, char *argv[]) {
+ 			sys_fail_if(rc < 0, "Error changing cwd");
+ 		}
+ 
+-		if (args.chroot_given) {
++		if (args.chroot_given || args.root_given) {
+ 			char *term = getenv("TERM");
+ 
+ 			if (!args.keepenv_flag)
+@@ -282,7 +296,8 @@ int main(int argc, char *argv[]) {
+ 
+ 	sync_wait_child(sync, SYNC_START);
+ 
+-	if (args.chroot_given && (clone_flags & CLONE_NEWUSER))
++	if ((args.chroot_given && (clone_flags & CLONE_NEWUSER)) ||
++            (args.root_given && (clone_flags & CLONE_NEWUSER)))
+ 		setup_console_owner(master, users);
+ 
+ 	setup_cgroup(cgroups, pid);
+@@ -290,7 +305,8 @@ int main(int argc, char *argv[]) {
+ 	setup_netif(netifs, pid);
+ 
+ #ifdef HAVE_DBUS
+-	register_machine(pid, args.chroot_given ? args.chroot_arg : "");
++        register_machine(pid, args.chroot_given ? args.chroot_arg : "");
++        register_machine(pid, args.root_given ? args.root_arg : "");
+ #endif
+ 
+ 	if (clone_flags & CLONE_NEWUSER)
+-- 
+2.7.4
+
