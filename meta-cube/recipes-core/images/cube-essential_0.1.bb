@@ -25,6 +25,8 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  rndmac \
 		  screen-getty \
 		  iw \
+		  essential-init \
+		  pflask \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
