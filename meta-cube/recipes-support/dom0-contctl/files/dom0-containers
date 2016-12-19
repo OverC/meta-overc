@@ -62,7 +62,7 @@ case "$1" in
         fi
 
         # Start autoboot containers first then the NULL group "peer".
-        exec "$bindir"/dom0_contctl launch-group $OPTIONS $BOOTGROUPS
+        exec /usr/sbin/cube-ctl --auto dom0 start
         touch "$lockdir"/dom0
     ;;
 
