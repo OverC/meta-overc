@@ -10,12 +10,14 @@ echo "[INFO] auto starting containers ..."
 for c in $(ls "${container_dir}/"); do
     if [ -d "${container_dir}/${c}" ]; then
 	if [ -e "${container_dir}/${c}/autostart" ]; then
-	    container_names="${container_names} $(basename ${c})"
+	    grep -q essential ${container_dir}/${c}/autostart
+	    if [ $? -eq 0 ]; then
+		container_names="${container_names} $(basename ${c})"
+	    fi
 	fi
     fi
 done
 
-echo "[INFO] starting: ${container_names}"
 for container in ${container_names}; do
     # TODO: add non pflask launches ...
     if [ -e "${container_dir}/${container}/pflask.cmd" ]; then

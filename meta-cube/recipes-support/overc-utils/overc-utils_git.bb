@@ -9,6 +9,7 @@ SRC_URI = " \
     git://github.com/OverC/overc-installer.git;branch=master \
     file://source/cube-cmd \
     file://source/cube-ctl \
+    file://source/cube-cfg \
     file://source/cube \
     file://source/cube-console \
     file://source/COPYING \
@@ -33,6 +34,7 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-console ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-ctl ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-cmd ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/cube-cfg ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
 
     # device manamage support
