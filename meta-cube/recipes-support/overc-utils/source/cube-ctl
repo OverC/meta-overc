@@ -21,9 +21,8 @@ commands (and options):
 
     start (launch) a container:
 
-       --auto: launch autostart containers 
-       --peer
-       --nested
+       --auto=<name>: launch autostart containers tagged with <name>
+
        <name>: name of the container to be launched (if not "--auto")
 
  ${0##*/} stop <name>
@@ -50,7 +49,7 @@ commands (and options):
 
        -t: container type: lxc, oci or cube (default: oci)
 
-       --auto: auto start the container
+       --auto=<name>: auto start the container, tag with <name>
 
        <source>: path to the container source (tar.bz2)
 
@@ -107,7 +106,8 @@ while [ $# -gt 0 ]; do
 	    nested=
 	    ;;
         --auto)
-	    auto=t
+	    auto=${2}
+	    shift
 	    ;;
 	--nested)
 	    nested=t
@@ -414,13 +414,30 @@ case "${cmd}" in
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
 
 	    if [ -n "${auto}" ]; then
-		touch ${out_dir}/${container_name}/autostart
+		echo "${auto}" > ${out_dir}/${container_name}/autostart
 	    fi
 	fi
 
 	# OCI (runc)
 	if [ "${container_type}" = "oci" ]; then
 	    echo "[INFO] Performing OCI configuration ..."
+	    (
+		cd ${out_dir}/${container_name}
+		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/all:/var/lib/cube/common
+		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
+		${SBINDIR}/cube-cfg gen ${container_name}:oci
+
+		# dom0 will have comms to these containers, so we need to create some directories
+		# in its structure
+		mkdir -p ${out_dir}/dom0/rootfs/var/lib/cube/all
+		mkdir -p ${out_dir}/dom0/rootfs/var/lib/cube/${container_name}
+	    )
+
+	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
+
+	    if [ -n "${auto}" ]; then
+		echo "${auto}" > ${out_dir}/${container_name}/autostart
+	    fi
 	fi
 
 	# LXC (lxc)
@@ -464,25 +481,43 @@ case "${cmd}" in
 	# the second non dashed argument will be the container name
 	container_names=${cmd_options_non_dashed[1]}
 
-	# TODO: this currently only support autostart containers on the local
-	#       machine. remote container need to be added.
+	# if single_launch is set, then we don't use dtach, but instead let the
+	# container go directly at the tty
+	single_launch=t
+
+	# TODO: this currently only supports autostart containers on the local
+	#       machine. remote container start needs to be added.
 	if [ -n "${auto}" ]; then
 	    echo "[INFO] auto starting containers ..."
 	    for c in $(ls "${container_dir}/"); do
 		if [ -d "${container_dir}/${c}" ]; then
 		    if [ -e "${container_dir}/${c}/autostart" ]; then
-			container_names="${container_names} $(basename ${c})"
+			grep -q ${auto} "${container_dir}/${c}/autostart"
+			if [ $? -eq 0 ]; then
+			    container_names="${container_names} $(basename ${c})"
+			fi
 		    fi
 		fi
 	    done
 	fi
 
-	echo "[INFO] starting: ${container_names}"
 	for container in ${container_names}; do
-	    # TODO: add non pflask launches ...
-	    if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
-		# pflask launch	
-		${container_dir}/${container}/pflask.cmd
+	    echo "[INFO]: autostarting $container ..."
+	    if [ -n "${single_launch}" ]; then
+		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
+		    ${container_dir}/${container}/pflask.cmd
+		elif [ -e "${container_dir}/${container}/config.json" ]; then
+		    (
+			cd ${container_dir}/${container}
+			runc create --console=/dev/ptmx ${container}
+			runc start ${container}
+		    )
+		fi
+	    else
+		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
+		    rm -f /tmp/${container}-console
+		    dtach -n /tmp/${container}-console ${container_dir}/${container}/pflask.cmd
+		fi
 	    fi
 	done
 	;;
