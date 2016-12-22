@@ -17,9 +17,17 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 function am_i_a_container()
 {
     local virt=`systemd-detect-virt`
-    if [ "${virt}" = "lxc" ]; then
-	return 1
-    fi
+    case ${virt} in
+	lxc*)
+	    return 1
+	    ;;
+	container*)
+	    return 1
+	    ;;
+	docker*)
+	    return 1
+	    ;;
+    esac
 
     return 0
 }
@@ -97,15 +105,14 @@ if [ -z "${monitor_container}" ];then
 fi
 
 if [ "${monitor_container}" = "'*'" ]; then
-    # only lxc is currently supported
     myname=`cat /etc/hostname`
     matches=""
-    for c in `ls -f /var/lib/lxc/*/rootfs/etc/hostname`; do
+    for c in `ls -f /opt/container/*/rootfs/etc/hostname`; do
 	# remove ourself from the list .. we can do that by checking
 	# the hostnames
 	grep -q -E "^${myname}$" $c
 	if [ $? -ne 0 ]; then
-	    cname=${c#/var/lib/lxc/}
+	    cname=${c#/opt/container/}
 	    cname=${cname%%/*}
 	    matches="$matches $cname"
 	fi
@@ -126,7 +133,7 @@ topdir=`dirname "$BASH_SOURCE"`
 
 for s in ${input_stream}; do
     output_and_log_msg "[INFO]: Creating the cmd-channel for $s ..."
-    (nanoserver -q $debug -L "ipc:///opt/container/$s/cmd-pipe" -E "$topdir/cube-cmd-handler -l $logfile -r $s") &
+    (nanoserver -q $debug -L "ipc:///var/lib/cube/$s/cmd-pipe" -E "$topdir/cube-cmd-handler -l $logfile -r $s") &
 done
 
 output_and_log_msg "[INFO]: Wating for the cube-cmd-server exited ..."

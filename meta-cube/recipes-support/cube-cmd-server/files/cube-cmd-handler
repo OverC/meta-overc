@@ -38,10 +38,9 @@ function console_listener() {
     local matches=""
     local console_file=""
 
-    # only lxc is currently supported
-    for c in `ls -df /var/lib/lxc/*`; do
+    for c in `ls -df /opt/container/*`; do
         grep -q ${connectorname} $c 2>/dev/null
-        if [ "${connectorname}" = "${c#/var/lib/lxc/}" ]; then
+        if [ "${connectorname}" = "${c#/opt/container/}" ]; then
             matches="$matches $c"
         fi
     done
@@ -59,7 +58,7 @@ function console_listener() {
                 type=console
             fi
 
-            console_file=`generate_console_name 200 /opt/container/${cname}/`
+            console_file=`generate_console_name 200 /var/lib/cube/${cname}/`
 	    (
             if [ "${type}" = "console" ]; then
                 # The target of the console matters. If it is "us", then we start agetty. If it is another
@@ -85,16 +84,16 @@ function console_listener() {
                     fi
                 fi
                 # send the number of the console to the caller
-                /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
                 # exec the console command .. or proxy
-                /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
+                /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
             fi
             if [ "${type}" = "namespace" ]; then
                 if [ "${connectorname}" == "dom0" ]; then
                     # namespace enter!
                     if [ -n "$target" ]; then
-                        /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
-                        /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q lxc-attach -n ${target} /bin/sh
+                        /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                        /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q lxc-attach -n ${target} /bin/sh
                     else
                         do_error "${requestor}" "[ERROR]: namespace consoles require a target container"
                         log_msg "[ERROR]: namespace consoles require a target container"
@@ -102,9 +101,9 @@ function console_listener() {
                 else
                     cmd="cube-console --ns ${target}"
                     # send the number of the console to the caller
-                    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
+                    /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
                     # exec the console command .. or proxy
-                    /usr/bin/dtach -N /opt/container/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
+                    /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
                 fi
             fi
             ) &
@@ -135,7 +134,7 @@ function do_command()
     # We run this within dtach to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost after 5 seconds
-    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 ${command}
+    /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 ${command}
 }
 
 function do_error()
@@ -150,7 +149,7 @@ function do_error()
     # We run this within dtach to allow for ptys, pipes, etc, to be used
     # in the future. For now, we just dump the output to the waiting pipe.
     # if no one is there, the output is lost.
-    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "${message}"
+    /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n "${message}"
 }
 
 function log_msg()
@@ -358,8 +357,8 @@ function read_loop()
             if [ $? -eq 0 ]; then
                 log_msg "[INFO]: issuing cmd-server-restart for $requestor"
                 # dump a message and then flee
-                if [ -p "/opt/container/${requestor}/cmd-output" ]; then
-                    /usr/bin/dtach -N /opt/container/${cname}/cmd-output -r none -w -W 5 echo -n "cmd-server restarting"
+                if [ -p "/var/lib/cube/${requestor}/cmd-output" ]; then
+                    /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n "cmd-server restarting"
                 fi
                 # clean exit, so systemd will restart us
                 log_msg "[INFO]: cube-cmd-handler ($$): exiting ..."

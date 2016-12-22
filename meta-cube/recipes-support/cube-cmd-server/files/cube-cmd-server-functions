@@ -27,18 +27,18 @@ function parse_yaml_conf_file() {
 function cube_whoami() {
     local myname=`cat /etc/hostname`
 
-    if [ -d '/var/lib/lxc' ]; then
+    if [ -d '/opt/container' ]; then
         # find our name from the container information
 
-        for c in `ls -f /var/lib/lxc/*/rootfs/etc/hostname`; do
-            grep -q -E "^${myname}$" $c
+        for c in `ls -f /opt/container/*/rootfs/etc/hostname`; do
+            grep -q -E "${myname}$" $c
             if [ $? -eq 0 ]; then
                 matches="$c"
             fi
         done
     fi
 
-    local cname=`echo "$matches" | cut -d/ -f5`
+    local cname=`echo "$matches" | cut -d/ -f4`
     if [ -n "${cname}" ]; then
         whoami="${cname}"
     else
