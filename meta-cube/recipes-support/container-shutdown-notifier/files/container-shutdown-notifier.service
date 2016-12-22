@@ -1,6 +1,6 @@
 [Unit]
 Description=Container Shutdown Notifier Service
-RequiresMountsFor=/opt/container/local
+RequiresMountsFor=/var/lib/cube/local
 
 [Service]
 Type=oneshot

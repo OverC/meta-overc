@@ -90,16 +90,16 @@ function exec_console()
 {
     local file
 
-    file=`wait_for_files 0.1 100 /opt/container/local/cmd-output /opt/container/local/cmd-error`
+    file=`wait_for_files 0.1 100 /var/lib/cube/local/cmd-output /var/lib/cube/local/cmd-error`
     if [ -z "${file}" ]; then
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
     fi
-    if [ "${file}" = "/opt/container/local/cmd-error" ]; then
+    if [ "${file}" = "/var/lib/cube/local/cmd-error" ]; then
 	/usr/bin/dtach -a ${file} -q -C -z -r none
 	exit 1
     fi
-    if [ "${file}" = "/opt/container/local/cmd-output" ]; then
+    if [ "${file}" = "/var/lib/cube/local/cmd-output" ]; then
 	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
     fi
     connect_console
@@ -108,7 +108,7 @@ function exec_console()
 
 function connect_console()
 {
-    file=`wait_for_files 0.1 100 /opt/container/local/${console_device}`
+    file=`wait_for_files 0.1 100 /var/lib/cube/local/${console_device}`
     if [ -z "${file}" ]; then
 	echo "[ERROR]: No console is available, and no error reported"
 	exit 2
@@ -120,7 +120,7 @@ function connect_console()
 	escape="-E"
     fi
 
-    /usr/bin/dtach -a /opt/container/local/${console_device} $escape -q -C -z -r none
+    /usr/bin/dtach -a /var/lib/cube/local/${console_device} $escape -q -C -z -r none
     ret=$?
     if [ -n "${verbose}" ]; then
 	echo "console connection exited with: $ret"
@@ -175,13 +175,13 @@ function do_essential_console()
     fi
 
     if [ -n "${we_are_dom0}" ]; then
-	console_device=`generate_console_name 200 /opt/container/${target}/`
+	console_device=`generate_console_name 200 /var/lib/cube/${target}/`
 	cmd="/sbin/agetty -J -"
 	local nsargs=""
 	if [ -e /proc/1/ns/cgroup ] ; then
 	    nsargs=-C
 	fi
-	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
 	connect_console
 	return
     else
@@ -197,19 +197,19 @@ function do_console()
     local type=$2 # namspace or login
 
     if [ -n "${we_are_dom0}" ]; then
-	console_device=`generate_console_name 200 /opt/container/${target}/`
+	console_device=`generate_console_name 200 /var/lib/cube/${target}/`
 	cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
 	local nsargs=""
 	if [ -e /proc/1/ns/cgroup ] ; then
 	    nsargs=-C
 	fi
-	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /opt/container/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
+	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
 	connect_console
 	return
     fi
 
-    if [ ! -e "/opt/container/local/cmd-pipe" ]; then
-	echo "[ERROR]: /opt/container/local/cmd-pipe not found, cannot create console"
+    if [ ! -e "/var/lib/cube/local/cmd-pipe" ]; then
+	echo "[ERROR]: /var/lib/cube/local/cmd-pipe not found, cannot create console"
 	exit 1
     fi
 
@@ -220,9 +220,9 @@ function do_console()
     [ -n "$verbose" ] && debug="-v "
 
     if [ -n "${namespace}" ]; then
-        (echo "nsenter ${target}" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
+        (echo "nsenter ${target}" | nanoclient -q $debug -R ipc:///var/lib/cube/local/cmd-pipe) &
     else
-	(echo "console ${target}" | nanoclient -q $debug -R ipc:///opt/container/local/cmd-pipe) &
+	(echo "console ${target}" | nanoclient -q $debug -R ipc:///var/lib/cube/local/cmd-pipe) &
     fi
 
     exec_console

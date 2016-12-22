@@ -42,12 +42,12 @@ function do_essential_cmd()
 	exit $?
     fi
 
-    if [ -e "/opt/container/local/cmd-pipe" ]; then
+    if [ -e "/var/lib/cube/local/cmd-pipe" ]; then
 	# send the command
-	(echo "${cmd}" | nanoclient -q -R "ipc:///opt/container/local/cmd-pipe") &
-	file=`wait_for_files 200 /opt/container/local/cmd-error /opt/container/local/cmd-output`
+	(echo "${cmd}" | nanoclient -q -R "ipc:///var/lib/cube/local/cmd-pipe") &
+	file=`wait_for_files 200 /var/lib/cube/local/cmd-error /var/lib/cube/local/cmd-output`
 	if [ -n "${file}" ]; then
-	    if [ "${file}" = /opt/container/local/cmd-output ] ; then
+	    if [ "${file}" = /var/lib/cube/local/cmd-output ] ; then
 		/usr/bin/dtach -a ${file} -q -C -z -T -R -r none
 		exit 0
 	    else
@@ -56,11 +56,11 @@ function do_essential_cmd()
 		exit 1
 	    fi
 	else
-	    echo "ERROR: no response recv'd on: /opt/container/local/cmd-pipe"
+	    echo "ERROR: no response recv'd on: /var/lib/cube/local/cmd-pipe"
 	    exit 2
 	fi
     else
-	echo "ERROR: command channel is not available at /opt/container/local/cmd-pipe"
+	echo "ERROR: command channel is not available at /var/lib/cube/local/cmd-pipe"
 	exit 1
     fi
 }
