@@ -21,7 +21,6 @@ OVERC_COMMON_EXTENDED = " \
      findutils \
      grep \
      groff \
-     grub \
      gzip \
      iso-codes \
      kernel-modules \
@@ -44,6 +43,7 @@ OVERC_COMMON_EXTENDED = " \
      coreutils \
      e2fsprogs \
      kbd \
+     ${OVERC_COMMON_EXTENDED_ARCH} \
     "
 
 OVERC_EXTRA_EXTENDED = "\
