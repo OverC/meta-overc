@@ -1,0 +1,41 @@
+From 5d07b43fa43883500303822aa4ceb01eb26eae22 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Tue, 10 Jan 2017 16:10:25 -0500
+Subject: [PATCH] pflask: add CLONE_UNCONTAIN to clone flags
+
+Allow pflask containers to have the ability to uncontain themselves. This
+will become an optional flag in the future.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ src/pflask.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/pflask.c b/src/pflask.c
+index 80bc12652ef5..3ca010f681c4 100644
+--- a/src/pflask.c
++++ b/src/pflask.c
+@@ -58,6 +58,10 @@
+ #include "printf.h"
+ #include "util.h"
+ 
++#ifndef CLONE_UNCONTAIN
++#  define CLONE_UNCONTAIN         0x00001000
++#endif
++
+ static size_t validate_optlist(const char *name, const char *opts);
+ 
+ static void do_daemonize(void);
+@@ -179,6 +183,9 @@ int main(int argc, char *argv[]) {
+ 	if (args.no_pidns_flag)
+ 		clone_flags &= ~(CLONE_NEWPID);
+ 
++	// TODO: add a flag for this
++	clone_flags |= CLONE_UNCONTAIN;
++
+ 	if (args.attach_given) {
+ 		master_fd = recv_pty(args.attach_arg);
+ 		fail_if(master_fd < 0, "Invalid PID '%u'", args.attach_arg);
+-- 
+2.4.0.53.g8440f74
+
