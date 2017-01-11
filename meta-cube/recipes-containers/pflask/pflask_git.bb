@@ -9,7 +9,8 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
            file://Makefile \
            file://pflask.mk \
            file://0001-pflask-add-pivot_root-support.patch \
-           file://0001-pty-add-retry-for-read-errors.patch"
+           file://0001-pty-add-retry-for-read-errors.patch \
+           file://0001-pflask-add-CLONE_UNCONTAIN-to-clone-flags.patch"
 
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
 
