@@ -55,7 +55,12 @@
 
   - name: turn off dnsmasq on dom0 if netprime is not dom0
     file: path=/var/lib/lxc/dom0/rootfs/etc/systemd/system/multi-user.target.wants/dnsmasq.service state=absent
-    when: network_prime_container != "dom0"
+    when: (network_prime_container != "dom0") and (network_device is undefined)
+
+  - name: set dom0 ip to 192.168.42.3 when it is not the network prime
+    copy: content="[Match]\nName=veth0\n\n[Network]\nAddress=192.168.42.3/24\nGateway=192.168.42.1\nDNS=192.168.42.1\n"
+      dest=/var/lib/lxc/dom0/rootfs/etc/systemd/network/20-wired.network mode=0644
+    when: (network_prime_container != "dom0") and (network_device is undefined)
 
   - name: copy network_prime_port_forward.sh
     copy: src=/etc/overc-conf/network_prime/network_prime_port_forward.sh.erb dest=/var/lib/lxc/{{network_prime_container}}/rootfs/etc/overc/network_prime_port_forward.sh mode=0750
