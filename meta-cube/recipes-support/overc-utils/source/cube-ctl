@@ -74,11 +74,6 @@ commands (and options):
 
     display detailed information about container <name>
 
- ${0##*/} restart <name>
-
-    restart container <name>. A graceful shutdown and relaunch will be
-    performed.
-
 EOF
 }
 
@@ -182,14 +177,9 @@ container_dir="/opt/container"
 dom0ctl="/opt/dom0-contctl/dom0_contctl"
 overc_cctl="/opt/overc-installer/overc-cctl"
 
-if [ -f "${dom0ctl}" ]; then
-    we_are_dom0=t
-fi
-
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    which systemd-detect-virt
     if [ $? -eq 0 ]; then
 	local virt=`systemd-detect-virt`
 	if [ "${virt}" = "lxc" ]; then
@@ -200,7 +190,8 @@ function am_i_a_container()
     return 0
 }
 
-if [ -d "/host/proc" ]; then
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
     we_are_dom0=t
 fi
 am_i_a_container
@@ -232,6 +223,93 @@ check_if_present()
     return 1
 }
 
+# outputs:
+#   machines: raw output from machinectl
+#   oci: raw output from runc
+#
+#   cubes: list of running cubes
+#   open_containers: list of running open containers
+build_container_lists()
+{
+    # there are cubes, find them via machinectl
+    machines="$(cube-cmd machinectl)"
+    # drop the machinectl count of machines
+    machines=$(echo "${machines}" | sed '/machines listed/d')
+
+    # and then there are open containers
+    graft_binaries_to_essential runc
+    if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
+	runc_essential="/var/lib/cube/essential/sbin/runc"
+    else
+	echo "ERROR: unable to execute runc on essential"
+	exit 1
+    fi
+    oci=$(cube-cmd ${runc_essential} list)
+
+    # and then there are all the possible containers, which are
+    # all found in /opt/container/<name>. We can tell the difference
+    # between oci and cubes by the config files in the directory
+    containers_available=$(ls /opt/container/)
+    for c in ${containers_available}; do
+	if [ -e "/opt/container/${c}/pflask.cmd" ]; then
+	    cubes_available="${cubes_available} ${c}"
+	elif [ -e "/opt/container/${c}/config.json" ]; then
+	    open_container_available="${open_container_available} ${c}"
+	fi
+    done
+
+    # short form output
+    OLDIFS=$IFS
+IFS="
+"
+    for l in ${machines} ${oci}; do
+
+	# collapse all whitespace to a single space for the cut lines below
+	l=$(echo ${l} | sed -e "s/[[:space:]]\+/ /g")
+
+	case ${l} in
+	    MACHINE*)
+		# do nothing, it's a header from machinectl
+		ctype="cube"
+		;;
+	    ID*)
+		# do nothing, it's a header from runc
+		ctype="oci"
+		;;
+	    *)
+		cname=$(echo "${l}" | cut -f 1 -d' ')
+		cstate=$(echo "${l}" | cut -f 3 -d' ')
+		if [ "${ctype}" == "cube" ]; then
+		    cubes="${cubes} ${cname}"
+		fi
+		if [ "${ctype}" == "oci" ]; then
+		    open_containers="${open_containers} ${cname}"
+		fi
+
+		case $cstate in
+		    stopped)
+			if [ "${ctype}" == "oci" ]; then
+			    open_container_stopped="${open_container_stopped} ${cname}"
+			    open_container_available=$(echo ${open_container_available} | sed "s/${cname}//")
+			fi
+			;;
+		    *)
+			# if we don't recognize the state .. assume it is running
+			if [ "${ctype}" == "oci" ]; then
+			    open_container_running="${open_container_running} ${cname}"
+			    open_container_available=$(echo ${open_container_available} | sed "s/${cname}//")
+			fi
+			if [ "${ctype}" == "cube" ]; then
+			    cubes_running="${cubes_running} ${cname}"
+			fi
+			;;
+		esac
+		;;
+	esac
+    done
+    IFS=$OLDIFS
+}
+
 # Check if the passed string matches any known container names
 # return false (1) if unknown, true (0) if known
 # additionally sets the global ${containers}
@@ -239,19 +317,53 @@ check_is_known_container()
 {
     container_name=$1
 
+    build_container_lists
+
     if [ -n "${we_are_dom0}" ]; then
-	containers="`cube-cmd lxc-ls`"
-	if [ -n "${containers}" ]; then
-	    echo ${containers} | grep -q -w ${container_name}
-	    if [ $? -ne 0 ]; then
-		return 1
-	    fi
+	echo ${cubes} | grep -q ${container_name}
+	if [ $? -eq 0 ]; then
+	    container_is_a_cube=t
+	fi
+	echo ${open_containers} | grep -q ${container_name}
+	if [ $? -eq 0 ]; then
+	    container_is_a_oci=t
+	fi
+	if [ -z "${container_is_a_cube}" ] && [ -z "${container_is_a_oci}" ]; then
+	    return 1
 	fi
     else
 	return 1
     fi
 
     return 0
+}
+
+graft_binaries_to_essential()
+{
+    local binaries=$@
+
+    if [ -z "${we_are_dom0}" ]; then
+	echo "ERROR: command is only available from dom0"
+	return
+    fi
+
+    if [ ! -d "/var/lib/cube/essential/sbin/" ]; then
+	mkdir -p "/var/lib/cube/essential/sbin/"
+    fi
+
+    for b in ${binaries}; do
+	if [ ! -e "/var/lib/cube/essential/sbin/${b}" ]; then
+	    bin="${b}"
+	    if [ ! -f "${bin}" ]; then
+		bin=$(which ${b})
+	    fi
+	    if [ ! -f "${bin}" ]; then
+		echo "ERROR: binary ${b} not found"
+		continue
+	    fi
+	    cp ${bin} /var/lib/cube/essential/sbin/
+	fi
+    done
 }
 
 tweak_container_fstab()
@@ -364,6 +476,11 @@ case "${cmd}" in
 	    container_name="`cubename ${filename}`"
 	fi
 
+	if check_is_known_container ${container_name}; then
+	    echo "[ERROR] Container ${container_name} already exists, cannot add."
+	    exit 1
+	fi
+
 	# unprivileged. create default subuid/subgids for root and pass the
 	# parameter to overc_cctl for container settings
 	if [ -n "${subuid}" ]; then
@@ -406,8 +523,13 @@ case "${cmd}" in
 	if [ "${container_type}" = "cube" ]; then
 	    echo "[INFO] Performing cube configuration ..."
 	    (
+		# make sure that /var/lib/cube/essential exists in the essential
+		# directory structure
+		mkdir -p ${out_dir}/var/lib/cube/essential
+
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
+		${SBINDIR}/cube-cfg mount bind:/var/lib/cube:/var/lib/cube
 		${SBINDIR}/cube-cfg gen ${container_name}:cube
 	    )
 
@@ -427,10 +549,9 @@ case "${cmd}" in
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
 		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
-		# dom0 will have comms to these containers, so we need to create some directories
-		# in its structure
-		mkdir -p ${out_dir}/dom0/rootfs/var/lib/cube/all
-		mkdir -p ${out_dir}/dom0/rootfs/var/lib/cube/${container_name}
+		# make the dirs in essential, but they will be bind mounted to dom0
+		mkdir -p ${out_dir}/var/lib/cube/all
+		mkdir -p ${out_dir}/var/lib/cube/${container_name}
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
@@ -457,25 +578,32 @@ case "${cmd}" in
 	fi
 	;;
     del|delete|remove)
-	check_required ${overc_cctl}
-	check_required ${dom0ctl}
+	graft_binaries_to_essential runc
+	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
+	    runc_essential="/var/lib/cube/essential/sbin/runc"
+	else
+	    echo "ERROR: unable to execute runc on essential"
+	    exit 1
+	fi
 
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
 	if ! check_is_known_container ${container_name}; then
-	    echo "[ERROR] Container ${container_name} not found, cannot remove."
+	    echo "[ERROR] Container ${container_name} not found, cannot delete."
 	    echo -n "Valid containers are: "
-	    echo ${containers}
+	    echo ${cubes} ${open_containers}
 	    exit 1
 	fi
+	echo "[INFO] deleting container ${container_name}"
 
-	echo "[INFO] stopping container ${container_name}"
-	${dom0ctl} stop -n ${container_name}
-
-	# now nuke it
-	echo "[INFO] removing container ${container_name}"
-	${overc_cctl} delete ${force} -n ${container_name}
+	if [ -n "${container_is_a_cube}" ]; then
+	    # nothing to do at the moment
+	    true
+	fi
+	if [ -n "${container_is_a_oci}" ]; then
+	    cube-cmd ${runc_essential} delete ${container_name}
+	fi
 	;;
     start)
 	# the second non dashed argument will be the container name
@@ -485,8 +613,8 @@ case "${cmd}" in
 	# container go directly at the tty
 	single_launch=t
 
-	# TODO: this currently only supports autostart containers on the local
-	#       machine. remote container start needs to be added.
+	# The auto is the container tags that we should locate. If found, add them
+	# to the container list
 	if [ -n "${auto}" ]; then
 	    echo "[INFO] auto starting containers ..."
 	    for c in $(ls "${container_dir}/"); do
@@ -502,15 +630,28 @@ case "${cmd}" in
 	fi
 
 	for container in ${container_names}; do
-	    echo "[INFO]: autostarting $container ..."
 	    if [ -n "${single_launch}" ]; then
 		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
 		    ${container_dir}/${container}/pflask.cmd
 		elif [ -e "${container_dir}/${container}/config.json" ]; then
 		    (
-			cd ${container_dir}/${container}
-			runc create --console=/dev/ptmx ${container}
-			runc start ${container}
+			if [ -n "${we_are_dom0}" ]; then
+			    # This escapes our namespace and launches the containers in our parents (essential)
+			    # namespace. But in that structure, runc may not be available so we copy it first and
+			    # then use it directly.
+			    build_container_lists
+
+			    echo "${open_container_running}" | grep -q ${container}
+			    if [ $? -ne 0 ]; then
+				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} create --bundle /opt/container/${container} --console=/dev/ptmx ${container}
+				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} start ${container}
+			    else
+				echo "container ${container} is already running ..."
+			    fi
+			else
+			    # TODO: use cube-cmd to talk to a remote container manager
+			    true
+			fi
 		    )
 		fi
 	    else
@@ -522,27 +663,85 @@ case "${cmd}" in
 	done
 	;;
     status|list)
-	check_if_present ${dom0ctl}
-	if [ $? -eq 0 ]; then
-	    ${dom0ctl} list
+	build_container_lists
+
+	if [ -n "${verbose}" ]; then
+	    machines=$(echo "${machines}" | sed 's/^/   /')
+	    oci=$(echo "${oci}" | sed 's/^/   /')
+	    echo "cubes:"
+	    echo ""
+	    echo "${machines}"
+	    echo ""
+	    echo "open containers:"
+	    echo ""
+	    echo "${oci}"
 	else
-	    cube-cmd lxc-ls
+	    for l in ${open_container_running}; do
+		echo "${l} # oci, running"
+	    done
+	    for l in ${open_container_stopped}; do
+		echo "${l} # oci, stopped"
+	    done
+	    for l in ${cubes_running}; do
+		echo "${l} # cube, running"
+	    done
+	    for l in ${open_container_available}; do
+		echo "${l} # oci, available"
+	    done
+	    for l in ${cubes_available}; do
+		echo "${l} # cube, available"
+	    done
+IFS=$OLDIFS
 	fi
 	;;
     info)
-	check_required ${dom0ctl}
+	build_container_lists
+
+	graft_binaries_to_essential runc
+	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
+	    runc_essential="/var/lib/cube/essential/sbin/runc"
+	else
+	    echo "ERROR: unable to execute runc on essential"
+	    exit 1
+	fi
+
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
-	${dom0ctl} info -n ${container_name}
-	;;
-    restart)
-	check_required ${dom0ctl}
-	# the second non dashed argument will be the container name
-	container_name=${cmd_options_non_dashed[1]}
-	${dom0ctl} relaunch -n ${container_name}
+
+	if [ -n "${container_name}" ]; then
+	    echo ${cubes} | grep -q ${container_name}
+	    if [ $? -eq 0 ]; then
+		container_is_a_cube=t
+	    fi
+	    echo ${open_containers} | grep -q ${container_name}
+	    if [ $? -eq 0 ]; then
+		container_is_a_oci=t
+	    fi
+	    if [ -z "${container_is_a_cube}" ] && [ -z "${container_is_a_oci}" ]; then
+		echo "ERROR: container ${container_name} is not valid"
+		exit 1
+	    fi
+
+	    if [ -n "${container_is_a_cube}" ]; then
+		if [ -n "${verbose}" ]; then
+		    cube-cmd machinectl status ${container_name}
+		else
+		    cube-cmd machinectl show ${container_name}
+		fi
+	    fi
+	    if [ -n "${container_is_a_oci}" ]; then
+		cube-cmd ${runc_essential} state ${container_name}
+	    fi
+	fi
 	;;
     stop)
-	check_required ${dom0ctl}
+	graft_binaries_to_essential runc
+	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
+	    runc_essential="/var/lib/cube/essential/sbin/runc"
+	else
+	    echo "ERROR: unable to execute runc on essential"
+	    exit 1
+	fi
 
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
@@ -550,16 +749,16 @@ case "${cmd}" in
 	if ! check_is_known_container ${container_name}; then
 	    echo "[ERROR] Container ${container_name} not found, cannot stop."
 	    echo -n "Valid containers are: "
-	    echo ${containers}
+	    echo ${cubes} ${open_containers}
 	    exit 1
 	fi
 	echo "[INFO] stopping container ${container_name}"
-	if ! ${dom0ctl} stop -n ${container_name}; then
-	    if ${dom0ctl} info -n ${container_name} | grep -q "State:[[:space:]]*STOPPED"; then
-		echo "[ERROR] Stopping ${container_name} encountered issues."
-		echo "[ERROR] Container ${container_name} might have already been stopped."
-	    fi
-	    exit 1
+
+	if [ -n "${container_is_a_cube}" ]; then
+	    cube-cmd machinectl stop ${container_name}
+	fi
+	if [ -n "${container_is_a_oci}" ]; then
+	    cube-cmd ${runc_essential} kill ${container_name} KILL
 	fi
 	;;
     exec)
