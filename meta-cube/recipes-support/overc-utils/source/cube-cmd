@@ -9,6 +9,11 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #  See the GNU General Public License for more details.
 
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
+    we_are_dom0=t
+fi
+
 function wait_for_files()
 {
     local wait_count=${1:-200} # 200 is the default
@@ -37,7 +42,7 @@ function do_essential_cmd()
 
     # When in dom0 we use the direct route and just exec the command
     # with no checking
-    if [ -d /host ]; then
+    if [ -n "${we_are_dom0}" ]; then
 	DIRECT="${cmd}" /sbin/cube-cmd-handler -r dom0
 	exit $?
     fi

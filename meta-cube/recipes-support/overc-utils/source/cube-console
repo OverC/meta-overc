@@ -64,7 +64,8 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -d "/host/proc" ]; then
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
     we_are_dom0=t
 fi
 
@@ -164,7 +165,7 @@ function wait_for_files()
 # essential is only available from dom0, so we need extra checks
 function do_essential_console()
 {
-    if [ ! -d "/host/proc" ]; then
+    if [ ! -d "/var/lib/cube/essential" ]; then
 	echo "ERROR: essential console can only be entered via dom0"
 	exit 1
     fi
