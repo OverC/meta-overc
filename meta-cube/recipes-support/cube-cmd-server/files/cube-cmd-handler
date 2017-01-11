@@ -186,7 +186,8 @@ CONF_FILE=/etc/cube-cmd-server.conf
 
 . /etc/cube-cmd-server-functions
 
-if [ -d "/host/proc" ]; then
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
     we_are_dom0=t
 fi
 
@@ -204,22 +205,6 @@ function read_loop()
     log_msg "[INFO]: cube-cmd-handler ($$): $line"
 
     case "${line}" in
-        cmd\ *)
-            echo ${commands_host_cmd_acl[@]} | grep -q ${requestor}
-            if [ $? -eq 0 ]; then
-                # remove the first option from the command, we'll be passing it along, unprocessed
-                line_array=( ${line} )
-                line=("${line_array[@]:1}")
-
-                if [ -n "${verbose}" ]; then
-                    echo "[INFO]: host command: ${line[@]}"
-                fi
-                do_command ${requestor} ${line[@]}
-            else
-                do_error "${requestor}" "ERROR: requestor ($requestor) is not allowed to host commands"
-                log_msg "[INFO]: requestor ($requestor) is not allowed to issue host commands"
-            fi
-            ;;
         lxc*)
             lxc_cmd=`echo $line | awk '{print $1}'`
             echo ${commands_lxc_acl[@]} | grep -q ${requestor}
@@ -363,6 +348,27 @@ function read_loop()
                 # clean exit, so systemd will restart us
                 log_msg "[INFO]: cube-cmd-handler ($$): exiting ..."
                 exit 0
+            fi
+            ;;
+        cmd\ *)
+	    pop_cmd_keyword=t
+	    ;&
+	*)
+            echo ${commands_host_cmd_acl[@]} | grep -q ${requestor}
+            if [ $? -eq 0 ]; then
+		if [ -n "${pop_cmd_keyword}" ]; then
+                    # remove the first option from the command, we'll be passing it along, unprocessed
+                    line_array=( ${line} )
+                    line=("${line_array[@]:1}")
+		fi
+
+                if [ -n "${verbose}" ]; then
+                    echo "[INFO]: host command: ${line[@]}"
+                fi
+                do_command ${requestor} ${line[@]}
+            else
+                do_error "${requestor}" "ERROR: requestor ($requestor) is not allowed to host commands"
+                log_msg "[INFO]: requestor ($requestor) is not allowed to issue host commands"
             fi
             ;;
     esac
