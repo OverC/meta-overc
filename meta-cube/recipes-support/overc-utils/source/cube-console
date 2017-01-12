@@ -104,7 +104,6 @@ function exec_console()
 	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
     fi
     connect_console
-
 }
 
 function connect_console()
@@ -132,9 +131,17 @@ function connect_console()
 function am_i_a_container()
 {
     local virt=`systemd-detect-virt`
-    if [ "${virt}" = "lxc" ]; then
-	return 1
-    fi
+    case $virt in
+	lxc*)
+	    return 1
+	    ;;
+	container*)
+	    return 1
+	    ;;
+	docker*)
+	    return 1
+	    ;;
+    esac
 
     return 0
 }

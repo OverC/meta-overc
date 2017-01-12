@@ -165,13 +165,18 @@ done
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    which systemd-detect-virt
-    if [ $? -eq 0 ]; then
-	local virt=`systemd-detect-virt`
-	if [ "${virt}" = "lxc" ]; then
+    local virt=`systemd-detect-virt`
+    case $virt in
+	lxc*)
 	    return 1
-	fi
-    fi
+	    ;;
+	container*)
+	    return 1
+	    ;;
+	docker*)
+	    return 1
+	    ;;
+    esac
 
     return 0
 }
