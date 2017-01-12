@@ -529,9 +529,10 @@ case "${cmd}" in
 	if [ "${container_type}" = "cube" ]; then
 	    echo "[INFO] Performing cube configuration ..."
 	    (
-		# make sure that /var/lib/cube/essential exists in the essential
-		# directory structure
+		# make sure that /var/lib/cube/essential and local exist
+		# in the essential directory structure
 		mkdir -p ${out_dir}/var/lib/cube/essential
+		mkdir -p ${out_dir}/var/lib/cube/local
 
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
@@ -555,7 +556,7 @@ case "${cmd}" in
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
 		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
-		# make the dirs in essential, but they will be bind mounted to dom0
+		# make the dirs in essential, but they will be bind mounted to the container
 		mkdir -p ${out_dir}/var/lib/cube/all
 		mkdir -p ${out_dir}/var/lib/cube/${container_name}
 	    )
