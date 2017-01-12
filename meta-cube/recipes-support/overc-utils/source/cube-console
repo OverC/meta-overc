@@ -195,14 +195,18 @@ function do_console()
     local type=$2 # namspace or login
 
     if [ -n "${we_are_dom0}" ]; then
-	console_device=`generate_console_name 200 /var/lib/cube/${target}/`
-	cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
-	local nsargs=""
-	if [ -e /proc/1/ns/cgroup ] ; then
-	    nsargs=-C
+	console_device=`generate_console_name 200 /var/lib/cube/local/`
+	mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
+	echo ${mgr} | grep -q runc
+	if [ $? -eq 0 ]; then
+	    cmd="${mgr} exec -- ${target} /sbin/agetty -J -"
+	    local nsargs=""
+	    if [ -e /proc/1/ns/cgroup ] ; then
+		nsargs=-C
+	    fi
+	    nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/local/${console_device} -r none -w -W 5 -Q ${cmd}
+	    connect_console
 	fi
-	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/dom0/${console_device} -r none -w -W 5 -Q ${cmd}
-	connect_console
 	return
     fi
 

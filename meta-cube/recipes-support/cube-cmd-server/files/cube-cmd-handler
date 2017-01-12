@@ -38,8 +38,8 @@ function console_listener() {
     local matches=""
     local console_file=""
 
+    # check to see if the connector is a valid container (that we know about)
     for c in `ls -df /opt/container/*`; do
-        grep -q ${connectorname} $c 2>/dev/null
         if [ "${connectorname}" = "${c#/opt/container/}" ]; then
             matches="$matches $c"
         fi
@@ -62,25 +62,21 @@ function console_listener() {
 	    (
             if [ "${type}" = "console" ]; then
                 # The target of the console matters. If it is "us", then we start agetty. If it is another
-                # container, we proxy the appropriate mechanism (cube-console or lxc-console)
+                # container, we proxy the appropriate mechanism
 
                 if [ -n "${we_are_dom0}" ]; then
                     if [ "${target}" == "dom0" ]; then
                         cmd="/sbin/agetty -J -"
                     else
-                        # we need to go down to essential to get a console to another container so
-                        # we'll call cube-console again .. which goes to the command server that helps
-                        # us out .. aka "cube-essential"
-                        cmd="cube-console ${target}"
-                    fi
-                else # we are essential
-                    if [ "${target}" == "essential" ]; then
-                        cmd="/sbin/agetty -J -"
-                    else
-                        # if the target is another container, we need to run a getty in the console
-                        # and connect to it. We do this to avoid lxc-console, which cannot be exited
-                        # without a control character, and can have only one active at time.
-                        cmd="lxc-attach -n ${target} -- /sbin/agetty -J -"
+			# if the target is another container, we need to run a getty in the console
+			# and connect to it. We do this to avoid built in console types, which cannot
+			# be exited without a control character, and can have only one active at time.
+			mgr=$(cube-cfg -o /opt/container/${cname}/ get cube.container.mgr)
+			echo ${mgr} | grep -q runc
+			if [ $? -eq 0 ]; then
+			    # OCI. Use the configured container manager
+			    cmd="${mgr} exec -- ${target} /sbin/agetty -J -"
+			fi
                     fi
                 fi
                 # send the number of the console to the caller
@@ -93,7 +89,12 @@ function console_listener() {
                     # namespace enter!
                     if [ -n "$target" ]; then
                         /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
-                        /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q lxc-attach -n ${target} /bin/sh
+
+			mgr=$(cube-cfg -o /opt/container/${cname}/ get cube.container.mgr)
+			echo ${mgr} | grep -q runc
+			if [ $? -eq 0 ]; then
+                            /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q ${mgr} exec ${target} /bin/sh
+			fi
                     else
                         do_error "${requestor}" "[ERROR]: namespace consoles require a target container"
                         log_msg "[ERROR]: namespace consoles require a target container"
