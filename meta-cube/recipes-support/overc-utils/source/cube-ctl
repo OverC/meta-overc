@@ -800,13 +800,17 @@ IFS=$OLDIFS
 
 	    cube-cmd cmd ${cmd_to_exec[@]}
 	else
-	    check_required ${dom0ctl}
-
-	    if [ -n "${verbose}" ]; then
-		echo "running: ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}"
+	    mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
+	    echo ${mgr} | grep -q runc
+	    if [ $? -eq 0 ]; then
+		cmd="${mgr} exec -- ${target} ${cmd_to_exec[@]}"
 	    fi
 
-	    ${dom0ctl} exec-cmd -n ${container_name} ${cmd_to_exec[@]}
+	    if [ -n "${verbose}" ]; then
+		echo "running: ${cmd}"
+	    fi
+
+	    eval ${cmd}
 	fi
 	;;
     *)
