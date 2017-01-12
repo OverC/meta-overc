@@ -21,6 +21,7 @@ cat << EOF
 global options:
     
  --clean: remove artifacts before performing <command>
+ -o     : output/config directory
 
 commands (and options):
 
@@ -37,36 +38,10 @@ commands (and options):
        <type>:       optional type of mount. 'bind'
        <name>:<name> source and destination directory
 
- ${0##*/} mount <type>:<name>:<name>
+ ${0##*/} set <container name> <setting>:<value>
 
-    clean: clean configuration artifacts
+ ${0##*/} get <container name> <setting>
 
- ${0##*/} add [-n <name>] [-u <subuid>] <source tar.bz2>
-
-    add a container to the platform. Once added, the container is monitored, but
-    not started. Use "cube-ctl start" to launch a container after adding it.
-
-       -n <name>: name of the container once added to the system. If this is
-                  not supplied, the container source tarball is used to generate
-                  a name.
-
-       -u: make this newly added container unprivileged. The subuid field will
-           be used to set the owner of the uid/gid in the root namespace for the
-           newly added container. If no subuid field is provided, a default
-           value of 800000 will be used.
- 
-       -o: if adding the container locally, the target directory for the rootfs
-
-       -t: container type: lxc, oci or cube (default: oci)
-
-       <source>: path to the container source (tar.bz2)
-
- ${0##*/} del [-F] <name>
-
-    remove a container from the system. Once this completes, the container is
-    stopped and purged from the filesystem.
-
-       -F force remove container without prompting
 EOF
 }
 
@@ -81,6 +56,7 @@ raw_command=($@)
 force=""
 peer=t
 non_dashed=""
+out_dir="./"
 
 # this corresponds to the lxc.id_map items within the container's config file
 DEFAULT_SUBUID=800000
@@ -276,6 +252,10 @@ generate_base_config()
     sed -i 's/\"ro\"/\"rw\"/g' config.json.tmp
 
     mv config.json.tmp config.json
+
+    # by default, we assume runc will manage the container, this can
+    # be changed later.
+    echo "runc" > cube.container.mgr
 }
 
 #
@@ -309,6 +289,8 @@ convert_base_config_to_cube()
     echo "#!/bin/bash" > pflask.cmd
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
     chmod +x pflask.cmd
+
+    echo "pflask" > cube.container.mgr
 }
 
 case "${cmd}" in
@@ -355,21 +337,28 @@ case "${cmd}" in
 	    exit 1
 	fi
 	;;
-    add)
-	;;
-    del|delete|remove)
-	;;
-    start)
-	;;
-    status|list)
-	;;
-    info)
-	;;
-    restart)
-	;;
-    stop)
-	;;
-    exec)
+    set|get)
+	var_value=${cmd_options_non_dashed[1]}
+	var=$(echo ${var_value} | cut -d: -f1)
+	value=$(echo ${var_value} | cut -d: -f2)
+
+	# until we switch to a git config type format, we will only process
+	# variables that we recongize, and know where to write their
+	# value. They also assume you are in the directory where you want
+	# the configuration written.
+	case $var in
+	    cube.container.mgr)
+		if [ ${cmd} = "set" ]; then
+		    echo "$value" > ${out_dir}/cube.container.mgr
+		elif [ ${cmd} = "get" ]; then
+		    if [ -e ${out_dir}/cube.container.mgr ]; then
+			cat ${out_dir}/cube.container.mgr
+		    else
+			echo ""
+		    fi
+		fi
+		;;
+	esac
 	;;
     *)
 	echo "Unknown command ..."
