@@ -47,7 +47,7 @@ function console_listener() {
 
     if [ -n "$matches" ]; then
         for m in $matches; do
-            cname=`echo "$m" | cut -d/ -f5`
+            cname=`echo "$m" | cut -d/ -f4`
 
             debug=""
             if [ -n "${verbose}" ]; then
