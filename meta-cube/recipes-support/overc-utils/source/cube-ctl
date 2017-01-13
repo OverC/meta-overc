@@ -180,7 +180,14 @@ overc_cctl="/opt/overc-installer/overc-cctl"
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt=`systemd-detect-virt`
+    local virt_bin=$(which systemd-detect-virt)
+
+    # if we can't run detection, just say we aren't a container
+    if [ -z "${virt_bin}" ]; then
+	return 0
+    fi
+
+    local virt=$(systemd-detect-virt)
     case $virt in
 	lxc*)
 	    return 1
@@ -201,7 +208,7 @@ if [ -d "/var/lib/cube/essential" ]; then
     we_are_dom0=t
 fi
 am_i_a_container
-if [ $? -eq 0 ]; then
+if [ $? -eq 1 ]; then
     we_are_a_container=t
 fi
 
@@ -323,6 +330,12 @@ check_is_known_container()
 {
     container_name=$1
 
+    # if we are not in a container .. then there's no need to check anything
+    # just return that this is not a known container
+    if [ -z "${we_are_a_container}" ]; then
+	return 1
+    fi
+
     build_container_lists
 
     if [ -n "${we_are_dom0}" ]; then
@@ -348,8 +361,10 @@ graft_binaries_to_essential()
 {
     local binaries=$@
 
+    if [ -z "${we_are_a_container}" ]; then
+	return
+    fi
     if [ -z "${we_are_dom0}" ]; then
-	echo "ERROR: command is only available from dom0"
 	return
     fi
 
