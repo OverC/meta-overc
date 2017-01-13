@@ -26,7 +26,7 @@ do_install_append(){
 	# remove the dependancy from lxc.service to reduce the boottime.
 
 	sed -i 's/lxc-net.service//g'  ${D}${systemd_unitdir}/system/lxc.service
-	sed -i 's/\(After=.*$\)/\1 openvswitch-nonetwork.service/' ${D}${systemd_unitdir}/system/lxc.service
+	sed -i 's/\(After=.*$\)/\1 openvswitch.service/' ${D}${systemd_unitdir}/system/lxc.service
 	sed -i '1,/ExecStartPre/ {/ExecStartPre/ i\
 ExecStartPre=/etc/lxc/lxc-overlayscan\nExecStartPre=/etc/lxc/lxc-overlayrestore
 }' ${D}${systemd_unitdir}/system/lxc.service

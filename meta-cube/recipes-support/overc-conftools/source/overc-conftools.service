@@ -1,6 +1,6 @@
 [Unit]
 Description=OverC system configuration service
-After=local-fs.target openvswitch-nonetwork.service network.target
+After=local-fs.target openvswitch.service network.target
 Before=lxc.service
 
 [Service]
