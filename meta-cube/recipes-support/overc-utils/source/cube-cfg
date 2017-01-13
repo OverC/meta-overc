@@ -141,6 +141,13 @@ done
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
+    local virt_bin=$(which systemd-detect-virt)
+
+    # if we can't run detection, just say we aren't a container
+    if [ -z "${virt_bin}" ]; then
+	return 0
+    fi
+
     local virt=`systemd-detect-virt`
     case $virt in
 	lxc*)
@@ -158,7 +165,7 @@ function am_i_a_container()
 }
 
 am_i_a_container
-if [ $? -eq 0 ]; then
+if [ $? -eq 1 ]; then
     we_are_a_container=t
 fi
 
