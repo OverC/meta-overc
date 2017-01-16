@@ -106,9 +106,8 @@ RDEPENDS_packagegroup-builder-debug = " \
 
 
 RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
-RDEPENDS_packagegroup-builder-extended_ARCH_x86 ?= "grub"
-RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 ?= "grub"
-RDEPENDS_packagegroup-builder-extended_ARCH_intel-x86-common ?= "grub"
+RDEPENDS_packagegroup-builder-extended_ARCH_i586 ?= "grub"
+RDEPENDS_packagegroup-builder-extended_ARCH_x86_64 ?= "grub"
 
 RDEPENDS_packagegroup-builder-extended = "\
     bash-completion \
