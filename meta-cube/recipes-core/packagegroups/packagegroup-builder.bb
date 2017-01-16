@@ -122,6 +122,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     gettext-runtime \
     grep \
     groff \
+    grub \
     gzip \
     ifupdown \
     inetutils \
@@ -187,7 +188,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     zlib \
     xterm \
     xz \
-    ${RDEPENDS_packagegroup-builder-extended_ARCH} \
     "
 
 RDEPENDS_packagegroup-builder-networking = "\
