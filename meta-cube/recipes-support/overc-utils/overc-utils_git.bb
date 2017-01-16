@@ -54,4 +54,4 @@ FILES_${PN} += "/opt/${BPN} \
 
 FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
 
-RDEPENDS_${PN} += "bash dtach nanoio nanoio-client udev systemd-extra-utils"
+RDEPENDS_${PN} += "bash dtach nanoio nanoio-client udev systemd-extra-utils jq"
