@@ -105,10 +105,6 @@ RDEPENDS_packagegroup-builder-debug = " \
     tcf-agent"
 
 
-RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
-RDEPENDS_packagegroup-builder-extended_ARCH_i586 ?= "grub"
-RDEPENDS_packagegroup-builder-extended_ARCH_x86_64 ?= "grub"
-
 RDEPENDS_packagegroup-builder-extended = "\
     bash-completion \
     bzip2 \

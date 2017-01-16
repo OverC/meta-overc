@@ -11,10 +11,6 @@ OVERC_COMMON_DISK = " \
      parted \
     "
 
-OVERC_COMMON_EXTENDED_ARCH ?= ""
-OVERC_COMMON_EXTENDED_ARCH_i586 ?= "grub"
-OVERC_COMMON_EXTENDED_ARCH_x86_64 ?= "grub"
-
 OVERC_COMMON_EXTENDED = " \
      bash-completion \
      cpio \
