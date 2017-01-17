@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 
-CUBE_DOM_SERVER_EXTRA_INSTALL ?= ""
+CUBE_SERVER_EXTRA_INSTALL ?= ""
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES ?= "tar.bz2"
@@ -27,7 +27,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-builder \
                   packagegroup-dom0 \
                   packagegroup-container \
-                  ${CUBE_DOM_SERVER_EXTRA_INSTALL} \
+                  ${CUBE_SERVER_EXTRA_INSTALL} \
                   "
 TARGETNAME ?= "cube-server"
 
