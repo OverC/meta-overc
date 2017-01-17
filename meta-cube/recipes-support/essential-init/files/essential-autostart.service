@@ -1,7 +1,7 @@
 [Unit]
 Description=Essential Autoboot Code
 After=syslog.target network.target
-After=getty@tty2.service
+After=getty@tty2.service dbus.service
 
 [Service]
 Type=simple
