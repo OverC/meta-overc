@@ -89,6 +89,10 @@ force=""
 peer=t
 non_dashed=""
 
+if [ -z "${SBINDIR}" ]; then
+    SBINDIR="/usr/sbin"
+fi
+
 # this corresponds to the lxc.id_map items within the container's config file
 DEFAULT_SUBUID=800000
 
@@ -546,8 +550,15 @@ case "${cmd}" in
 	    (
 		# make sure that /var/lib/cube/essential and local exist
 		# in the essential directory structure
-		mkdir -p ${out_dir}/var/lib/cube/essential
-		mkdir -p ${out_dir}/var/lib/cube/local
+
+		# see if someone arranged for /var/lib/cube to be mounted into out_dir, if
+		# not, we need to go directly at /var/lib/cube
+		var_dir=""
+		if [ -d "${out_dir}/var/lib/cube/" ]; then
+		    var_dir="${out_dir}"
+		fi
+		mkdir -p ${var_dir}/var/lib/cube/essential
+		mkdir -p ${var_dir}/var/lib/cube/local
 
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
@@ -575,9 +586,16 @@ case "${cmd}" in
 		graft_binaries_to_essential runc
 		${SBINDIR}/cube-cfg set cube.container.mgr:/var/lib/cube/essential/sbin/runc
 
+		# see if someone arranged for /var/lib/cube to be mounted into out_dir, if
+		# not, we need to go directly at /var/lib/cube
+		var_dir=""
+		if [ -d "${out_dir}/var/lib/cube/" ]; then
+		    var_dir="${out_dir}"
+		fi
+
 		# make the dirs in essential, but they will be bind mounted to the container
-		mkdir -p ${out_dir}/var/lib/cube/all
-		mkdir -p ${out_dir}/var/lib/cube/${container_name}
+		mkdir -p ${var_dir}/var/lib/cube/all
+		mkdir -p ${var_dir}/var/lib/cube/${container_name}
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
