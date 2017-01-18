@@ -1,16 +1,16 @@
 ---
   - name: setup static IP
-    replace: dest=/var/lib/lxc/{{item.0}}/rootfs/etc/systemd/network/20-wired.network regexp='^DHCP=.*' replace='Address=192.168.42.{{item.1}}/24'
+    replace: dest=/opt/container/{{item.0}}/rootfs/etc/systemd/network/20-wired.network regexp='^DHCP=.*' replace='Address=192.168.42.{{item.1}}/24'
     with_together:
     - "{{cname}}"
     - "{{coffset}}"
 
   - name: setup Gateway
-    lineinfile: dest=/var/lib/lxc/{{item}}/rootfs/etc/systemd/network/20-wired.network line='Gateway=192.168.42.1'
+    lineinfile: dest=/opt/container/{{item}}/rootfs/etc/systemd/network/20-wired.network line='Gateway=192.168.42.1'
     with_items:
     - "{{cname}}"
 
   - name: setup nameserver
-    copy: content="nameserver 192.168.42.2\n" dest=/var/lib/lxc/{{item}}/rootfs/etc/resolv.conf
+    copy: content="nameserver 192.168.42.2\n" dest=/opt/container/{{item}}/rootfs/etc/resolv.conf
     with_items:
     - "{{cname}}"
