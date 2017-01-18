@@ -38,6 +38,13 @@ commands (and options):
        <type>:       optional type of mount. 'bind'
        <name>:<name> source and destination directory
 
+ ${0##*/} device <type>:<name>:<name>
+
+    add a device to a container
+
+       <type>:       network
+       <name>:<name> device name in essential : device name in container
+
  ${0##*/} set <container name> <setting>:<value>
 
  ${0##*/} get <container name> <setting>
@@ -209,6 +216,10 @@ clean_config_artifacts()
 	rm -f .cube.mount
 	rm -f .cube.mount.bind
     fi
+
+    if [ "${type}" = "device" ] || [ "${type}" = "all" ]; then
+	rm -f .cube.device cube.device.network
+    fi
 }
 
 #
@@ -284,6 +295,15 @@ convert_base_config_to_cube()
 	fi
     done
 
+    # any devices.
+    # TODO: these need to come from the oci spec, like the mounts, but right
+    #       now the OCI tool doesn't seem to handle it
+    if [ -e ".cube.device.network" ]; then
+	netdevs=$(cat .cube.device.network)
+	pflask_args="${pflask_args} --netif=${netdevs}"
+	echo "${netdevs}" >> pflask.config
+    fi
+
     # what is the executable we are running ?
     app=$(jq -r  '.process.args | .[]' config.json)
 
@@ -341,6 +361,29 @@ case "${cmd}" in
 	    echo "$source:$dest" >> .cube.mount
 	else
 	    echo "ERROR: Invalid mount specified ${name_temp}"
+	    exit 1
+	fi
+	;;
+    device|dev)
+	name_temp=${cmd_options_non_dashed[1]}
+
+	if [ -n "${clean}" ]; then
+	    clean_config_artifacts device
+	fi
+
+	colons=$(echo ${name_temp} | sed -e 's/\(.\)/\1\n/g' | grep : | wc -l)
+	if [ ${colons} -eq 2 ]; then
+	    # we have <type>:<source>:<dest>
+	    device_type=$(echo ${name_temp} | cut -f1 -d:)
+	    essential_device=$(echo ${name_temp} | cut -f2 -d:)
+	    container_device=$(echo ${name_temp} | cut -f3 -d:)
+
+	    # save the mount information for the generation phase
+	    if [ "${device_type}" == "network" ]; then
+		echo "$essential_device:$container_device"  >> .cube.device.network
+	    fi
+	else
+	    echo "ERROR: Invalid device specified ${name_temp}"
 	    exit 1
 	fi
 	;;
