@@ -1,0 +1,22 @@
+[Unit]
+Description=Essential Autoboot Code
+After=syslog.target network.target
+After=getty@tty2.service dbus.service
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+# ExecStartPre=
+# ExecStartPre=
+ExecStart=-/usr/sbin/essential-autostart
+#ExecStop=
+# Environment=BOOTUP=serial
+# Environment=CONSOLETYPE=serial
+Delegate=yes
+TTYPath=/dev/tty2
+StandardInput=tty
+StandardOutput=tty
+# StandardError=syslog
+
+[Install]
+WantedBy=basic.target

@@ -1,0 +1,20 @@
+[Unit]
+Description=Dom0 Autoboot Code
+After=syslog.target network.target
+
+[Service]
+Type=forking
+RemainAfterExit=yes
+# ExecStartPre=
+# ExecStartPre=
+ExecStart=/usr/sbin/dom0-containers start
+ExecStop=/usr/sbin/dom0-containers stop
+# Environment=BOOTUP=serial
+# Environment=CONSOLETYPE=serial
+Delegate=yes
+StandardInput=tty
+StandardOutput=tty
+# StandardError=syslog
+
+[Install]
+WantedBy=basic.target
