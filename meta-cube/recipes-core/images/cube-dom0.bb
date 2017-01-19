@@ -25,7 +25,7 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
                    packagegroup-core-ssh-openssh \
                    overc-system-agent \
                    cube-update \
-                   dom0-contctl \
+                   dom0-init \
                  "
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
