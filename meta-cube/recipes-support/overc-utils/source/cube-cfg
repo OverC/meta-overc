@@ -22,6 +22,7 @@ global options:
     
  --clean: remove artifacts before performing <command>
  -o     : output/config directory
+ -n     : container name
 
 commands (and options):
 
@@ -45,9 +46,9 @@ commands (and options):
        <type>:       network
        <name>:<name> device name in essential : device name in container
 
- ${0##*/} set <container name> <setting>:<value>
+ ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
 
- ${0##*/} get <container name> <setting>
+ ${0##*/} [-n <container name>] [-o <output dir>] get <setting>
 
 EOF
 }
@@ -144,6 +145,19 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+# if outdir wasn't passed on the command line, but a container name
+# was passed, then we should check to see if the container is available
+# and change the out_dir to where it is stored. This allows things
+# like: 'cube-cfg -n cube-server get autostart' to work without passing
+# the out_dir explicitly
+if [ "${out_dir}" == "./" ]; then
+    if [ -n "${container_name}" ]; then
+	if [ -d "/opt/container/${container_name}" ]; then
+	    out_dir="/opt/container/${container_name}"
+	fi
+    fi
+fi
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
@@ -403,6 +417,17 @@ case "${cmd}" in
 		elif [ ${cmd} = "get" ]; then
 		    if [ -e ${out_dir}/cube.container.mgr ]; then
 			cat ${out_dir}/cube.container.mgr
+		    else
+			echo ""
+		    fi
+		fi
+		;;
+	    autostart)
+		if [ ${cmd} = "set" ]; then
+		    echo "$value" > ${out_dir}/autostart
+		elif [ ${cmd} = "get" ]; then
+		    if [ -e ${out_dir}/autostart ]; then
+			cat ${out_dir}/autostart
 		    else
 			echo ""
 		    fi
