@@ -311,7 +311,7 @@ convert_base_config_to_cube()
     rootfs=$(jq -r  '.root.path'  config.json)
     rootfs="/opt/container/${container_name}/${rootfs}"
 
-    pflask_args="${pflask_args}	--root ${rootfs}"
+    pflask_args="${pflask_args}	--uncontain --root ${rootfs}"
 
     echo "#!/bin/bash" > pflask.cmd
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd

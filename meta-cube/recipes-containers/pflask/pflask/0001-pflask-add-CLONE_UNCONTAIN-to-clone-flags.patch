@@ -1,4 +1,4 @@
-From 5d07b43fa43883500303822aa4ceb01eb26eae22 Mon Sep 17 00:00:00 2001
+From e35bee64d765b83ba38dcca9400ab759bd305261 Mon Sep 17 00:00:00 2001
 From: Bruce Ashfield <bruce.ashfield@windriver.com>
 Date: Tue, 10 Jan 2017 16:10:25 -0500
 Subject: [PATCH] pflask: add CLONE_UNCONTAIN to clone flags
@@ -8,11 +8,104 @@ will become an optional flag in the future.
 
 Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 ---
- src/pflask.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ src/cmdline.c | 17 +++++++++++++++++
+ src/cmdline.h |  3 +++
+ src/pflask.c  |  7 +++++++
+ 3 files changed, 27 insertions(+)
 
+diff --git a/src/cmdline.c b/src/cmdline.c
+index 1c8956f..6160252 100644
+--- a/src/cmdline.c
++++ b/src/cmdline.c
+@@ -57,6 +57,7 @@ const char *gengetopt_args_info_help[] = {
+   "  -I, --no-ipcns         Disable IPC namespace support  (default=off)",
+   "  -H, --no-utsns         Disable UTS namespace support  (default=off)",
+   "  -P, --no-pidns         Disable PID namespace support  (default=off)",
++  "  -C, --uncontain        Grant the ability to see the parent namespace",
+     0
+ };
+ 
+@@ -98,6 +99,7 @@ void clear_given (struct gengetopt_args_info *args_info)
+   args_info->cgroup_given = 0 ;
+   args_info->caps_given = 0 ;
+   args_info->detach_given = 0 ;
++  args_info->uncontain_given = 0 ;
+   args_info->attach_given = 0 ;
+   args_info->setenv_given = 0 ;
+   args_info->keepenv_given = 0 ;
+@@ -135,6 +137,7 @@ void clear_args (struct gengetopt_args_info *args_info)
+   args_info->caps_arg = NULL;
+   args_info->caps_orig = NULL;
+   args_info->detach_flag = 0;
++  args_info->uncontain_flag = 0;
+   args_info->attach_orig = NULL;
+   args_info->setenv_arg = NULL;
+   args_info->setenv_orig = NULL;
+@@ -188,6 +191,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
+   args_info->no_ipcns_help = gengetopt_args_info_help[20] ;
+   args_info->no_utsns_help = gengetopt_args_info_help[21] ;
+   args_info->no_pidns_help = gengetopt_args_info_help[22] ;
++  args_info->uncontain_help = gengetopt_args_info_help[23] ;
+   
+ }
+ 
+@@ -394,6 +398,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
+   write_multiple_into_file(outfile, args_info->caps_given, "caps", args_info->caps_orig, 0);
+   if (args_info->detach_given)
+     write_into_file(outfile, "detach", 0, 0 );
++  if (args_info->uncontain_given)
++    write_into_file(outfile, "uncontain", 0, 0 );
+   if (args_info->attach_given)
+     write_into_file(outfile, "attach", args_info->attach_orig, 0);
+   write_multiple_into_file(outfile, args_info->setenv_given, "setenv", args_info->setenv_orig, 0);
+@@ -1012,6 +1018,7 @@ cmdline_parser_internal (
+         { "no-ipcns",	0, NULL, 'I' },
+         { "no-utsns",	0, NULL, 'H' },
+         { "no-pidns",	0, NULL, 'P' },
++        { "uncontain",	0, NULL, 'C' },
+         { 0,  0, 0, 0 }
+       };
+ 
+@@ -1156,6 +1163,16 @@ cmdline_parser_internal (
+             goto failure;
+         
+           break;
++        case 'C':	/* grant uncontain privs */
++
++
++          if (update_arg((void *)&(args_info->uncontain_flag), 0, &(args_info->uncontain_given),
++                         &(local_args_info.uncontain_given), optarg, 0, 0, ARG_FLAG,
++                         check_ambiguity, override, 1, 0, "uncontain", 'C',
++                         additional_error))
++            goto failure;
++
++          break;
+         case 'a':	/* Attach to the specified detached process.  */
+         
+         
+diff --git a/src/cmdline.h b/src/cmdline.h
+index 00efb42..ea591f2 100644
+--- a/src/cmdline.h
++++ b/src/cmdline.h
+@@ -83,6 +83,8 @@ struct gengetopt_args_info
+   const char *caps_help; /**< @brief Change the effective capabilities inside the container help description.  */
+   int detach_flag;	/**< @brief Detach from terminal (default=off).  */
+   const char *detach_help; /**< @brief Detach from terminal help description.  */
++  int uncontain_flag;	/**< @brief Grant uncontain privs (default=off).  */
++  const char *uncontain_help; /**< @brief uncontain privs help description.  */
+   int attach_arg;	/**< @brief Attach to the specified detached process.  */
+   char * attach_orig;	/**< @brief Attach to the specified detached process original value given at command line.  */
+   const char *attach_help; /**< @brief Attach to the specified detached process help description.  */
+@@ -120,6 +122,7 @@ struct gengetopt_args_info
+   unsigned int cgroup_given ;	/**< @brief Whether cgroup was given.  */
+   unsigned int caps_given ;	/**< @brief Whether caps was given.  */
+   unsigned int detach_given ;	/**< @brief Whether detach was given.  */
++  unsigned int uncontain_given ;	/**< @brief Whether uncontain was given.  */
+   unsigned int attach_given ;	/**< @brief Whether attach was given.  */
+   unsigned int setenv_given ;	/**< @brief Whether setenv was given.  */
+   unsigned int keepenv_given ;	/**< @brief Whether keepenv was given.  */
 diff --git a/src/pflask.c b/src/pflask.c
-index 80bc12652ef5..3ca010f681c4 100644
+index 80bc126..0791d13 100644
 --- a/src/pflask.c
 +++ b/src/pflask.c
 @@ -58,6 +58,10 @@
@@ -30,12 +123,12 @@ index 80bc12652ef5..3ca010f681c4 100644
  	if (args.no_pidns_flag)
  		clone_flags &= ~(CLONE_NEWPID);
  
-+	// TODO: add a flag for this
-+	clone_flags |= CLONE_UNCONTAIN;
++	if (args.uncontain_flag)
++		clone_flags |= CLONE_UNCONTAIN;
 +
  	if (args.attach_given) {
  		master_fd = recv_pty(args.attach_arg);
  		fail_if(master_fd < 0, "Invalid PID '%u'", args.attach_arg);
 -- 
-2.4.0.53.g8440f74
+2.7.4
 
