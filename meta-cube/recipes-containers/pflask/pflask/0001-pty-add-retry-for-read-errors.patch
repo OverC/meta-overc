@@ -34,7 +34,7 @@ index ca5ab25..f1cb750 100644
  	int rc;
  
 +	int error_count = 0;
-+	int milliseconds = 15;
++	int milliseconds = 80;
  	sigset_t mask;
 +	struct timespec ts;
 +
@@ -55,7 +55,7 @@ index ca5ab25..f1cb750 100644
 +				   sleep and retry. If this happens 100 times .. we admit defeat
 +				   and exit */
 +				error_count++;
-+				if( error_count > 100 )
++				if( error_count > 100000 )
 +					 goto done;
 +				else {
 +					nanosleep(&ts, NULL);
