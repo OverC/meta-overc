@@ -11,6 +11,10 @@ SYSROOT_PREPROCESS_FUNCS += "bolt_sysroot_preprocess"
 
 inherit golang
 
+do_compile_prepend() {
+    export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
+}
+
 do_compile_append() {
     go install github.com/boltdb/bolt/cmd/bolt
 }
