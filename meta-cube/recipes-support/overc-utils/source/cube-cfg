@@ -32,14 +32,21 @@ commands (and options):
 
        <name>:<type> container name and type
 
- ${0##*/} mount <type>:<name>:<name>
+ ${0##*/} [-n <container name>] mount <type>:<name>:<name>
 
     mount a directory into the container
 
        <type>:       optional type of mount. 'bind'
        <name>:<name> source and destination directory
 
- ${0##*/} device <type>:<name>:<name>
+ ${0##*/} [-n <container name>] hook <type>:<name>
+
+    add a hook into the container lifecycle
+
+       <type>       type of hook: prestart or poststop
+       <name>       full path to the hook
+
+ ${0##*/} [-n <container name>] device <type>:<name>:<name>
 
     add a device to a container
 
@@ -47,8 +54,13 @@ commands (and options):
        <name>:<name> device name in essential : device name in container
 
  ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
-
  ${0##*/} [-n <container name>] [-o <output dir>] get <setting>
+
+    valid settings are:
+
+        cube.container.mgr     The manager for the container
+        autostart              The autostart manager for the container
+        app                    The application to start in the container
 
 EOF
 }
@@ -227,12 +239,16 @@ clean_config_artifacts()
     fi
 
     if [ "${type}" = "mount" ] || [ "${type}" = "all" ]; then
-	rm -f .cube.mount
-	rm -f .cube.mount.bind
+	rm -f ${out_dir}/.cube.mount
+	rm -f ${out_dir}/.cube.mount.bind
     fi
 
     if [ "${type}" = "device" ] || [ "${type}" = "all" ]; then
-	rm -f .cube.device cube.device.network
+	rm -f ${out_dir}/.cube.device ${out_dir}/.cube.device.network
+    fi
+
+    if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
+	rm -f ${out_dir}/.cube.hooks.prestart ${out_dir}/.cube.hooks.poststop
     fi
 }
 
@@ -251,6 +267,8 @@ generate_base_config()
 	done
     fi
 
+    # TODO: these can also be cube-cfg values, but right now are
+    #       restricted for compatibility reasons
     capabilities="--cap-add KILL \
 		  --cap-add LINUX_IMMUTABLE \
                   --cap-add SYS_RAWIO \
@@ -259,11 +277,26 @@ generate_base_config()
                   --cap-add SYS_RESOURCE \
                   --cap-add SYS_TTY_CONFIG"
 
-    # TODO: Vary this for application containers (app and hooks)
     app="/sbin/init"
-    hooks="--prestart /usr/libexec/oci/hooks.d/netns \
-	   --prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
-	   --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+    if [ -e "cube.app" ]; then
+	app=$(cat cube.app)
+    fi
+
+    if [ -e ".cube.hooks.prestart" ]; then
+	for hook in $(cat .cube.hooks.prestart); do
+	    hooks="${hooks} --prestart ${hook}"
+	done
+    fi
+    if [ -e ".cube.hooks.poststop" ]; then
+	for hook in $(cat .cube.hooks.poststop); do
+	    hooks="${hooks} --poststop ${hook}"
+	done
+    fi
+    if [ -z "${hooks}" ]; then
+	hooks="--prestart /usr/libexec/oci/hooks.d/netns \
+	       --prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
+	       --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+    fi
 
     ## TODO: if there's no oci-runtime-tool, then we should capture a
     ##       a default config.json and modify it on the fly
@@ -365,16 +398,42 @@ case "${cmd}" in
 	    dest=$(echo ${name_temp} | cut -f3 -d:)
 
 	    # save the mount information for the generation phase
-	    echo "$source:$dest"  >> .cube.mount.bind
+	    echo "$source:$dest"  >> ${out_dir}/.cube.mount.bind
 	elif [ ${colons} -eq 1 ]; then
 	    # we have <source>:<dest>
 	    source=$(echo ${name_temp} | cut -f1 -d:)
 	    dest=$(echo ${name_temp} | cut -f2 -d:)
 
 	    # save the mount information for the generation phase
-	    echo "$source:$dest" >> .cube.mount
+	    echo "$source:$dest" >> ${out_dir}/.cube.mount
 	else
 	    echo "ERROR: Invalid mount specified ${name_temp}"
+	    exit 1
+	fi
+	;;
+    hook)
+	name_temp=${cmd_options_non_dashed[1]}
+
+	if [ -n "${clean}" ]; then
+	    clean_config_artifacts hooks
+	fi
+
+	colons=$(echo ${name_temp} | sed -e 's/\(.\)/\1\n/g' | grep : | wc -l)
+	if [ ${colons} -eq 1 ]; then
+	    # we have <source>:<dest>
+	    type=$(echo ${name_temp} | cut -f1 -d:)
+	    hookname=$(echo ${name_temp} | cut -f2 -d:)
+
+	    if [ "${type}" == "prestart" ]; then
+		echo "${hookname}" >> ${out_dir}/.cube.hooks.prestart
+	    elif [ "${type}" == "poststop" ]; then
+		echo "${hookname}" >> ${out_dir}/.cube.hooks.poststop
+	    else
+		echo "ERROR: invalid hook type specified ${type}"
+		exit 1
+	    fi
+	else
+	    echo "ERROR: Invalid hook specified ${name_temp}"
 	    exit 1
 	fi
 	;;
@@ -394,7 +453,7 @@ case "${cmd}" in
 
 	    # save the mount information for the generation phase
 	    if [ "${device_type}" == "network" ]; then
-		echo "$essential_device:$container_device"  >> .cube.device.network
+		echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.network
 	    fi
 	else
 	    echo "ERROR: Invalid device specified ${name_temp}"
@@ -411,6 +470,17 @@ case "${cmd}" in
 	# value. They also assume you are in the directory where you want
 	# the configuration written.
 	case $var in
+	    app)
+		if [ ${cmd} = "set" ]; then
+		    echo "$value" > ${out_dir}/cube.app
+		elif [ ${cmd} = "get" ]; then
+		    if [ -e ${out_dir}/cube.app ]; then
+			cat ${out_dir}/cube.app
+		    else
+			echo ""
+		    fi
+		fi
+		;;
 	    cube.container.mgr)
 		if [ ${cmd} = "set" ]; then
 		    echo "$value" > ${out_dir}/cube.container.mgr
