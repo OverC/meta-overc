@@ -293,9 +293,13 @@ generate_base_config()
 	done
     fi
     if [ -z "${hooks}" ]; then
-	hooks="--prestart /usr/libexec/oci/hooks.d/netns \
-	       --prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
-	       --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+	# if no hooks have been passed, but the app is not /sbin/init
+	# we don't need the systemd hook, just go with the network one
+	if [ "${app}" = "/sbin/init" ]; then
+	    hooks="--prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
+	           --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+	fi
+	hooks="${hooks} --prestart /usr/libexec/oci/hooks.d/netns"
     fi
 
     ## TODO: if there's no oci-runtime-tool, then we should capture a
