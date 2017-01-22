@@ -13,6 +13,8 @@ inherit golang
 
 SYSROOT_PREPROCESS_FUNCS += "consul_migrate_sysroot_preprocess"
 
+export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
+
 consul_migrate_sysroot_preprocess () {
     install -d ${SYSROOT_DESTDIR}${prefix}/local/go/src/${PKG_NAME}
     cp -a ${D}${prefix}/local/go/src/${PKG_NAME} ${SYSROOT_DESTDIR}${prefix}/local/go/src/$(dirname ${PKG_NAME})

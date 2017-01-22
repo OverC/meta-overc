@@ -21,3 +21,5 @@ inherit golang
 INSANE_SKIP_${PN} = "ldflags"
 
 RDEPENDS_${PN} = "bash"
+
+export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"

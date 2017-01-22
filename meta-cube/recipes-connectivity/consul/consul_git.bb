@@ -53,6 +53,8 @@ INSANE_SKIP_${PN} += "ldflags"
 SYSTEMD_SERVICE_${PN} = "consul.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
+export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
+
 #Stops go from installing and testing the package
 do_configure(){
 }

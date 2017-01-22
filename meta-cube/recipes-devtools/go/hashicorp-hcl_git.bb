@@ -12,6 +12,8 @@ S = "${WORKDIR}/git"
 inherit golang
 
 do_compile() {
+    export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
+
     oe_runmake generate
 }
 
