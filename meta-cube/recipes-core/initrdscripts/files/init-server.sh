@@ -118,5 +118,18 @@ if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
     CMDLINE=""
 fi
 
-exec switch_root $ROOT_MOUNT $INIT $CMDLINE ||
+# !!! The Big Fat Warnings !!!
+#
+# The IMA policy may enforce appraising the executable and verifying the
+# signature stored in xattr. However, ramfs doesn't support xattr, and all
+# other initializations must *NOT* be placed after IMA initialization!
+[ -x /init.ima ] && /init.ima $ROOT_MOUNT && {
+    # switch_root is an exception. We call it in the real rootfs and it
+    # should be already signed properly.
+    switch_root="usr/sbin/switch_root.static"
+} || {
+    switch_root="switch_root"
+}
+
+exec $switch_root $ROOT_MOUNT $INIT $CMDLINE ||
     fatal "Couldn't switch_root, dropping to shell"
