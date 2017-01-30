@@ -362,9 +362,12 @@ convert_base_config_to_cube()
     rootfs=$(jq -r  '.root.path'  config.json)
     rootfs="/opt/container/${container_name}/${rootfs}"
 
-    pflask_args="${pflask_args}	--uncontain --root ${rootfs}"
+    pflask_args="${pflask_args}	-p ${container_name} --uncontain -d --escape-char=255 --root ${rootfs}"
 
     echo "#!/bin/bash" > pflask.cmd
+    if [ "${use_screen_getty}" = 1 ] ; then
+	echo "export CONSOLE_CMD=\"[ -d /tmp/screens ] && /usr/bin/screen -S console -x -X screen -t ${container_name} /bin/pflask -a %d -E 255\"" >> pflask.cmd
+    fi
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
     chmod +x pflask.cmd
 
@@ -379,6 +382,18 @@ case "${cmd}" in
 	name_temp=${cmd_options_non_dashed[1]}
 	container_name=$(echo ${name_temp} | cut -f1 -d:)
 	container_type=$(echo ${name_temp} | cut -f2 -d:)
+	container_options=$(echo ${name_temp} | cut -f3- -d:)
+	# Container Options Processing
+	use_screen_getty=0
+	itr=1
+	opt=$(echo ${name_temp} | cut -f${itr} -d:)
+	while [ "$opt" != "" ] ; do
+	    if [ "$opt" = "screen-getty" ] ; then
+		use_screen_getty=1
+	    fi
+	    let itr+=1
+	    opt=$(echo ${name_temp} | cut -f${itr} -d:)
+	done
 	if [ "${container_name}" == "${container_type}" ]; then
 	    container_type="oci"
 	fi

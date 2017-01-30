@@ -9,6 +9,10 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #  See the GNU General Public License for more details.
 
+if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
+    set -x
+fi
+
 usage()
 {
 cat << EOF
@@ -107,6 +111,9 @@ while [ $# -gt 0 ]; do
         --auto)
 	    auto=${2}
 	    shift
+	    ;;
+	-s)
+	    container_options=:screen-getty
 	    ;;
 	--nested)
 	    nested=t
@@ -563,7 +570,7 @@ case "${cmd}" in
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube:/var/lib/cube
-		${SBINDIR}/cube-cfg gen ${container_name}:cube
+		${SBINDIR}/cube-cfg gen ${container_name}:cube${container_options}
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
