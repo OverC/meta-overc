@@ -1,0 +1,27 @@
+From e8b87c62063ed99d8c4f55634760c31e37e324d1 Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Thu, 26 Jan 2017 10:52:06 -0800
+Subject: [PATCH 6/6] Fix segementation fault if TERM variable is not set
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/pflask.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/pflask.c b/src/pflask.c
+index 0fbd462..1ebdc27 100644
+--- a/src/pflask.c
++++ b/src/pflask.c
+@@ -301,7 +301,8 @@ int main(int argc, char *argv[]) {
+ 			setenv("PATH", "/usr/sbin:/usr/bin:/sbin:/bin", 1);
+ 			setenv("USER", args.user_arg, 1);
+ 			setenv("LOGNAME", args.user_arg, 1);
+-			setenv("TERM", term, 1);
++			if (term)
++				setenv("TERM", term, 1);
+ 		}
+ 
+ 		for (unsigned int i = 0; i < args.setenv_given; i++) {
+-- 
+2.11.0
+

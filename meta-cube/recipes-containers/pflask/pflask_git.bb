@@ -10,7 +10,12 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
            file://pflask.mk \
            file://0001-pflask-add-pivot_root-support.patch \
            file://0001-pty-add-retry-for-read-errors.patch \
-           file://0001-pflask-add-CLONE_UNCONTAIN-to-clone-flags.patch"
+           file://0001-pflask-add-CLONE_UNCONTAIN-to-clone-flags.patch \
+           file://0002-Add-escape-char-command-line-argument.patch \
+           file://0003-Allow-changing-of-the-machine-name-on-create.patch \
+           file://0004-Add-ability-to-launch-a-CONSOLE_CMD-after-the-server.patch \
+           file://0005-Allow-detached-mode-to-start-from-systemd.patch \
+           file://0006-Fix-segementation-fault-if-TERM-variable-is-not-set.patch"
 
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
 
