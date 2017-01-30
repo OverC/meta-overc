@@ -28,7 +28,7 @@ do_install_append(){
 	sed -i 's/lxc-net.service//g'  ${D}${systemd_unitdir}/system/lxc.service
 	sed -i 's/\(After=.*$\)/\1 openvswitch.service/' ${D}${systemd_unitdir}/system/lxc.service
 	sed -i '1,/ExecStartPre/ {/ExecStartPre/ i\
-ExecStartPre=/etc/lxc/lxc-overlayscan\nExecStartPre=/etc/lxc/lxc-overlayrestore
+ExecStartPre=sh -c "/etc/lxc/lxc-overlayscan"\nExecStartPre=sh -c "/etc/lxc/lxc-overlayrestore"
 }' ${D}${systemd_unitdir}/system/lxc.service
 
 	# disable the dmesg output on the console when booting the containers,
