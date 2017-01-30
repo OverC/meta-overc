@@ -1,0 +1,45 @@
+From 0e84378096e5b8fafc23ba1b3980b6c2d29205e1 Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Wed, 25 Jan 2017 19:19:27 -0800
+Subject: [PATCH 4/6] Add ability to launch a CONSOLE_CMD after the server_pty
+ is setup
+
+When operating in detached mode, the CONSOLE_CMD can be used to attach
+a terminal prior to launching the container.  This works nicely for
+the screen-getty functionality for sharing a serial port and allowing
+the real console to be connected to a multiplexer.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/pty.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/src/pty.c b/src/pty.c
+index a545946..a4ac143 100644
+--- a/src/pty.c
++++ b/src/pty.c
+@@ -286,6 +286,21 @@ void serve_pty(int fd) {
+ 	rc = listen(sock, 1);
+ 	sys_fail_if(rc < 0, "listen()");
+ 
++	char *console_cmd = getenv("CONSOLE_CMD");
++	if (console_cmd) {
++		if (strstr(console_cmd, "%d")) {
++			char *cmd;
++			if (asprintf(&cmd, console_cmd, getpid()) < 0) {
++				printf("OOM\n");
++				exit(1);
++			}
++			system(cmd);
++			free(cmd);
++		} else {
++			system(console_cmd);
++		}
++	}
++
+ 	sigemptyset(&mask);
+ 	sigaddset(&mask, SIGINT);
+ 	sigaddset(&mask, SIGTERM);
+-- 
+2.11.0
+

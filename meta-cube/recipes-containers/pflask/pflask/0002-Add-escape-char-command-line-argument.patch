@@ -1,0 +1,186 @@
+From 4a3859689e2fedd06f6d4514fc05e6116cc3149d Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Wed, 25 Jan 2017 13:24:56 -0800
+Subject: [PATCH 2/6] Add escape-char command line argument
+
+The escape character should be able to be changed and disabled in pflask.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/cmdline.c | 25 ++++++++++++++++++++++++-
+ src/cmdline.h |  4 ++++
+ src/pflask.c  |  4 ++--
+ src/pty.c     |  4 ++--
+ src/pty.h     |  2 +-
+ 5 files changed, 33 insertions(+), 6 deletions(-)
+
+diff --git a/src/cmdline.c b/src/cmdline.c
+index c83cc64..a50c574 100644
+--- a/src/cmdline.c
++++ b/src/cmdline.c
+@@ -58,6 +58,7 @@ const char *gengetopt_args_info_help[] = {
+   "  -H, --no-utsns         Disable UTS namespace support  (default=off)",
+   "  -P, --no-pidns         Disable PID namespace support  (default=off)",
+   "  -C, --uncontain        Grant the ability to see the parent namespace",
++  "  -E, --escape-char=INT  Set a different escape character (default=0)",
+     0
+ };
+ 
+@@ -100,6 +101,7 @@ void clear_given (struct gengetopt_args_info *args_info)
+   args_info->caps_given = 0 ;
+   args_info->detach_given = 0 ;
+   args_info->uncontain_given = 0 ;
++  args_info->escape_char_given = 0 ;
+   args_info->attach_given = 0 ;
+   args_info->setenv_given = 0 ;
+   args_info->keepenv_given = 0 ;
+@@ -138,6 +140,11 @@ void clear_args (struct gengetopt_args_info *args_info)
+   args_info->caps_orig = NULL;
+   args_info->detach_flag = 0;
+   args_info->uncontain_flag = 0;
++  args_info->escape_char_arg = '\0';
++  args_info->escape_char_orig = NULL;
++  args_info->attach_orig = NULL;
++  args_info->setenv_arg = NULL;
++  args_info->setenv_orig = NULL;
+   args_info->attach_orig = NULL;
+   args_info->setenv_arg = NULL;
+   args_info->setenv_orig = NULL;
+@@ -192,6 +199,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
+   args_info->no_utsns_help = gengetopt_args_info_help[21] ;
+   args_info->no_pidns_help = gengetopt_args_info_help[22] ;
+   args_info->uncontain_help = gengetopt_args_info_help[23] ;
++  args_info->escape_char_help = gengetopt_args_info_help[24] ;
+   
+ }
+ 
+@@ -400,6 +408,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
+     write_into_file(outfile, "detach", 0, 0 );
+   if (args_info->uncontain_given)
+     write_into_file(outfile, "uncontain", 0, 0 );
++  if (args_info->escape_char_given)
++    write_into_file(outfile, "escape-char", 0, 0 );
+   if (args_info->attach_given)
+     write_into_file(outfile, "attach", args_info->attach_orig, 0);
+   write_multiple_into_file(outfile, args_info->setenv_given, "setenv", args_info->setenv_orig, 0);
+@@ -972,6 +982,7 @@ cmdline_parser_internal (
+   int initialize;
+   int check_required;
+   int check_ambiguity;
++  int tmp;
+   
+   package_name = argv[0];
+   
+@@ -1019,10 +1030,11 @@ cmdline_parser_internal (
+         { "no-utsns",	0, NULL, 'H' },
+         { "no-pidns",	0, NULL, 'P' },
+         { "uncontain",	0, NULL, 'C' },
++        { "escape-char",	1, NULL, 'E' },
+         { 0,  0, 0, 0 }
+       };
+ 
+-      c = getopt_long (argc, argv, "hVr:Cc:t:m:n::u:e:wg:b:da:s:kUMNIHP", long_options, &option_index);
++      c = getopt_long (argc, argv, "hVr:Cc:t:m:n::u:E:e:wg:b:da:s:kUMNIHP", long_options, &option_index);
+ 
+       if (c == -1) break;	/* Exit from `while (1)' loop.  */
+ 
+@@ -1173,6 +1185,17 @@ cmdline_parser_internal (
+             goto failure;
+ 
+           break;
++        case 'E':	/* Change terminal escape character or disable with 255 */
++
++          if (update_arg( (void *)&tmp,
++               &(args_info->escape_char_orig), &(args_info->escape_char_given),
++              &(local_args_info.escape_char_given), optarg, 0, 0, ARG_INT,
++              check_ambiguity, override, 0, 0,
++              "escape-char", 'E',
++              additional_error))
++            goto failure;
++		  args_info->escape_char_arg = tmp;
++          break;
+         case 'a':	/* Attach to the specified detached process.  */
+         
+         
+diff --git a/src/cmdline.h b/src/cmdline.h
+index ea591f2..ae05f82 100644
+--- a/src/cmdline.h
++++ b/src/cmdline.h
+@@ -85,6 +85,9 @@ struct gengetopt_args_info
+   const char *detach_help; /**< @brief Detach from terminal help description.  */
+   int uncontain_flag;	/**< @brief Grant uncontain privs (default=off).  */
+   const char *uncontain_help; /**< @brief uncontain privs help description.  */
++  char escape_char_arg;	/**< @brief Set escape character for tty attach.  */
++  char * escape_char_orig;	/**< @brief Set escape character for tty attach original value given at command line.  */
++  const char *escape_char_help; /**< @brief Set escape character for tty attach help description.  */
+   int attach_arg;	/**< @brief Attach to the specified detached process.  */
+   char * attach_orig;	/**< @brief Attach to the specified detached process original value given at command line.  */
+   const char *attach_help; /**< @brief Attach to the specified detached process help description.  */
+@@ -123,6 +126,7 @@ struct gengetopt_args_info
+   unsigned int caps_given ;	/**< @brief Whether caps was given.  */
+   unsigned int detach_given ;	/**< @brief Whether detach was given.  */
+   unsigned int uncontain_given ;	/**< @brief Whether uncontain was given.  */
++  unsigned int escape_char_given ;	/**< @brief Whether escape-char was given.  */
+   unsigned int attach_given ;	/**< @brief Whether attach was given.  */
+   unsigned int setenv_given ;	/**< @brief Whether setenv was given.  */
+   unsigned int keepenv_given ;	/**< @brief Whether keepenv was given.  */
+diff --git a/src/pflask.c b/src/pflask.c
+index 0791d13..886d7dc 100644
+--- a/src/pflask.c
++++ b/src/pflask.c
+@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
+ 		master_fd = recv_pty(args.attach_arg);
+ 		fail_if(master_fd < 0, "Invalid PID '%u'", args.attach_arg);
+ 
+-		process_pty(master_fd);
++		process_pty(master_fd, args.escape_char_arg);
+ 		return 0;
+ 	}
+ 
+@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
+ 	if (args.detach_flag)
+ 		serve_pty(master_fd);
+ 	else
+-		process_pty(master_fd);
++		process_pty(master_fd, args.escape_char_arg);
+ 
+ 	kill(pid, SIGKILL);
+ 
+diff --git a/src/pty.c b/src/pty.c
+index 6e3a48a..a545946 100644
+--- a/src/pty.c
++++ b/src/pty.c
+@@ -100,7 +100,7 @@ void open_slave_pty(const char *master_name) {
+ 	sys_fail_if(rc < 0, "ioctl(TIOCWINSZ)");
+ }
+ 
+-void process_pty(int master_fd) {
++void process_pty(int master_fd, char escape_char) {
+ 	int rc;
+ 
+ 	int error_count = 0;
+@@ -180,7 +180,7 @@ void process_pty(int master_fd) {
+ 			sys_fail_if(rc < 0, "write()");
+ 
+ 			for (p = buf; p < buf + rc; p++) {
+-				if (*p == '\0')
++				if (*p == escape_char && escape_char != 255)
+ 					goto done;
+ 			}
+ 		}
+diff --git a/src/pty.h b/src/pty.h
+index e198ea4..4993670 100644
+--- a/src/pty.h
++++ b/src/pty.h
+@@ -31,7 +31,7 @@
+ void open_master_pty(int *master_fd, char **master_name);
+ void open_slave_pty(const char *master_name);
+ 
+-void process_pty(int master_fd);
++void process_pty(int master_fd, char escape_char);
+ 
+ void serve_pty(int fd);
+ int recv_pty(pid_t pid);
+-- 
+2.11.0
+
