@@ -8,6 +8,7 @@ SRC_URI = "git://${PKG_NAME}.git \
           "
 
 SRCREV = "99639186cd41eebd3f905935df586a9094a2bfa1"
+PV = "3.1+git${SRCPV}"
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 
