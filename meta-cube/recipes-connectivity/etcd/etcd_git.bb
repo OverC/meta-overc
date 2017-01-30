@@ -72,6 +72,7 @@ do_compile() {
 do_install() {
 	install -d ${D}/${bindir}
 	install ${S}/bin/etcd ${D}/${bindir}/etcd
+	install ${S}/bin/etcdctl ${D}/${bindir}/etcdctl
 
 	install -d ${D}/lib/systemd/system/
 	install -m 0644 ${S}/contrib/systemd/etcd.service ${D}/lib/systemd/system/
