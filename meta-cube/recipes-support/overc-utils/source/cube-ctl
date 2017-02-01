@@ -112,9 +112,6 @@ while [ $# -gt 0 ]; do
 	    auto=${2}
 	    shift
 	    ;;
-	-s)
-	    container_options=:screen-getty
-	    ;;
 	--nested)
 	    nested=t
 	    peer=
@@ -570,11 +567,12 @@ case "${cmd}" in
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube:/var/lib/cube
-		${SBINDIR}/cube-cfg gen ${container_name}:cube${container_options}
+		${SBINDIR}/cube-cfg gen ${container_name}:cube
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
 
+	    # TODO: replace with a call to cube-cfg
 	    if [ -n "${auto}" ]; then
 		echo "${auto}" > ${out_dir}/${container_name}/autostart
 	    fi
@@ -607,6 +605,7 @@ case "${cmd}" in
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
 
+	    # TODO: replace with a call to cube-cfg
 	    if [ -n "${auto}" ]; then
 		echo "${auto}" > ${out_dir}/${container_name}/autostart
 	    fi
