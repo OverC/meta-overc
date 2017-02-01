@@ -50,7 +50,7 @@ commands (and options):
 
     add a device to a container
 
-       <type>:       network
+       <type>:       network or console/tty
        <name>:<name> device name in essential : device name in container
 
  ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
@@ -59,6 +59,7 @@ commands (and options):
     valid settings are:
 
         cube.container.mgr     The manager for the container
+        cube.console.mgr       The console manager (if access is not direct)
         autostart              The autostart manager for the container
         app                    The application to start in the container
 
@@ -365,8 +366,14 @@ convert_base_config_to_cube()
     pflask_args="${pflask_args}	-p ${container_name} --uncontain -d --escape-char=255 --root ${rootfs}"
 
     echo "#!/bin/bash" > pflask.cmd
-    if [ "${use_screen_getty}" = 1 ] ; then
-	echo "export CONSOLE_CMD=\"[ -d /tmp/screens ] && /usr/bin/screen -S console -x -X screen -t ${container_name} /bin/pflask -a %d -E 255\"" >> pflask.cmd
+    if [ -e "cube.console.mgr" ]; then
+	grep -q "screen-tty" cube.console.mgr
+	if [ $? -eq 0 ]; then
+	    # The %d in the pflask command line is a sentinel value to trigger
+	    # pflask to attach to it's pid (through the console command). This
+	    # only works in background mode.
+	    echo "export CONSOLE_CMD=\"[ -d /tmp/screens ] && /usr/bin/screen -S console -x -X screen -t ${container_name} /bin/pflask -a %d -E 255\"" >> pflask.cmd
+	fi
     fi
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
     chmod +x pflask.cmd
@@ -382,18 +389,7 @@ case "${cmd}" in
 	name_temp=${cmd_options_non_dashed[1]}
 	container_name=$(echo ${name_temp} | cut -f1 -d:)
 	container_type=$(echo ${name_temp} | cut -f2 -d:)
-	container_options=$(echo ${name_temp} | cut -f3- -d:)
-	# Container Options Processing
-	use_screen_getty=0
-	itr=1
-	opt=$(echo ${name_temp} | cut -f${itr} -d:)
-	while [ "$opt" != "" ] ; do
-	    if [ "$opt" = "screen-getty" ] ; then
-		use_screen_getty=1
-	    fi
-	    let itr+=1
-	    opt=$(echo ${name_temp} | cut -f${itr} -d:)
-	done
+
 	if [ "${container_name}" == "${container_type}" ]; then
 	    container_type="oci"
 	fi
@@ -506,6 +502,17 @@ case "${cmd}" in
 		elif [ ${cmd} = "get" ]; then
 		    if [ -e ${out_dir}/cube.container.mgr ]; then
 			cat ${out_dir}/cube.container.mgr
+		    else
+			echo ""
+		    fi
+		fi
+		;;
+	    cube.console.mgr)
+		if [ ${cmd} = "set" ]; then
+		    echo "$value" > ${out_dir}/cube.console.mgr
+		elif [ ${cmd} = "get" ]; then
+		    if [ -e ${out_dir}/cube.console.mgr ]; then
+			cat ${out_dir}/cube.console.mgr
 		    else
 			echo ""
 		    fi
