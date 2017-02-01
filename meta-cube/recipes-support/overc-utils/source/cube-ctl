@@ -322,6 +322,7 @@ IFS="
 			fi
 			if [ "${ctype}" == "cube" ]; then
 			    cubes_running="${cubes_running} ${cname}"
+			    cubes_available=$(echo ${cubes_available} | sed "s/${cname}//")
 			fi
 			;;
 		esac
