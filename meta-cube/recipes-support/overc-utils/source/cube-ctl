@@ -579,9 +579,8 @@ case "${cmd}" in
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
 
-	    # TODO: replace with a call to cube-cfg
 	    if [ -n "${auto}" ]; then
-		echo "${auto}" > ${out_dir}/${container_name}/autostart
+		${SBINDIR}/cube-cfg -o ${out_dir}/${container_name} set autostart:${auto}
 	    fi
 	fi
 
@@ -612,9 +611,8 @@ case "${cmd}" in
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
 
-	    # TODO: replace with a call to cube-cfg
 	    if [ -n "${auto}" ]; then
-		echo "${auto}" > ${out_dir}/${container_name}/autostart
+		${SBINDIR}/cube-cfg -o ${out_dir}/${container_name} set autostart:${auto}
 	    fi
 	fi
 
