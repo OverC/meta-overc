@@ -700,6 +700,8 @@ case "${cmd}" in
 			    if [ $? -ne 0 ]; then
 				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} create --bundle /opt/container/${container} --console=/dev/ptmx ${container}
 				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} start ${container}
+
+				cube-cfg set overc/containers/${container}/status:active
 			    else
 				echo "container ${container} is already running ..."
 			    fi
@@ -814,6 +816,7 @@ IFS=$OLDIFS
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
 	    cube-cmd ${runc_essential} kill ${container_name} KILL
+	    cube-cfg set overc/containers/${container_name}/status:inactive
 	fi
 	;;
     exec)
