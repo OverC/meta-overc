@@ -86,6 +86,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
             ;;
+	--dryrun)
+	    dryrun=t
+	    vebose=t
+	    ;;
 	--clean)
 	    clean=t
 	    ;;
@@ -381,6 +385,53 @@ convert_base_config_to_cube()
     echo "pflask" > cube.container.mgr
 }
 
+fetch_from_etcd()
+{
+    local key=$1
+
+    local key_dir=$(dirname ${key})
+    local key_name=$(basename ${key})
+    local etcdctl=etcdctl
+
+    if [ -n "${dryrun}" ]; then
+	etcdctl="echo etcdctl"
+    fi
+
+    if [ -n "${verbose}" ]; then
+	echo "[INFO]: fetching ${key}"
+    fi
+
+    eval ${etcdctl} get ${key_dir}/${key_name}
+    if [ $? -ne 0 ]; then
+	echo "ERROR: Could not inject ${key} to etcd data store"
+	return
+    fi
+}
+
+inject_to_etcd()
+{
+    local key=$1
+    local value=$2
+
+    local key_dir=$(dirname ${key})
+    local key_name=$(basename ${key})
+    local etcdctl=etcdctl
+
+    if [ -n "${dryrun}" ]; then
+	etcdctl="echo etcdctl"
+    fi
+
+    if [ -n "${verbose}" ]; then
+	echo "[INFO]: injecting ${key}:${value}"
+    fi
+
+    eval ${etcdctl} set ${key_dir}/${key_name} ${value} > /dev/null
+    if [ $? -ne 0 ]; then
+	echo "ERROR: Could not inject ${key} to etcd data store"
+	return
+    fi
+}
+
 case "${cmd}" in
     clean)
 	clean_config_artifacts
@@ -527,6 +578,16 @@ case "${cmd}" in
 		    else
 			echo ""
 		    fi
+		fi
+		;;
+	    */*)
+		# if there's a / in the variable, it is destined for a data
+		# store. Note: this could also be a flag to the call, i.e. --etcd
+		# but lets go with this for now
+		if [ ${cmd} = "set" ]; then
+		    inject_to_etcd ${var} ${value}
+		else
+		    fetch_from_etcd ${var}
 		fi
 		;;
 	esac
