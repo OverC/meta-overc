@@ -568,6 +568,12 @@ case "${cmd}" in
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube:/var/lib/cube
+		# cubes are priviledged. By default pflask will mount
+		# /proc/sys as read-only. This means that things (like
+		# docker) that need to modify sys parameters will fail. By
+		# adding and extra mount of essential's /proc/sys to the
+		# container /proc/sys, we'll end up with a r/w /proc/sys.
+		${SBINDIR}/cube-cfg mount bind:/proc/sys:/proc/sys
 		${SBINDIR}/cube-cfg gen ${container_name}:cube
 	    )
 
