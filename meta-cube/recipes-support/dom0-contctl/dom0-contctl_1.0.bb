@@ -57,22 +57,22 @@ do_install() {
         install -m 0755 ${WORKDIR}/${i} ${dom0_contctl_dir}
     done
 
-    install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}/lib/systemd/system/
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}${systemd_system_unitdir}
 
     install -d ${D}/${sysconfdir}
-    install -m 0744 ${WORKDIR}/dom0-contctl.conf ${D}/${sysconfdir}
+    install -m 0744 ${WORKDIR}/dom0-contctl.conf ${D}/${sysconfdir}/
 
     if ${@bb.utils.contains("MACHINE", "xilinx-zynq", "true", "false", d)} ; then
-        if [ -e ${D}/lib/systemd/system/dom0-contctl.service ]; then
-            sed -i 's/^StandardOutput=.*$/StandardOutput=tty/' ${D}/lib/systemd/system/dom0-contctl.service
-            sed -i 's/^StandardError=.*$/StandardError=tty/' ${D}/lib/systemd/system/dom0-contctl.service
-            sed -i '/^StandardError=/a TTYPath=/dev/ttyPS0' ${D}/lib/systemd/system/dom0-contctl.service
+        if [ -e ${D}${systemd_system_unitdir}/dom0-contctl.service ]; then
+            sed -i 's/^StandardOutput=.*$/StandardOutput=tty/' ${D}${systemd_system_unitdir}/dom0-contctl.service
+            sed -i 's/^StandardError=.*$/StandardError=tty/' ${D}${systemd_system_unitdir}/dom0-contctl.service
+            sed -i '/^StandardError=/a TTYPath=/dev/ttyPS0' ${D}${systemd_system_unitdir}/dom0-contctl.service
         fi
     fi
 }
 
 FILES_${PN} += "/opt \
-                /lib/systemd/system \
+		${systemd_system_unitdir} \
                 ${sysconfdir} \
 "
