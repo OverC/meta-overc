@@ -67,16 +67,16 @@ read_only_essential () {
         rm ${IMAGE_ROOTFS}/etc/system-id -f
     fi
     ln -s ../run/systemd/resolve/system-id ${IMAGE_ROOTFS}/etc/system-id
-    if [ -e ${IMAGE_ROOTFS}/lib/systemd/system/cube-cmd-server.service ]; then
-	sed -i '/^\[Service\]/a\\ExecStartPre=/bin/sh -c "mkdir -p  /opt/container/dom0 /opt/container/cube-desktop /opt/container/all /opt/container/local"' ${IMAGE_ROOTFS}/lib/systemd/system/cube-cmd-server.service
+    if [ -e ${IMAGE_ROOTFS}${systemd_system_unitdir}/cube-cmd-server.service ]; then
+	sed -i '/^\[Service\]/a\\ExecStartPre=/bin/sh -c "mkdir -p  /opt/container/dom0 /opt/container/cube-desktop /opt/container/all /opt/container/local"' ${IMAGE_ROOTFS}${systemd_system_unitdir}/cube-cmd-server.service
     fi
-    if [ -e ${IMAGE_ROOTFS}/lib/systemd/system/overc-conftools.service ]; then
-	sed -i '/ExecStart/d' ${IMAGE_ROOTFS}/lib/systemd/system/overc-conftools.service
+    if [ -e ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service ]; then
+	sed -i '/ExecStart/d' ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service
 	sed -i '/^\[Service\]/a\\ \
 ExecStartPre=/bin/sh -c "cp /etc/hosts0 /run/systemd/resolve/hosts" \
 ExecStartPre=/bin/sh -c "cp /etc/dnsmasq.conf0 /run/systemd/resolve/dnsmasq.conf" \
 ExecStart=/bin/sh -c "/usr/bin/ansible-playbook /etc/overc-conf/ansible/overc.yml" \
-' ${IMAGE_ROOTFS}/lib/systemd/system/overc-conftools.service
+' ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service
     fi
     if [ -e ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network ]; then
 	rm -f ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network
