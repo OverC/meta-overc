@@ -12,12 +12,12 @@ S = "${WORKDIR}/git"
 
 do_install() {
 	mkdir -p ${D}/opt/${BPN}/
-	mkdir -p ${D}/lib/systemd/system/
+	mkdir -p ${D}${systemd_system_unitdir}/
 	install -m755 ${S}/sbin/overc-cctl ${D}/opt/${BPN}/
-	install -m 0755 ${S}/files/overc_cleanup.service ${D}/lib/systemd/system/
+	install -m 0755 ${S}/files/overc_cleanup.service ${D}${systemd_system_unitdir}/
 }
 
 FILES_${PN} += "/opt/${BPN} \
-		/lib/systemd/system \
+		${systemd_system_unitdir} \
 	    "
 RDEPENDS_${PN} += "bash"
