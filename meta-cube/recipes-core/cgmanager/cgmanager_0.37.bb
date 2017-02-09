@@ -19,11 +19,11 @@ DEPENDS += "libnih libnih-native"
 # The test scripts need some extra facilities
 RDEPENDS_${PN} += "libnih bash sudo util-linux"
 
-EXTRA_OECONF += "--sbindir=/sbin --with-distro=${DISTRO} --with-init-script=\
+EXTRA_OECONF += "--sbindir=${base_sbindir} --with-distro=${DISTRO} --with-init-script=\
 ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit,', '', d)}\
 ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"
 
-FILES_${PN} += "/usr/lib/systemd/system/*"
+FILES_${PN} += "${systemd_system_unitdir}/*"
 
 do_install_prepend() {
     # Copy assorted scripts and other control files into the build directory
