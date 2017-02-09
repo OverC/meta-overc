@@ -20,8 +20,8 @@ SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 PACKAGES += "${PN}-dom0-conf ${PN}-host-conf ${PN}-functions"
 
 do_install_append() {
-    install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/cube-cmd-server.service ${D}/lib/systemd/system/
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/cube-cmd-server.service ${D}${systemd_system_unitdir}
 
     install -d ${D}${base_sbindir}
     install -m 0755 ${WORKDIR}/cube-cmd-server ${D}${base_sbindir}
@@ -35,7 +35,7 @@ do_install_append() {
 
 FILES_${PN} = "${base_sbindir}/cube-cmd-server \
 	       ${base_sbindir}/cube-cmd-handler \
-	       lib/systemd/system/cube-cmd-server.service"
+	       ${systemd_system_unitdir}/cube-cmd-server.service"
 
 FILES_${PN}-dom0-conf = "${sysconfdir}/cube-cmd-server.conf-dom0"
 FILES_${PN}-host-conf = "${sysconfdir}/cube-cmd-server.conf-host"
