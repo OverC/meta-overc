@@ -15,8 +15,8 @@ SYSTEMD_SERVICE_${PN} = "container-shutdown-notifier.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 do_install() {
-    install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/container-shutdown-notifier.service ${D}/lib/systemd/system/
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/container-shutdown-notifier.service ${D}/${systemd_system_unitdir}
 
     install -d ${D}${base_sbindir}
     install -m 0744 ${WORKDIR}/container-shutdown-notifier ${D}${base_sbindir}
