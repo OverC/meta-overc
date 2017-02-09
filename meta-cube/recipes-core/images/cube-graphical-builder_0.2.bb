@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 CUBE_BUILDER_EXTRA_INSTALL ?= ""
+CUBE_BUILDER_EXTRA_UNINSTALL ?= ""
 
 # fixme: core-boot has a hard dep on boogerbox
 IMAGE_INSTALL += "packagegroup-core-boot \
@@ -18,6 +19,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  packagegroup-graphical-builder \
 		  ${CUBE_BUILDER_EXTRA_INSTALL} \
 		 "
+IMAGE_INSTALL_remove += "${CUBE_BUILDER_EXTRA_UNINSTALL}"
 
 XSERVER_append = " xserver-xorg \
            xserver-xorg-extension-dri \

@@ -11,7 +11,7 @@ PACKAGE_EXCLUDE = "busybox* "
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 CUBE_DOM_1_EXTRA_INSTALL ?= ""
-
+CUBE_DOM_1_EXTRA_UNINSTALL ?= ""
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-util-linux \
@@ -21,6 +21,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-dom1 \
                   ${CUBE_DOM_1_EXTRA_INSTALL} \
                  "
+IMAGE_INSTALL_remove += "${CUBE_DOM_1_EXTRA_UNINSTALL}"
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 

@@ -18,6 +18,7 @@ PACKAGE_EXCLUDE = "busybox*"
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 CUBE_DESKTOP_EXTRA_INSTALL ?= ""
+CUBE_DESKTOP_EXTRA_UNINSTALL ?= ""
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-dom0 \
@@ -34,6 +35,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         ntp-utils \
                         ${CUBE_DESKTOP_EXTRA_INSTALL} \
                        "
+IMAGE_INSTALL_remove += "${CUBE_DESKTOP_EXTRA_UNINSTALL}"
 
 XSERVER_append = "xserver-xorg \
                   xserver-xorg-extension-dri \
