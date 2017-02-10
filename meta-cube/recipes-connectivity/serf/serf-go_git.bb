@@ -3,7 +3,7 @@ HOMEPAGE = "https://github.com/hashicorp/serf"
 LICENSE = "MPL-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=b278a92d2c1509760384428817710378"
 
-DEPENDS += "go-cross \
+DEPENDS += "go-cross-${TARGET_ARCH} \
     cli \
     logutils \
     columnize \

@@ -1,4 +1,4 @@
-DEPENDS += "go-cross"
+DEPENDS += "go-cross-${TARGET_ARCH}"
 
 S = "${WORKDIR}/git"
 
