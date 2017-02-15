@@ -33,6 +33,7 @@ RDEPENDS_packagegroup-oci = " \
     runc \
     oci-systemd-hook \
     oci-runtime-tools \
+    oci-image-tools \
     netns \
     riddler \
 "

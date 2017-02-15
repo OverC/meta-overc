@@ -11,6 +11,7 @@ PACKAGES = "\
 
 RDEPENDS_packagegroup-service-discovery = "\
     etcd  \
+    skopeo \
 "
 
 RDEPENDS_packagegroup-service-discovery-and-configuration = "\
