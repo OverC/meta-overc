@@ -35,7 +35,7 @@ commands (and options):
 
        <name>: name of the container to be stopped
 
- ${0##*/} add [-n <name>] [-u <subuid>] <source tar.bz2>
+ ${0##*/} add [-n <name>] [-u <subuid>] <source>
 
     add a container to the platform. Once added, the container is monitored, but
     not started. Use "cube-ctl start" to launch a container after adding it.
@@ -55,7 +55,7 @@ commands (and options):
 
        --auto=<name>: auto start the container, tag with <name>
 
-       <source>: path to the container source (tar.bz2)
+       <source>: path to the container source. Either a directory or a tar.gz
 
  ${0##*/} del [-F] <name>
 
@@ -485,6 +485,11 @@ case "${cmd}" in
 	# the first non dashed argument will be the container source
 	container_source=${cmd_options_non_dashed[1]}
 
+	if [ -z "${container_source}" ]; then
+	    echo "[ERROR]: no container source provided"
+	    exit 1
+	fi
+
 	for o in ${dashed}; do
 	    case ${o} in
 		-n*)
@@ -534,11 +539,27 @@ case "${cmd}" in
 	echo "[INFO] Installing container ${container_name} to ${out_dir}"
 	echo "[INFO] Extracting rootfs....."
 	mkdir -p "${out_dir}/${container_name}/rootfs"
-	tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
-	if [ $? != 0 ]; then
-		echo "[ERROR]: rootfs file extraction failed"
-		exit 1
-	fi
+	case ${container_source} in
+	    *.tar)
+		tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
+		if [ $? != 0 ]; then
+		    echo "[ERROR]: rootfs file extraction failed"
+		    exit 1
+		fi
+		;;
+	    *.tar.gz)
+		;;
+	    *)
+		if [ -d ${container_source} ]; then
+		    # could be further refined to pick up a config.json and do an
+		    # oci maniplation, but for now, we just cp -ar
+		    cp -ar ${container_source}/* ${out_dir}/${container_name}/rootfs
+		else
+		    echo "[ERROR]: unknown container source"
+		    exit 1
+		fi
+		;;
+	esac
 	echo "[INFO] Succeeded"
 
 	if [ -n "${subuid}" ]; then
