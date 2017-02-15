@@ -841,7 +841,7 @@ IFS=$OLDIFS
 	fi
 	;;
     exec)
-	if [ -n "${we_are_a_container}" ]; then
+	if [ -z "${we_are_a_container}" ]; then
 	    echo "ERROR: host detected, cube-ctl only works in a monitored container."
 	    echo "       Commands must be directly invoked in essential, control functions"
 	    echo "       via the control domain."
@@ -868,10 +868,13 @@ IFS=$OLDIFS
 
 	    cube-cmd cmd ${cmd_to_exec[@]}
 	else
-	    mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
+	    mgr=$(cube-cfg -o /opt/container/${container_name}/ get cube.container.mgr)
 	    echo ${mgr} | grep -q runc
 	    if [ $? -eq 0 ]; then
-		cmd="${mgr} exec -- ${target} ${cmd_to_exec[@]}"
+		cmd="cube-cmd ${mgr} exec -- ${container_name} ${cmd_to_exec}"
+	    else
+		echo "[ERROR]: no container manager identified, not executing command"
+		exit 1
 	    fi
 
 	    if [ -n "${verbose}" ]; then
