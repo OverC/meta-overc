@@ -3,7 +3,7 @@ SUMMARY = "Work with remote images registries - retrieving information, images, 
 LICENSE = "Apache"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7e611105d3e369954840a6668c438584"
 
-DEPENDS = "go-cross \
+DEPENDS = "go-cross-${TARGET_ARCH} \
            go-urfave \
            containers-image \
            go-digest \
