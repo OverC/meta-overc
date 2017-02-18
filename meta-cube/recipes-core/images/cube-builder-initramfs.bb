@@ -7,7 +7,7 @@ CUBE_BUILDER_INITRAMFS_EXTRA_INSTALL ?= ""
 
 # Archived variant for running a full installer from the initramfs
 # PACKAGE_INSTALL = "initramfs-cube-builder bash kmod bzip2 vim which sed tar kbd coreutils util-linux grep gawk udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL}"
-PACKAGE_INSTALL = "initramfs-cube-builder bash kmod bzip2 sed tar kbd coreutils util-linux grep gawk udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL}"
+PACKAGE_INSTALL = "initramfs-cube-builder bash kmod bzip2 sed tar kbd coreutils util-linux grep gawk udev mdadm base-passwd ${ROOTFS_BOOTSTRAP_INSTALL} ${IMAGE_INSTALL}"
 PACKAGE_EXCLUDE = "busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog"
 
 IMAGE_INSTALL += " \
