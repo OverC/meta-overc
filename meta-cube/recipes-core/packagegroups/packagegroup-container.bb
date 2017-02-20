@@ -30,7 +30,7 @@ RDEPENDS_packagegroup-docker = " \
     libvirt-python \
 "
 RDEPENDS_packagegroup-oci = " \
-    runc \
+    virtual/runc \
     oci-systemd-hook \
     oci-runtime-tools \
     oci-image-tools \
