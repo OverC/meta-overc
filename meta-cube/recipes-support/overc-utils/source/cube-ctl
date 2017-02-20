@@ -121,18 +121,18 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	-u)
-		# This is an unprivileged container. We need to config subuid/subgid.
-		if [ "${2}" -eq "${2}" ] 2>/dev/null; then
-			if [ "${2}" -lt 100000 ] 2>/dev/null; then
-				echo "Error: -u requires a subuid number no less than 100000"
-				exit 1
-			fi
-			subuid="${2}"
-			shift
-		else
-			subuid="${DEFAULT_SUBUID}"
+	    # This is an unprivileged container. We need to config subuid/subgid.
+	    if [ "${2}" -eq "${2}" ] 2>/dev/null; then
+		if [ "${2}" -lt 100000 ] 2>/dev/null; then
+		    echo "Error: -u requires a subuid number no less than 100000"
+		    exit 1
 		fi
-		;;
+		subuid="${2}"
+		shift
+	    else
+		subuid="${DEFAULT_SUBUID}"
+	    fi
+	    ;;
 	-F)
 	    force=-F
 	    ;;
@@ -168,6 +168,9 @@ while [ $# -gt 0 ]; do
 		    ;;
 	    esac
 	    ;;
+	*://*)
+	    non_dashed="${non_dashed} $1"
+	    ;;
 	*:*)
 	    # once we see something of the format <foo>:<var>, we are done processing,
 	    # since all other options are for the embedded command
@@ -182,7 +185,6 @@ while [ $# -gt 0 ]; do
 done
 
 container_dir="/opt/container"
-dom0ctl="/opt/dom0-contctl/dom0_contctl"
 overc_cctl="/opt/overc-installer/overc-cctl"
 
 # returns 1 if we are container, 0 otherwise
@@ -352,7 +354,7 @@ check_is_known_container()
 	if [ $? -eq 0 ]; then
 	    container_is_a_cube=t
 	fi
-	echo ${open_containers} | grep -q ${container_name}
+	echo ${open_containers} ${open_container_available} | grep -q ${container_name}
 	if [ $? -eq 0 ]; then
 	    container_is_a_oci=t
 	fi
@@ -477,6 +479,13 @@ EOF
 	fi
 }
 
+#
+# Command processing
+#
+# This is getting a bit large, and could be broken out into separate commands
+# at some point, but for now, we leverage a common code base and set of 
+# utility routines.
+#
 case "${cmd}" in
     add)
 	if [ -z "${container_type}" ]; then
@@ -498,10 +507,34 @@ case "${cmd}" in
 		*)
 		    echo "Unknow parameter ..."
 		    usage
-		    exit
+		    exit 1
 		    ;;
 	    esac
 	done
+
+	# test to see if the container_source is a url!
+
+	# extract the protocol
+	proto="$(echo ${container_source} | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+	# remove the protocol
+	url="$(echo ${container_source/$proto/})"
+	# extract the user (if any)
+	user="$(echo $url | grep @ | cut -d@ -f1)"
+	# extract the host
+	host="$(echo ${url/$user@/} | cut -d/ -f1)"
+	# by request - try to extract the port
+	port="$(echo $host | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+	# extract the path (if any)
+	path="$(echo $url | grep / | cut -d/ -f2-)"
+
+	if [ -n "${verbose}" ]; then
+	    echo "url: $url"
+	    echo "  proto: $proto"
+	    echo "  user: $user"
+	    echo "  host: $host"
+	    echo "  port: $port"
+	    echo "  path: $path"
+	fi
 
 	# if no name was provided, we just generate one from the source
 	if [ -z "${container_name}" ]; then
@@ -509,6 +542,16 @@ case "${cmd}" in
 	    extension="${filename##*.}"
 	    filename="${filename%%.*}"
 	    container_name="`cubename ${filename}`"
+	fi
+
+	if [ -z "${container_name}" ]; then
+	    # try and see if the container_source was a url, and if so, the host
+	    # name can be the container name
+	    container_name=${host}
+	    if [ -z "${container_name}" ]; then
+		echo "[ERROR]: ${container_source} is not a valid container source location"
+		exit 1
+	    fi
 	fi
 
 	if check_is_known_container ${container_name}; then
@@ -536,24 +579,60 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	echo "[INFO] Installing container ${container_name} to ${out_dir}"
-	echo "[INFO] Extracting rootfs....."
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
-	    *.tar)
+	    *.tar*)
+		echo "[INFO] Installing container ${container_name} to ${out_dir}"
+		echo "[INFO] Extracting rootfs....."
 		tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
 		if [ $? != 0 ]; then
 		    echo "[ERROR]: rootfs file extraction failed"
 		    exit 1
 		fi
 		;;
-	    *.tar.gz)
+	    docker://*)
+		# make an oci format copy from the registry
+		skopeo copy ${container_source} oci:${out_dir}/${container_name}/docker 2> /dev/null
+		if [ $? -ne 0 ]; then
+		    echo "[ERROR]: docker container ${container_source} not found, check input and try again"
+		    exit 1
+		fi
+	
+		# TODO: allow the variation of the ref tag
+		oci-create-runtime-bundle --ref latest ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
+		if [ $? -ne 0 ]; then
+		    echo "[ERROR]: error OCI runtime could not be created from ${container_source}"
+		    exit 1
+		fi
+
+		if [ -f "${out_dir}/${container_name}/oci-runtime/config.json" ]; then
+		    entry_point=$(jq -r '.process.args | .[]' ${out_dir}/${container_name}/oci-runtime/config.json)
+		fi
+
+		# recursive call!! This may mean we need an import tool front end, instead of doing this here
+		cube-ctl add -n ${container_name} ${out_dir}/${container_name}/oci-runtime
+
+		if [ -n "${entry_point}" ]; then
+		    cube-cfg -n ${container_name} set app:${entry_point}
+		    cube-cfg gen ${container_name}:oci
+		fi
+
+		rm -rf ${out_dir}/${container_name}/docker
+		rm -rf ${out_dir}/${container_name}/oci-runtime
+
+		exit 0
 		;;
 	    *)
 		if [ -d ${container_source} ]; then
+		    echo "[INFO] Adding ${container_source} to ${container_name}"
+
 		    # could be further refined to pick up a config.json and do an
 		    # oci maniplation, but for now, we just cp -ar
-		    cp -ar ${container_source}/* ${out_dir}/${container_name}/rootfs
+		    if [ -d ${container_source}/rootfs ]; then
+			cp -ar ${container_source}/rootfs ${out_dir}/${container_name}
+		    else
+			cp -ar ${container_source}/* ${out_dir}/${container_name}/rootfs
+		    fi
 		else
 		    echo "[ERROR]: unknown container source"
 		    exit 1
@@ -612,6 +691,12 @@ case "${cmd}" in
 		cd ${out_dir}/${container_name}
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/all:/var/lib/cube/common
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
+
+		${SBINDIR}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
+		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+
 		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
 		# update the container manager
@@ -665,10 +750,14 @@ case "${cmd}" in
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
+	if [ -z "${out_dir}" ]; then
+	    out_dir="${container_dir}/"
+	fi
+
 	if ! check_is_known_container ${container_name}; then
 	    echo "[ERROR] Container ${container_name} not found, cannot delete."
 	    echo -n "Valid containers are: "
-	    echo ${cubes} ${open_containers}
+	    echo ${cubes} ${open_containers} ${open_container_available}
 	    exit 1
 	fi
 	echo "[INFO] deleting container ${container_name}"
@@ -678,7 +767,13 @@ case "${cmd}" in
 	    true
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
-	    cube-cmd ${runc_essential} delete ${container_name}
+	    # TODO: the container state needs to be tracked better, and only
+	    #       do this if it is running
+	    cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
+	    if [ -d "${out_dir}/${container_name}" ]; then
+		echo "[INFO] removing container source .."
+		rm -rf "${out_dir}/${container_name}"
+	    fi
 	fi
 	;;
     start)
@@ -812,7 +907,7 @@ IFS=$OLDIFS
 	    fi
 	fi
 	;;
-    stop)
+    stop|pause)
 	graft_binaries_to_essential runc
 	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
 	    runc_essential="/var/lib/cube/essential/sbin/runc"
@@ -837,6 +932,9 @@ IFS=$OLDIFS
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
 	    cube-cmd ${runc_essential} kill ${container_name} KILL
+	    if [ "${cmd}" == "stop" ]; then
+		cube-cmd ${runc_essential} delete ${container_name}
+	    fi
 	    cube-cfg set overc/containers/${container_name}/status:inactive
 	fi
 	;;

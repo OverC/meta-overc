@@ -32,6 +32,7 @@ SRC_URI = " \
     file://source/ansible/post.yml \
     file://source/ansible/setup_offset.yml \
     file://source/essential_rw.sh \
+    file://source/oci-network \
 "
 
 S = "${WORKDIR}"
@@ -65,6 +66,9 @@ do_install() {
 
     install -d ${D}/${sysconfdir}/profile.d/
     install -m 0644 ${WORKDIR}/source/essential_rw.sh ${D}/${sysconfdir}/profile.d/
+
+    install -d ${D}/${libexecdir}/oci/hooks.d/
+    install -m 755 ${WORKDIR}/source/oci-network ${D}/${libexecdir}/oci/hooks.d/
 }
 
 RDEPENDS_${PN} += " \
@@ -81,3 +85,4 @@ SYSTEMD_SERVICE_${PN} = "overc-conftools.service"
 FILES_${PN} +=  " \
     ${base_libdir}/systemd \
 "
+FILES_${PN} += "${libexecdir}/oci/hooks.d/"

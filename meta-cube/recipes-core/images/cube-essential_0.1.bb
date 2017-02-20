@@ -29,6 +29,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  pflask \
 		  oci-systemd-hook \
 		  netns \
+                  jq \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
 
