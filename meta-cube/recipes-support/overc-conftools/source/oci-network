@@ -1,0 +1,37 @@
+#/bin/bash
+
+# we ge an action + startup json
+action=$1
+shift
+
+# yank what we need out of the json
+pid=$(echo "$@" | jq .pid)
+veth_name=$(eval echo veth${pid})
+
+if [ "${action}" = "up" ]; then
+    echo "${pid}" > .cube.pid
+    echo "${veth_name}" > .cube.veth
+
+    ip link add dev ${veth_name} type veth peer name br-int-veth1
+    
+    ovs-vsctl add-port br-int ${veth_name}
+    ip link set br-int-veth1 netns ${pid}
+
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
+    # TODO: the ip must be dhcp .. how to do this ? run dhclient ?
+    nsenter -t ${pid} -n --preserve-credentials ip addr add 192.168.42.101/24 dev br-int-veth1
+    # TODO: the mac address needs to vary. We could clone, or generate a new one
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev br-int-veth1 up address 00:00:6c:00:00:00
+    # TODO: the gateway may need to vary. We could look this up on the host
+    nsenter -t ${pid} -n --preserve-credentials ip route add default via 192.168.42.1
+
+    ip link set dev ${veth_name} up
+fi
+
+if [ "${action}" = "down" ]; then
+    path=$(echo "$@" | jq .bundlePath | sed 's%"%%g')
+    veth_name_down=$(cat ${path}/.cube.veth)
+
+    ovs-vsctl del-port br-int ${veth_name_down}
+    ip link del dev ${veth_name_down}
+fi
