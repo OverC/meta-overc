@@ -87,7 +87,7 @@ mkdir -p $ROOT_MOUNT/
 sleep ${ROOT_DELAY}
 
 try_to_mount_rootfs() {
-    local mount_flags="rw,noatime"
+    local mount_flags="rw,noatime,iversion"
 
     mount -o $mount_flags "${ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
 
