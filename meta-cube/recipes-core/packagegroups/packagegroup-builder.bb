@@ -9,6 +9,9 @@ DESCRIPTION = "Packages required to run the build system w/o gfx"
 PR = "r1"
 LICENSE = "MIT"
 
+# grr - packagegroup is special and wants to be allarch, which
+# doesn't work so well if we want to filter grub for x86 etc.
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
 inherit packagegroup
 
 PACKAGES = "\
@@ -105,6 +108,10 @@ RDEPENDS_packagegroup-builder-debug = " \
     tcf-agent"
 
 
+RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
+RDEPENDS_packagegroup-builder-extended_ARCH_i586 += " grub"
+RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 += " grub"
+
 RDEPENDS_packagegroup-builder-extended = "\
     bash-completion \
     bzip2 \
@@ -122,7 +129,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     gettext-runtime \
     grep \
     groff \
-    grub \
     gzip \
     ifupdown \
     inetutils \
@@ -188,6 +194,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     zlib \
     xterm \
     xz \
+    ${RDEPENDS_packagegroup-builder-extended_ARCH} \
     "
 
 RDEPENDS_packagegroup-builder-networking = "\

@@ -8,7 +8,9 @@ SUMMARY = "Domain 0 facilities for OverC"
 DESCRIPTION = "Packages required to define domain 0 cube for OverC"
 LICENSE = "MIT"
 
-
+# grr - packagegroup is special and wants to be allarch, which
+# doesn't work so well if we want to filter grub for x86 etc.
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
 inherit packagegroup
 
 require overc-common-pkgdefs.inc

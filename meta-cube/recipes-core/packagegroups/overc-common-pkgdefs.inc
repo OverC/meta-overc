@@ -11,6 +11,10 @@ OVERC_COMMON_DISK = " \
      parted \
     "
 
+OVERC_COMMON_EXTENDED_ARCH ?= ""
+OVERC_COMMON_EXTENDED_ARCH_i586 += " grub"
+OVERC_COMMON_EXTENDED_ARCH_x86-64 += " grub"
+
 OVERC_COMMON_EXTENDED = " \
      bash-completion \
      cpio \
@@ -21,7 +25,6 @@ OVERC_COMMON_EXTENDED = " \
      findutils \
      grep \
      groff \
-     grub \
      gzip \
      iso-codes \
      kernel-modules \
@@ -44,6 +47,7 @@ OVERC_COMMON_EXTENDED = " \
      coreutils \
      e2fsprogs \
      kbd \
+     ${OVERC_COMMON_EXTENDED_ARCH} \
     "
 
 OVERC_EXTRA_EXTENDED = "\
