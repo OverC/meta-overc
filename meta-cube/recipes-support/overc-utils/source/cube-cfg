@@ -62,13 +62,26 @@ cat << EOF
 
     valid settings are:
 
-        cube.container.mgr     The manager for the container
-        cube.console.mgr       The console manager (if access is not direct)
-        autostart              The autostart manager for the container
-        app                    The application to start in the container
-
 EOF
+
+for K in "${!CONFIG_MAP[@]}"; do
+    help_text=$(echo "${CONFIG_MAP[$K]}" | cut -f2 -d\;)
+    printf "       %-25s %s\n" "$K" "${help_text}"
+done
+echo ""
 }
+
+declare -A CONFIG_MAP
+
+# The key is the variable value on the command line, followed by the
+# variable to set in the database semi-colon help text
+#
+#  <var> <db var>; <help text>
+#
+CONFIG_MAP[app]="cube.app;The application to start in the container"
+CONFIG_MAP[cube.container.mgr]="cube.container.mgr;The manager for the container"
+CONFIG_MAP[cube.console.mgr]="cube.console.mgr;The console manager (if access is not direct)"
+CONFIG_MAP[autostart]="autostart;The autostart runlevel for the container"
 
 if [ -z "$1" ]; then
     usage
@@ -641,66 +654,45 @@ case "${cmd}" in
 	var=$(echo ${var_value} | cut -d: -f1)
 	value=$(echo ${var_value} | cut -d: -f2)
 
-	# until we switch to a git config type format, we will only process
-	# variables that we recongize, and know where to write their
-	# value. They also assume you are in the directory where you want
-	# the configuration written.
-	case $var in
-	    app)
-		if [ ${cmd} = "set" ]; then
-		    echo "$value" > ${out_dir}/cube.app
-		elif [ ${cmd} = "get" ]; then
-		    if [ -e ${out_dir}/cube.app ]; then
-			cat ${out_dir}/cube.app
-		    else
-			echo ""
-		    fi
-		fi
-		;;
-	    cube.container.mgr)
-		if [ ${cmd} = "set" ]; then
-		    echo "$value" > ${out_dir}/cube.container.mgr
-		elif [ ${cmd} = "get" ]; then
-		    if [ -e ${out_dir}/cube.container.mgr ]; then
-			cat ${out_dir}/cube.container.mgr
-		    else
-			echo ""
-		    fi
-		fi
-		;;
-	    cube.console.mgr)
-		if [ ${cmd} = "set" ]; then
-		    echo "$value" > ${out_dir}/cube.console.mgr
-		elif [ ${cmd} = "get" ]; then
-		    if [ -e ${out_dir}/cube.console.mgr ]; then
-			cat ${out_dir}/cube.console.mgr
-		    else
-			echo ""
-		    fi
-		fi
-		;;
-	    autostart)
-		if [ ${cmd} = "set" ]; then
-		    echo "$value" > ${out_dir}/autostart
-		elif [ ${cmd} = "get" ]; then
-		    if [ -e ${out_dir}/autostart ]; then
-			cat ${out_dir}/autostart
-		    else
-			echo ""
-		    fi
-		fi
-		;;
-	    */*)
-		# if there's a / in the variable, it is destined for a data
-		# store. Note: this could also be a flag to the call, i.e. --etcd
-		# but lets go with this for now
-		if [ ${cmd} = "set" ]; then
-		    inject_to_etcd ${var} ${value}
+	if [ -z "${CONFIG_MAP[$var]}" ]; then
+	    echo $var | grep -q /
+	    if [ $? -ne 0 ]; then
+		echo "[ERROR]: '$var' is not a known setting"
+		exit 1
+	    else
+		etcd=t
+		db_var="$var"
+	    fi
+	else
+	    db_var=$(echo "${CONFIG_MAP[$var]}" | cut -f1 -d\;)
+	fi
+
+	# note: the backend that stores these values will change over time
+	#       for now, it is a simple on-disk file. It could be a git config
+	#       format file, etcd, or a database in the future
+
+	if [ -n "${etcd}" ]; then
+	    # if there's a / in the variable, it is destined for a data
+	    # store. Note: this could also be a flag to the call, i.e. --etcd
+	    # but lets go with this for now
+	    if [ ${cmd} = "set" ]; then
+		## TODO: if "value" is empty we should be deleting the key, right now
+		##       there is no way to do it.
+		inject_to_etcd ${var} ${value}
+	    else
+		fetch_from_etcd ${var}
+	    fi
+	else
+	    if [ "${cmd}" = "set" ]; then
+		echo "${value}" > ${out_dir}/${db_var}
+	    else
+		if [ -e "${out_dir}/cube.app" ]; then
+		    cat "${out_dir}/cube.app"
 		else
-		    fetch_from_etcd ${var}
+		    echo ""
 		fi
-		;;
-	esac
+	    fi
+	fi
 	;;
     *)
 	echo "Unknown command ..."
