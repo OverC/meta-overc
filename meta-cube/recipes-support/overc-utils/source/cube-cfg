@@ -57,8 +57,20 @@ cat << EOF
        <type>:       network, network-virt or console/tty
        <name>:<name> device name in essential : device name in container
 
- ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
- ${0##*/} [-n <container name>] [-o <output dir>] get <setting>
+ get/set:
+
+   NOTE: variables with embedded / are etcd set/get operations.
+
+   set:
+     ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
+     ${0##*/} [-n <container name>] [-o <output dir>] <setting>:<value>
+
+   get:
+     ${0##*/} [-n <container name>] [-o <output dir>] get <setting>
+     ${0##*/} [-n <container name>] [-o <output dir>] <setting>:
+
+   clear/delete:
+     ${0##*/} [-n <container name>] [-o <output dir>] :<setting>
 
     valid settings are:
 
@@ -66,7 +78,7 @@ EOF
 
 for K in "${!CONFIG_MAP[@]}"; do
     help_text=$(echo "${CONFIG_MAP[$K]}" | cut -f2 -d\;)
-    printf "       %-25s %s\n" "$K" "${help_text}"
+    printf "      %-25s %s\n" "$K" "${help_text}"
 done
 echo ""
 }
@@ -654,9 +666,35 @@ case "${cmd}" in
 	fi
 	;;
     set|get)
+	;&
+    *:*)
 	var_value=${cmd_options_non_dashed[1]}
-	var=$(echo ${var_value} | cut -d: -f1)
-	value=$(echo ${var_value} | cut -d: -f2)
+	if [ -z "${var_value}" ]; then
+	    var_value="${cmd}"
+	    var=$(echo ${var_value} | cut -d: -f1)
+	    value=$(echo ${var_value} | cut -d: -f2)
+
+	    # set or get wasn't passed on the command line, so we determine
+	    # if this is set or get based on which values are empty.
+
+	    # - if both are defined, then this is a set
+	    # - if only the var is defined, then this is a get
+	    # - if only the value is defined, it is a clear/delete 
+	    #   and the value is actually the variable
+	    if [ -n "${var}" ] && [ -n "${value}" ]; then
+		cmd="set"
+	    elif [ -n "${var}" ] && [ -z "${value}" ]; then
+		cmd="get"
+	    elif [ -z "${var}" ] && [ -n "${value}" ]; then
+		# this is a delete operation
+		cmd="set"
+		var=$value
+		value=""
+	    fi
+	else
+	    var=$(echo ${var_value} | cut -d: -f1)
+	    value=$(echo ${var_value} | cut -d: -f2)
+	fi
 
 	if [ -z "${CONFIG_MAP[$var]}" ]; then
 	    echo $var | grep -q /
@@ -690,8 +728,8 @@ case "${cmd}" in
 	    if [ "${cmd}" = "set" ]; then
 		echo "${value}" > ${out_dir}/${db_var}
 	    else
-		if [ -e "${out_dir}/cube.app" ]; then
-		    cat "${out_dir}/cube.app"
+		if [ -e "${out_dir}/${db_var}" ]; then
+		    cat "${out_dir}/${db_var}"
 		else
 		    echo ""
 		fi
