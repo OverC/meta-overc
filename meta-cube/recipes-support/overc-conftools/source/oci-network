@@ -12,20 +12,63 @@ if [ "${action}" = "up" ]; then
     echo "${pid}" > .cube.pid
     echo "${veth_name}" > .cube.veth
 
-    ip link add dev ${veth_name} type veth peer name br-int-veth1
+    network=dynamic
+    if [ -f .cube.network.type ]; then
+	network=$(cat .cube.network.type)
+    fi
+
+    # This creates a veth pair.
+    #
+    #    veth<container namespace> -> veth-br-int
+    #
+    # veth<container namespace> remains in essential, and we use the container
+    # namespace so we can always locate the container ns later, and so that it
+    # is unique within essential.
+    #
+    # veth-br-int is inserted into the container, and will be consistent across
+    # containers.
+    #
+    ip link add dev ${veth_name} type veth peer name veth-br-int
     
+    # Add the veth that stays in essential to the ovs-bridge. This gets us
+    # connectivity to the network prime, and hence the outside world
     ovs-vsctl add-port br-int ${veth_name}
-    ip link set br-int-veth1 netns ${pid}
 
-    nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
-    # TODO: the ip must be dhcp .. how to do this ? run dhclient ?
-    nsenter -t ${pid} -n --preserve-credentials ip addr add 192.168.42.101/24 dev br-int-veth1
-    # TODO: the mac address needs to vary. We could clone, or generate a new one
-    nsenter -t ${pid} -n --preserve-credentials ip link set dev br-int-veth1 up address 00:00:6c:00:00:00
-    # TODO: the gateway may need to vary. We could look this up on the host
-    nsenter -t ${pid} -n --preserve-credentials ip route add default via 192.168.42.1
-
+    # Bring up the interface we just added to the bridge. It must be up so dhcp
+    # can get an ip address.
     ip link set dev ${veth_name} up
+
+    # push the container veth endpoint into the container network namespace
+    ip link set veth-br-int netns ${pid}
+
+    #
+    # Configure the container networking:
+    #   1) loopback interface
+    #   2) dhcp address for the veth-br-int
+    #   3) default route configuration
+    #
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up
+    if [ "${network}" == "dynamic" ]; then
+	nsenter -t ${pid} -n --preserve-credentials dhclient veth-br-int
+    else
+	# the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
+	ip=$(cat .cube.network.ip)
+	nsenter -t ${pid} -n --preserve-credentials ip addr add $ip dev veth-br-int
+    fi
+
+    # NOTE: the mac address needs to vary. We could clone, or generate a new one
+    mac_address="00:00:6c:00:00:00"
+    if [ -n ".cube.network.mac" ]; then
+	mac_address=$(cat .cube.network.mac)
+    fi
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up address ${mac_address}
+
+    gateway="192.168.42.1"
+    if [ -n ".cube.network.gateway" ]; then
+	gateway=$(cat .cube.network.gateway)
+    fi
+    nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
 fi
 
 if [ "${action}" = "down" ]; then
