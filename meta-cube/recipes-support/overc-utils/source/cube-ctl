@@ -582,7 +582,7 @@ case "${cmd}" in
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
-		echo "[INFO] Installing container ${container_name} to ${out_dir}"
+		echo "[INFO] Installing container ${container_name} to ${out_dir}/${container_nae}"
 		echo "[INFO] Extracting rootfs....."
 		tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
 		if [ $? != 0 ]; then
@@ -955,6 +955,9 @@ IFS=$OLDIFS
 
 	# the container name is the first element
 	container_name=${cmd_options_non_dashed[0]}
+
+	## xxx: todo: validate the container name here, otherwise the error
+	#             message is very cryptic
 
 	# remove the first option from the command, we'll be passing it along, unprocessed
 	cmd_to_exec=("${cmd_options_non_dashed[@]:1}")
