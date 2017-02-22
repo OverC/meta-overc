@@ -177,7 +177,11 @@ determine_outdir()
     if [ "${out_dir}" == "./" ]; then
 	if [ -n "${container_name}" ]; then
 	    if [ -d "/opt/container/${container_name}" ]; then
-		out_dir="/opt/container/${container_name}"
+		# but only if we have a config.json, should this actually become
+		# our outdir
+		if [ -f "/opt/container/${container_name}/config.json" ]; then
+		    out_dir="/opt/container/${container_name}"
+		fi
 	    fi
 	fi
     fi
