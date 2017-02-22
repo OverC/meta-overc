@@ -54,6 +54,10 @@ if [ "${action}" = "up" ]; then
     else
 	# the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
 	ip=$(cat .cube.network.ip)
+	if [ -z "${ip}" ]; then
+	    echo "ERROR: static networking selected and no IP provided"
+	    exit 1
+	fi
 	nsenter -t ${pid} -n --preserve-credentials ip addr add $ip dev veth-br-int
     fi
 
