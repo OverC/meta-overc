@@ -374,9 +374,15 @@ IFS='
 	hooks="${hooks} --prestart /usr/libexec/oci/hooks.d/netns"
     fi
 
+    console_mgr=$(cube-cfg cube.console.mgr)
+    if [ "${console_mgr}" = "tty" ]; then
+	tty_flag="--tty"
+    fi
+
     ## TODO: if there's no oci-runtime-tool, then we should capture a
     ##       a default config.json and modify it on the fly
-    oci-runtime-tool generate --tty \
+    oci-runtime-tool generate \
+	             ${tty_flag} \
 	             ${hooks} \
 		     --args ${app} \
                      --seccomp-remove-all \
@@ -405,6 +411,20 @@ IFS='
     if [ ! -e cube.container.mgr ]; then
 	echo "runc" > cube.container.mgr
     fi
+
+    # Generate an oci.cmd that can be used to launch this container via runc
+    echo "#!/bin/bash" > oci.cmd
+    echo "mgr=\$(cat /opt/container/${container_name}/cube.container.mgr)" >> oci.cmd
+    if [ "${console_mgr}" = "tty" ]; then
+	runc_console="--console=/dev/ptmx"
+	jq -r  '.process.terminal = true' config.json > config.json.terminal
+    else
+	jq -r  '.process.terminal = false' config.json > config.json.terminal
+    fi
+    mv config.json.terminal config.json
+    echo "\${mgr} create --bundle /opt/container/${container_name} ${runc_console} ${container_name}" >> oci.cmd
+    echo "\${mgr} start ${container_name}" >> oci.cmd
+    chmod +x oci.cmd
 }
 
 #
