@@ -608,6 +608,7 @@ case "${cmd}" in
 
 		if [ -n "${entry_point}" ]; then
 		    cube-cfg -n ${container_name} set app:${entry_point}
+		    cube-cfg -n ${container_name} set cube.console.mgr:tty
 		    cube-cfg gen ${container_name}:oci
 		fi
 
@@ -768,6 +769,8 @@ case "${cmd}" in
 		echo "[INFO] removing container source .."
 		rm -rf "${out_dir}/${container_name}"
 	    fi
+	    machine=$(cube-cfg id)
+	    cube-cfg set overc/$machine/oci/${container}/:
 	fi
 	;;
     start)
@@ -809,7 +812,10 @@ case "${cmd}" in
 			    echo "${open_container_running}" | grep -q ${container}
 			    if [ $? -ne 0 ]; then
 				nsenter -P -t 1 -p -n -u -m -C /opt/container/${container}/oci.cmd
-				cube-cfg set overc/containers/${container}/status:active
+				# TODO: move this cube-cfg call into a pre-start hook, same with the
+				#       delete of the key
+				machine=$(cube-cfg id)
+				cube-cfg set overc/$machine/oci/${container}/status:active
 			    else
 				echo "container ${container} is already running ..."
 			    fi
@@ -927,7 +933,8 @@ IFS=$OLDIFS
 	    if [ "${cmd}" == "stop" ]; then
 		cube-cmd ${runc_essential} delete ${container_name}
 	    fi
-	    cube-cfg set overc/containers/${container_name}/status:inactive
+	    machine=$(cube-cfg id)
+	    cube-cfg set overc/$machine/oci/${container_name}/status:inactive
 	fi
 	;;
     exec)
