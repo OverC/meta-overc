@@ -69,10 +69,12 @@ commands (and options):
 
     show the status (list) of known containers
 
- ${0##*/} <target>:<command>
+ ${0##*/} [-i] <target>:<command>
 
     execute command <command> against a named target. Either a container
     name should be specified, or "host" for a native command.
+
+      -i :    The command is interactive and a terminal should be allocated
 
  ${0##*/} info <name>
 
@@ -139,6 +141,9 @@ while [ $# -gt 0 ]; do
         --n|-n)
 	    container_name=${2}
 	    shift
+	    ;;
+        --i|-i)
+	    interactive=t
 	    ;;
         --t|-t)
 	    container_type=${2}
@@ -814,9 +819,7 @@ case "${cmd}" in
 
 			    echo "${open_container_running}" | grep -q ${container}
 			    if [ $? -ne 0 ]; then
-				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} create --bundle /opt/container/${container} --console=/dev/ptmx ${container}
-				nsenter -P -t 1 -p -n -u -m -C ${runc_essential} start ${container}
-
+				nsenter -P -t 1 -p -n -u -m -C /opt/container/${container}/oci.cmd
 				cube-cfg set overc/containers/${container}/status:active
 			    else
 				echo "container ${container} is already running ..."
@@ -955,12 +958,14 @@ IFS=$OLDIFS
 
 	# the container name is the first element
 	container_name=${cmd_options_non_dashed[0]}
-
-	## xxx: todo: validate the container name here, otherwise the error
-	#             message is very cryptic
+	check_is_known_container ${container_name}
+	if [ $? -eq 1 ]; then
+	    echo "ERROR: container ${container_name} is not known"
+	    exit 1
+	fi
 
 	# remove the first option from the command, we'll be passing it along, unprocessed
-	cmd_to_exec=("${cmd_options_non_dashed[@]:1}")
+	cmd_to_exec="${cmd_options_non_dashed[@]:1}"
 
 	if [ "${container_name}" = "host" ] || [ "${container_name}" = "essential" ]; then
 	    if [ -n "${verbose}" ]; then
@@ -974,8 +979,16 @@ IFS=$OLDIFS
 	    if [ $? -eq 0 ]; then
 		cmd="cube-cmd ${mgr} exec -- ${container_name} ${cmd_to_exec}"
 	    else
-		echo "[ERROR]: no container manager identified, not executing command"
+		echo "[ERROR]: container '${container_name} has no container manager identified, not executing command"
 		exit 1
+	    fi
+
+	    # if the command is interactive, we need to ensure that a terminal is allocated
+	    # or it won't work / look like it is hung
+	    terminal_json=$(jq -r '.process.terminal' /opt/container/${container_name}/config.json)
+	    if [ -n "${interactive}" ] && [ "${terminal_json}" = "false" ] ; then
+		jq -r  '.process.terminal = true' /opt/container/${container_name}/config.json > /opt/container/${container_name}/config.json.terminal
+		mv /opt/container/${container_name}/config.json.terminal /opt/container/${container_name}/config.json
 	    fi
 
 	    if [ -n "${verbose}" ]; then
