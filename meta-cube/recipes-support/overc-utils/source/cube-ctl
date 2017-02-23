@@ -419,16 +419,17 @@ tweak_container_fstab()
 }
 
 #
-# arg1: the container type
+# arg1: the container name
 # arg2: the container directory (note: *not* the rootfs dir)
 #
 # We generate a base configuration, and then tweak it for the
 # various container formats.
 #
-generate_container_config()
+generate_lxc_container_config()
 {
-    local ctype=$1
-    local cdir=$2
+    local cn=$1
+    local pathtocontainer=$2
+    local lxcbase="/opt/container"
 
     cat << EOF >${pathtocontainer}/config
 lxc.utsname = ${cn}
@@ -446,42 +447,30 @@ lxc.group = ${group}
 lxc.start.auto = ${autostart}
 overc.start.auto = ${peerstart}
 EOF
-	if [ ${cn} == "dom0" ]; then
-		echo "lxc.uncontain = 1" >> ${pathtocontainer}/config
-	fi
-	if [ ${bridged_net} == 1 ]; then
-		sed -i '/^lxc.network.script.*$/d' ${pathtocontainer}/config
-		sed -i '/^lxc.network.type.*$/a lxc.network.link = br0' \
-		    ${pathtocontainer}/config
-	fi
-	if [ ${domain0} == 1 ]; then
-		# Domain 0 wants to drive X onto a real console
-		echo "lxc.console = none" >>${pathtocontainer}/config
-	fi
+    if [ ${cn} == "dom0" ]; then
+	echo "lxc.uncontain = 1" >> ${pathtocontainer}/config
+	# Domain 0 wants to drive X onto a real console
+	echo "lxc.console = none" >>${pathtocontainer}/config
+    fi
 
-	if [ -n "${subuid}" ]; then
-		# for unprivileged containers, we need to use the mixed structure to
-		# isolate the control of the container itself from the upper layer.
-		echo "lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed" >>${pathtocontainer}/config
-		# subuid/subgid configuration for unprivileged container
-		echo "lxc.id_map = u 0 ${subuid} 65536" >>${pathtocontainer}/config
-		echo "lxc.id_map = g 0 ${subuid} 65536" >>${pathtocontainer}/config
-	else
-		# privileged containers
-		echo "lxc.mount.entry = devpts ${lxcbase}/${cn}/rootfs/dev/pts devpts gid=5,mode=620 0 0" >>${pathtocontainer}/config
-		echo "lxc.mount.entry = proc ${lxcbase}/${cn}/rootfs/proc    proc defaults 0 0" >>${pathtocontainer}/config
-		echo "lxc.mount.entry = sysfs ${lxcbase}/${cn}/rootfs/sys     sysfs defaults 0 0" >>${pathtocontainer}/config
-		echo "lxc.hook.autodev = ${lxcbase}/${cn}/autodev" >>${pathtocontainer}/config
-	fi
+    if [ -n "${subuid}" ]; then
+	# for unprivileged containers, we need to use the mixed structure to
+	# isolate the control of the container itself from the upper layer.
+	echo "lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed" >>${pathtocontainer}/config
+	# subuid/subgid configuration for unprivileged container
+	echo "lxc.id_map = u 0 ${subuid} 65536" >>${pathtocontainer}/config
+	echo "lxc.id_map = g 0 ${subuid} 65536" >>${pathtocontainer}/config
+    else
+	# privileged containers
+	echo "lxc.mount.entry = devpts ${lxcbase}/${cn}/rootfs/dev/pts devpts gid=5,mode=620 0 0" >>${pathtocontainer}/config
+	echo "lxc.mount.entry = proc ${lxcbase}/${cn}/rootfs/proc    proc defaults 0 0" >>${pathtocontainer}/config
+	echo "lxc.mount.entry = sysfs ${lxcbase}/${cn}/rootfs/sys     sysfs defaults 0 0" >>${pathtocontainer}/config
+	echo "lxc.hook.autodev = ${lxcbase}/${cn}/autodev" >>${pathtocontainer}/config
+    fi
 
-	if [ -f "etc/system-id" ] || [ -f "/etc/system-id" ]; then
-		echo "lxc.mount.entry = /etc/system-id ${lxcbase}/${cn}/rootfs/etc/system-id none ro,bind,optional,create=file" >>${pathtocontainer}/config
-	fi
-
-	lxcbase=$temp_lxcbase
-	if [ ${havettyconsole} == 1 ]; then
-		echo "overc.screen-getty = 1" >>${pathtocontainer}/config
-	fi
+    if [ ${havettyconsole} == 1 ]; then
+	echo "overc.screen-getty = 1" >>${pathtocontainer}/config
+    fi
 }
 
 #
