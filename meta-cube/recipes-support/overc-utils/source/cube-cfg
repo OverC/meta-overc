@@ -57,7 +57,13 @@ cat << EOF
        <type>:       network, network-virt or console/tty
        <name>:<name> device name in essential : device name in container
 
- get/set:
+ ${0##*/} [-n <container name>] id
+
+    get the unique machine / platform identifier
+
+    -n <container name> : get the container identifier
+
+ ${0##*/} get/set:
 
    NOTE: variables with embedded / are etcd set/get operations.
 
@@ -374,7 +380,7 @@ IFS='
 	hooks="${hooks} --prestart /usr/libexec/oci/hooks.d/netns"
     fi
 
-    console_mgr=$(cube-cfg cube.console.mgr)
+    console_mgr=$(cube-cfg cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
 	tty_flag="--tty"
     fi
@@ -520,7 +526,7 @@ IFS='
     echo "pflask" > cube.container.mgr
 }
 
-fetch_from_etcd()
+etcd_fetch()
 {
     local key=$1
 
@@ -543,7 +549,7 @@ fetch_from_etcd()
     fi
 }
 
-inject_to_etcd()
+etcd_inject()
 {
     local key=$1
     local value=$2
@@ -552,18 +558,25 @@ inject_to_etcd()
     local key_name=$(basename ${key})
     local etcdctl=etcdctl
 
+    redir="> /dev/null"
     if [ -n "${dryrun}" ]; then
 	etcdctl="echo etcdctl"
+	redir=""
     fi
 
     if [ -n "${verbose}" ]; then
 	echo "[INFO]: injecting ${key}:${value}"
     fi
 
-    eval ${etcdctl} set ${key_dir}/${key_name} ${value} > /dev/null
-    if [ $? -ne 0 ]; then
-	echo "ERROR: Could not inject ${key} to etcd data store"
-	return
+    if [ -n "${value}" ]; then
+	eval ${etcdctl} set ${key_dir}/${key_name} ${value} $redir
+	if [ $? -ne 0 ]; then
+	    echo "ERROR: Could not inject ${key} to etcd data store"
+	    return
+	fi
+    else
+	# value isn't set, we are clearing the key
+	eval ${etcdctl} rm -r ${key} ${value} $redir
     fi
 }
 
@@ -616,6 +629,13 @@ case "${cmd}" in
 	else
 	    echo "ERROR: Invalid mount specified ${name_temp}"
 	    exit 1
+	fi
+	;;
+    id)
+	if [ -e /etc/machine-id ]; then
+	    cat /etc/machine-id
+	else
+	    echo ""
 	fi
 	;;
     hook|hook-script)
@@ -740,9 +760,9 @@ case "${cmd}" in
 	    if [ ${cmd} = "set" ]; then
 		## TODO: if "value" is empty we should be deleting the key, right now
 		##       there is no way to do it.
-		inject_to_etcd ${var} ${value}
+		etcd_inject ${var} ${value}
 	    else
-		fetch_from_etcd ${var}
+		etcd_fetch ${var}
 	    fi
 	else
 	    if [ "${cmd}" = "set" ]; then
