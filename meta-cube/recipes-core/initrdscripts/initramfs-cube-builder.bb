@@ -9,6 +9,11 @@ RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
 
 do_install() {
         install -m 0755 ${WORKDIR}/init-server.sh ${D}/init
+
+	# Create device nodes expected by some kernels in initramfs
+	# before even executing /init.
+	install -d ${D}/dev
+	mknod -m 622 ${D}/dev/console c 5 1
 }
 
 # While this package maybe an allarch due to it being a 
@@ -17,6 +22,6 @@ do_install() {
 #inherit allarch
 INHIBIT_DEFAULT_DEPS = "1"
 
-FILES_${PN} = " /init "
+FILES_${PN} = " /init /dev"
 
 COMPATIBLE_HOST = "(arm|aarch64|i.86|x86_64|powerpc).*-linux"
