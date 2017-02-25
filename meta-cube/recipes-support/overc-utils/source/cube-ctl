@@ -801,6 +801,7 @@ case "${cmd}" in
 	    if [ -n "${single_launch}" ]; then
 		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
 		    ${container_dir}/${container}/pflask.cmd
+		    cube-cfg set overc/$machine/cube/${container}/:active
 		elif [ -e "${container_dir}/${container}/config.json" ]; then
 		    (
 			if [ -n "${we_are_dom0}" ]; then
