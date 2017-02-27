@@ -25,6 +25,8 @@ ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"
 
 FILES_${PN} += "${systemd_system_unitdir}/*"
 
+EXTRA_OEMAKE += "SYSTEMD_UNIT_DIR=${systemd_system_unitdir}/"
+
 do_install_prepend() {
     # Copy assorted scripts and other control files into the build directory
     # so they get installed.
