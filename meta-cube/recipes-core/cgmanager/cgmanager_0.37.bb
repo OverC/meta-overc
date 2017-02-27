@@ -23,7 +23,7 @@ EXTRA_OECONF += "--sbindir=${base_sbindir} --with-distro=${DISTRO} --with-init-s
 ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit,', '', d)}\
 ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)}"
 
-FILES_${PN} += "${systemd_system_unitdir}/*"
+FILES_${PN} += "${systemd_system_unitdir}/"
 
 EXTRA_OEMAKE += "SYSTEMD_UNIT_DIR=${systemd_system_unitdir}/"
 
