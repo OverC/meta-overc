@@ -3,7 +3,6 @@ HOMEPAGE = "https://github.com/WindRiver-OpenSourceLabs/meta-overc"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
-PKG_NAME = "github.com/miekg/dns"
 SRC_URI = "file://COPYING \
 	file://screen-getty.c \
 	file://screen-gettyrc \
