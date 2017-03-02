@@ -35,6 +35,23 @@ commands (and options):
 
        <name>: name of the container to be stopped
 
+ ${0##*/} stack <container a> <container b>
+
+    stack (connect) two containers. This ensures that container a can communicate
+    with container b.
+
+       <container a>: name of the first container to be stacked
+       <container b>: name of the second container to be stacked
+
+ ${0##*/} store <container> <location>
+
+    Put a container into storage. <location> is a directory or a registry (local
+    or remote).
+
+       <container>: name of the first container to be stored
+       <location>:  storage location. dir:// for directories, cube:// or docker:// for
+                    registries.
+
  ${0##*/} add [-n <name>] [-u <subuid>] <source>
 
     add a container to the platform. Once added, the container is monitored, but
@@ -473,6 +490,21 @@ EOF
     fi
 }
 
+spinner()
+{
+    local pid=$!
+    local delay=0.75
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
 #
 # Command processing
 #
@@ -584,6 +616,9 @@ case "${cmd}" in
 		    exit 1
 		fi
 		;;
+            cube://*)
+		# for now, cubes are in docker registries
+                ;&
 	    docker://*)
 		# make an oci format copy from the registry
 		skopeo copy ${container_source} oci:${out_dir}/${container_name}/docker 2> /dev/null
@@ -732,6 +767,165 @@ case "${cmd}" in
 	    # now we need to restart the command server, so the new container can be monitored
 	    systemctl restart cube-cmd-server
 	fi
+	;;
+    store)
+	# stores (copies, pushes, clones ..) a container
+
+	if [ -z "${container_type}" ]; then
+	    container_type="oci"
+	fi
+	# the first non dashed argument will be the container name/source
+	container_source=${cmd_options_non_dashed[1]}
+	# and the second is the dest
+	container_dest=${cmd_options_non_dashed[2]}
+
+	if [ -z "${container_source}" ]; then
+	    echo "[ERROR]: no container source provided"
+	    exit 1
+	fi
+
+	for o in ${dashed}; do
+	    case ${o} in
+		-n*)
+		    container_name=`echo $o | cut -d: -f2`
+		    ;;
+		*)
+		    echo "Unknow parameter ..."
+		    usage
+		    exit 1
+		    ;;
+	    esac
+	done
+
+	if [ -z "${container_name}" ]; then
+	    container_name="${container_source}"
+	fi
+
+	# test to see if the container_source is a url!
+
+	# extract the protocol
+	src_proto="$(echo ${container_source} | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+	# remove the protocol
+	src_url="$(echo ${container_source/$proto/})"
+	# extract the user (if any)
+	src_user="$(echo $url | grep @ | cut -d@ -f1)"
+	# extract the host
+	src_host="$(echo ${url/$user@/} | cut -d/ -f1)"
+	# by request - try to extract the port
+	src_port="$(echo $host | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+	# extract the path (if any)
+	src_path="$(echo $url | grep / | cut -d/ -f2-)"
+
+	# extract the protocol
+	dest_proto="$(echo ${container_dest} | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+	# remove the protocol
+	dest_url="$(echo ${container_dest/$proto/})"
+	# extract the user (if any)
+	dest_user="$(echo $url | grep @ | cut -d@ -f1)"
+	# extract the host
+	dest_host="$(echo ${url/$user@/} | cut -d/ -f1)"
+	# by request - try to extract the port
+	dest_port="$(echo $host | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+	# extract the path (if any)
+	dest_path="$(echo $url | grep / | cut -d/ -f2-)"
+
+	if [ -z "${src_proto}" ]; then
+	    # we are working with a local container, so validate the name
+	    check_is_known_container ${container_name}
+	    if [ $? -eq 1 ]; then
+		echo "[ERROR] Container ${container_name} is unknown, cannot store"
+		exit 1
+	    fi
+	fi
+
+	if [ -z "${dest_proto}" ]; then
+	    check_is_known_container ${container_name}
+	    if [ $? -eq 0 ]; then
+		echo "[ERROR] Container ${container_name} already exists, cannot store"
+		echo "        Use --force to overwrite existing container"
+		# TODO: implement --force :D
+		exit 1
+	    fi
+	fi
+
+	# We support: container -> registry
+	#             container -> container
+	#             registry  -> registry
+	#
+	# NOTE: registry -> local is "add"
+	#
+	# NOTE: registries can be local or remote
+	#
+
+	# for now, we convert cube:// to docker:// (since we are not writing our
+	# own registry protocol)
+	container_source=$(echo ${container_source} | sed 's%cube://%docker://%')
+	container_dest=$(echo ${container_dest} | sed 's%cube://%docker://%')
+
+	if [ -n "${src_proto}" ] && [ -n "${dest_proto}" ]; then
+	    echo "[INFO]: registry -> registry storage"
+
+	    # TODO: make the tls setting an option
+	    flags="--dest-tls-verify=false --src-tls-verify=false"
+	    skopeo copy ${flags} ${container_source} ${container_dest}
+	elif [ -n "${src_proto}" ] && [ -z "${dest_proto}" ]; then
+	    echo "[INFO]: registry -> local storage is not support, use cube-ctl add"
+	    exit 1
+	elif [ -z "${src_proto}" ] && [ -n "${dest_proto}" ]; then
+	    echo "[INFO]: local -> registry storage"
+	    # we have to make sure that the container is a valid OCI container, or
+	    # we won't be able to copy it to the registry.
+
+	    container_source="/opt/container/${container_source}"
+	    if [ ! -d "${container_source}" ]; then
+		echo "[ERROR] container source ${container_source} not found"
+		exit 1
+	    fi
+
+	    if [ ! -e "${container_source}/oci-layout" ]; then
+		# the container is not in OCI format, we'll need to convert it
+
+		echo -n "[INFO]: creating OCI manifest and blobs ... "
+
+		# We create an empty oci container structure, and then copy it into
+		# the original container. We could also copy the original container's
+		# rootfs into the oci container, but that means moving Gigs of data
+		# .. so we avoid it this way.
+		umoci init --layout ${container_source}-oci
+		umoci new --image ${container_source}-oci
+		umoci unpack --image ${container_source}-oci ${container_source}-oci
+		rm -f ${container_source}-oci/config.json
+		cp -r ${container_source}-oci/* ${container_source}/
+		rm -rf ${container_source}-oci
+
+		umoci repack --image ${container_source} ${container_source} &
+		spinner
+		echo ""
+	    fi
+
+	    # TODO: make the tls setting an option
+	    flags="--dest-tls-verify=false --src-tls-verify=false"
+	    echo "[INFO]: storing container ${container_source}"
+	    skopeo copy ${flags} oci:${container_source} ${container_dest}
+	elif [ -z "${src_proto}" ] && [ -z "${dest_proto}" ]; then
+	    echo "[INFO]: local -> local storage"
+
+	    container_source="/opt/container/${container_source}"
+	    container_dest="/opt/container/${container_dest}"
+	    if [ ! -d "${container_source}" ]; then
+		echo "[ERROR] container source ${container_source} not found"
+		exit 1
+	    fi
+	    if [ -d "${container_dest}" ]; then
+		echo "[ERROR] container dest ${container_dest} already exists"
+		exit 1
+	    fi
+
+	    cp -ar "${container_source}" "${container_dest}"
+	fi
+	;;
+    stack)
+	# TODO
 	;;
     del|delete|remove)
 	graft_binaries_to_essential runc
