@@ -12,6 +12,7 @@ PACKAGES = "\
 RDEPENDS_packagegroup-service-discovery = "\
     etcd  \
     skopeo \
+    umoci \
 "
 
 RDEPENDS_packagegroup-service-discovery-and-configuration = "\
