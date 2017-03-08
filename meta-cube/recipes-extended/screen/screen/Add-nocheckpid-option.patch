@@ -1,3 +1,4 @@
+From 42c69bb787a8aab540470808d595c724ca928c4d Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Sun, 3 Jul 2016 07:44:32 -0500
 Subject: [PATCH] Add -nocheckpid option
@@ -13,16 +14,9 @@ a remote screen command via a socket which is shared from another
 context.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- attacher.c   | 17 +++++++++++------
- doc/screen.1 |  7 +++++++
- help.c       |  1 +
- screen.c     | 16 +++++++++++++---
- socket.c     |  3 ++-
- 5 files changed, 34 insertions(+), 10 deletions(-)
 
 diff --git a/attacher.c b/attacher.c
-index 8847d5d..35431c8 100644
+index 1052549cbd57..2636ebf5579b 100644
 --- a/attacher.c
 +++ b/attacher.c
 @@ -59,6 +59,7 @@ extern char HostName[];
@@ -33,7 +27,7 @@ index 8847d5d..35431c8 100644
  extern struct mode attach_Mode;
  extern struct NewWindow nwin_options;
  extern int MasterPid, attach_fd;
-@@ -300,11 +301,14 @@ int how;
+@@ -307,11 +308,14 @@ int how;
  
    debug2("Attach: uid %d euid %d\n", (int)getuid(), (int)geteuid());
    MasterPid = 0;
@@ -52,7 +46,7 @@ index 8847d5d..35431c8 100644
      }
    debug1("Attach decided, it is '%s'\n", SockPath);
    debug1("Attach found MasterPid == %d\n", MasterPid);
-@@ -452,7 +456,8 @@ static sigret_t
+@@ -459,7 +463,8 @@ static sigret_t
  AttacherSigInt SIGDEFARG
  {
    signal(SIGINT, AttacherSigInt);
@@ -62,7 +56,7 @@ index 8847d5d..35431c8 100644
    SIGRETURN;
  }
  
-@@ -620,7 +625,7 @@ Attacher()
+@@ -627,7 +632,7 @@ Attacher()
        alarm(15);
        pause();
        alarm(0);
@@ -72,10 +66,10 @@ index 8847d5d..35431c8 100644
  	  debug1("attacher: Panic! MasterPid %d does not exist.\n", MasterPid);
  	  AttacherPanic++;
 diff --git a/doc/screen.1 b/doc/screen.1
-index 6adb1eb..48cf205 100644
+index d3aab704d9b5..bdcdc895f33e 100644
 --- a/doc/screen.1
 +++ b/doc/screen.1
-@@ -295,6 +295,13 @@ Do not terminate the screen session when the final window is closed.  The
+@@ -299,6 +299,13 @@ Do not terminate the screen session when the final window is closed.  The
  quit command must be used from with in the screen session to terminate
  the screen session.
  .TP 5
@@ -90,22 +84,22 @@ index 6adb1eb..48cf205 100644
  Preselect a window. This is useful when you want to reattach to a
  specific window or you want to send a command via the \*Q-X\*U
 diff --git a/help.c b/help.c
-index cc24bc8..929a7a2 100644
+index fa95a4ae697a..092d98eaf2d6 100644
 --- a/help.c
 +++ b/help.c
-@@ -90,6 +90,7 @@ char *myname, *message, *arg;
-   printf("-list         Do nothing, just list our SockDir [on possible matches].\n");
-   printf("-L            Turn on output logging.\n");
+@@ -88,6 +88,7 @@ void exit_with_usage(char *myname, char *message, char *arg)
+   printf("-Logfile file Set logfile name.\n");
+   printf("-m            ignore $STY variable, do create a new screen session.\n");
    printf("-noexit       Do not exit when the last screen window terminates.\n");
 +  printf("-nopidcheck   Do not validate attacher process ids.\n");
-   printf("-m            ignore $STY variable, do create a new screen session.\n");
    printf("-O            Choose optimal output rather than exact vt100 emulation.\n");
    printf("-p window     Preselect the named window if it exists.\n");
+   printf("-q            Quiet startup. Exits with non-zero return code if unsuccessful.\n");
 diff --git a/screen.c b/screen.c
-index 3bdd632..3e65b88 100644
+index 5553bf85f2ec..3b17d2395237 100644
 --- a/screen.c
 +++ b/screen.c
-@@ -210,6 +210,7 @@ char *wlisttit;
+@@ -213,6 +213,7 @@ char *wlisttit;
  int auto_detach = 1;
  int iflag, rflag, dflag, lsflag, quietflag, wipeflag, xflag;
  int noexitflag;
@@ -113,33 +107,33 @@ index 3bdd632..3e65b88 100644
  int cmdflag;
  int queryflag = -1;
  int adaptflag;
-@@ -685,9 +686,18 @@ char **av;
- 		  mflag = 1;
- 		  break;
- 		case 'n':
--		  if (strcmp(ap+1, "oexit"))
--		    exit_with_usage(myname, "Unknown option %s", --ap);
--		  noexitflag = 1;
-+		  if (!strcmp(ap+1, "oexit"))
-+		    {
-+		      noexitflag = 1;
-+		    }
-+		  else if (!strcmp(ap+1, "opidcheck"))
-+		    {
-+		      nopidcheckflag = 1;
-+		    }
-+		  else
-+		    {
-+		      exit_with_usage(myname, "Unknown option %s", --ap);
-+		    }
- 		  ap = NULL;
- 		  break;
- 		case 'O':		/* to be (or not to be?) deleted. jw. */
+@@ -697,9 +698,18 @@ int main(int ac, char** av)
+             mflag = 1;
+             break;
+           case 'n':
+-            if (strcmp(ap+1, "oexit"))
+-              exit_with_usage(myname, "Unknown option %s", --ap);
+-            noexitflag = 1;
++            if (!strcmp(ap+1, "oexit"))
++              {
++                noexitflag = 1;
++              }
++            else if (!strcmp(ap+1, "opidcheck"))
++              {
++                nopidcheckflag = 1;
++              }
++            else
++              {
++                exit_with_usage(myname, "Unknown option %s", --ap);
++              }
+             ap = NULL;
+             break;
+ 
 diff --git a/socket.c b/socket.c
-index a03ce24..080b686 100644
+index e464a62388c6..bad332c5062f 100644
 --- a/socket.c
 +++ b/socket.c
-@@ -66,6 +66,7 @@ static void  AskPassword __P((struct msg *));
+@@ -76,6 +76,7 @@ static void  AskPassword __P((struct msg *));
  extern char *RcFileName, *extra_incap, *extra_outcap;
  extern int ServerSocket, real_uid, real_gid, eff_uid, eff_gid;
  extern int dflag, iflag, rflag, lsflag, quietflag, wipeflag, xflag;
@@ -147,7 +141,7 @@ index a03ce24..080b686 100644
  extern int queryflag;
  extern char *attach_tty, *LoginName, HostName[];
  extern struct display *display, *displays;
-@@ -878,7 +879,7 @@ struct win *wi;
+@@ -862,7 +863,7 @@ struct win *wi;
  	return -1;
      }
  
@@ -157,5 +151,5 @@ index a03ce24..080b686 100644
        Msg(0, "Attach attempt with bad pid(%d)!", pid);
        return -1;
 -- 
-1.9.1
+2.11.0.rc2
 

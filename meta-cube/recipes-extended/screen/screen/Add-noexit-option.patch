@@ -1,3 +1,4 @@
+From 73e721138c9339c99e75a1ac8866fe2401001517 Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Sat, 2 Jul 2016 09:53:10 -0500
 Subject: [PATCH] Add -noexit option
@@ -10,18 +11,12 @@ multiplexes sessions which are started automatically with:
     screen -S console -x -X screen ...cmd...
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- doc/screen.1 | 5 +++++
- help.c       | 1 +
- process.c    | 3 ++-
- screen.c     | 7 +++++++
- 4 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/doc/screen.1 b/doc/screen.1
-index 41d7087..6adb1eb 100644
+index 21694ff8e02e..d3aab704d9b5 100644
 --- a/doc/screen.1
 +++ b/doc/screen.1
-@@ -290,6 +290,11 @@ emulation (only affects auto-margin terminals without `LP').
+@@ -294,6 +294,11 @@ emulation (only affects auto-margin terminals without `LP').
  This can also be set in your .screenrc by specifying `OP' in a \*Qtermcap\*U
  command.
  .TP 5
@@ -34,19 +29,19 @@ index 41d7087..6adb1eb 100644
  Preselect a window. This is useful when you want to reattach to a
  specific window or you want to send a command via the \*Q-X\*U
 diff --git a/help.c b/help.c
-index a2b8614..cc24bc8 100644
+index ea6c15d79df3..fa95a4ae697a 100644
 --- a/help.c
 +++ b/help.c
-@@ -89,6 +89,7 @@ char *myname, *message, *arg;
-   printf("-ls [match]   or\n");
-   printf("-list         Do nothing, just list our SockDir [on possible matches].\n");
+@@ -87,6 +87,7 @@ void exit_with_usage(char *myname, char *message, char *arg)
    printf("-L            Turn on output logging.\n");
-+  printf("-noexit       Do not exit when the last screen window terminates.\n");
+   printf("-Logfile file Set logfile name.\n");
    printf("-m            ignore $STY variable, do create a new screen session.\n");
++  printf("-noexit       Do not exit when the last screen window terminates.\n");
    printf("-O            Choose optimal output rather than exact vt100 emulation.\n");
    printf("-p window     Preselect the named window if it exists.\n");
+   printf("-q            Quiet startup. Exits with non-zero return code if unsuccessful.\n");
 diff --git a/process.c b/process.c
-index a01a574..17cb2e0 100644
+index 847732137f6c..e29a3fbaa41f 100644
 --- a/process.c
 +++ b/process.c
 @@ -64,6 +64,7 @@ extern char *hstatusstring, *captionstring, *timestring;
@@ -57,7 +52,7 @@ index a01a574..17cb2e0 100644
  extern char *hardcopydir, *screenlogfile, *logtstamp_string;
  extern int log_flush, logtstamp_on, logtstamp_after;
  extern char *VisualBellString;
-@@ -5324,7 +5325,7 @@ struct win *wi;
+@@ -5433,7 +5434,7 @@ struct win *wi;
    wi->w_inlen = 0;
    wtab[wi->w_number] = 0;
  
@@ -67,10 +62,10 @@ index a01a574..17cb2e0 100644
        FreeWindow(wi);
        Finit(0);
 diff --git a/screen.c b/screen.c
-index 69e5eee..3bdd632 100644
+index 6cd528af31df..5553bf85f2ec 100644
 --- a/screen.c
 +++ b/screen.c
-@@ -209,6 +209,7 @@ char *wliststr;
+@@ -212,6 +212,7 @@ char *wliststr;
  char *wlisttit;
  int auto_detach = 1;
  int iflag, rflag, dflag, lsflag, quietflag, wipeflag, xflag;
@@ -78,19 +73,19 @@ index 69e5eee..3bdd632 100644
  int cmdflag;
  int queryflag = -1;
  int adaptflag;
-@@ -683,6 +684,12 @@ char **av;
- 		case 'm':
- 		  mflag = 1;
- 		  break;
-+		case 'n':
-+		  if (strcmp(ap+1, "oexit"))
-+		    exit_with_usage(myname, "Unknown option %s", --ap);
-+		  noexitflag = 1;
-+		  ap = NULL;
-+		  break;
- 		case 'O':		/* to be (or not to be?) deleted. jw. */
- 		  force_vt = 0;
- 		  break;
+@@ -695,6 +696,12 @@ int main(int ac, char** av)
+           case 'm':
+             mflag = 1;
+             break;
++          case 'n':
++            if (strcmp(ap+1, "oexit"))
++              exit_with_usage(myname, "Unknown option %s", --ap);
++            noexitflag = 1;
++            ap = NULL;
++            break;
+ 
+           case 'O':		/* to be (or not to be?) deleted. jw. */
+             force_vt = 0;
 -- 
-1.9.1
+2.11.0.rc2
 
