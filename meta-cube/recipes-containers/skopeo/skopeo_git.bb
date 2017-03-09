@@ -42,7 +42,7 @@ RDEPENDS_${PN} = "gpgme \
                  "
 
 SRC_URI = "git://github.com/projectatomic/skopeo"
-SRCREV = "1f6c140716f8a89aa4d499dd1295803745c26e2c"
+SRCREV = "f89bd82dcd05a8e09b770bac00d5731c33db5cb1"
 PV = "v0.1.19-dev+git${SRCPV}"
 
 S = "${WORKDIR}/git"
