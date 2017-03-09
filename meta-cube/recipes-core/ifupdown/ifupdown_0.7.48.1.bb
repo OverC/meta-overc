@@ -18,7 +18,7 @@ EXTRA_OEMAKE = ""
 S = "${WORKDIR}/ifupdown-${PV}ubuntu5"
 
 
-inherit update-rc.d systemd
+inherit update-rc.d systemd update-alternatives
 
 do_compile () {
 	chmod a+rx *.pl *.sh
