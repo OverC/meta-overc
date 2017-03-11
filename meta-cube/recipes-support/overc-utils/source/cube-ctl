@@ -621,7 +621,15 @@ case "${cmd}" in
                 ;&
 	    docker://*)
 		# make an oci format copy from the registry
-		skopeo copy ${container_source} oci:${out_dir}/${container_name}/docker 2> /dev/null
+
+		container_source=$(echo ${container_source} | sed 's%cube://%docker://%')
+
+		# TODO: make the tls setting an option
+		flags="--dest-tls-verify=false --src-tls-verify=false"
+		if [ -n "${verbose}" ]; then
+		    echo "skopeo copy ${flags} ${container_source} oci:${out_dir}/${container_name}/docker"
+		fi
+		skopeo copy ${flags} ${container_source} oci:${out_dir}/${container_name}/docker 2> /dev/null
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: docker container ${container_source} not found, check input and try again"
 		    exit 1
