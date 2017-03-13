@@ -361,7 +361,9 @@ IFS="
 # additionally sets the global ${containers}
 check_is_known_container()
 {
-    container_name=$1
+    local container_name=$1
+    local container_is_a_oci=""
+    local container_is_a_cube=""
 
     # if we are not in a container .. then there's no need to check anything
     # just return that this is not a known container
@@ -372,11 +374,11 @@ check_is_known_container()
     build_container_lists
 
     if [ -n "${we_are_dom0}" ]; then
-	echo ${cubes} | grep -q ${container_name}
+	echo ${cubes} | grep -w -q ${container_name}
 	if [ $? -eq 0 ]; then
 	    container_is_a_cube=t
 	fi
-	echo ${open_containers} ${open_container_available} | grep -q ${container_name}
+	echo ${open_containers} ${open_container_available} | grep -w -q ${container_name}
 	if [ $? -eq 0 ]; then
 	    container_is_a_oci=t
 	fi
@@ -847,9 +849,9 @@ case "${cmd}" in
 	fi
 
 	if [ -z "${dest_proto}" ]; then
-	    check_is_known_container ${container_name}
+	    check_is_known_container ${container_dest}
 	    if [ $? -eq 0 ]; then
-		echo "[ERROR] Container ${container_name} already exists, cannot store"
+		echo "[ERROR] Container ${container_dest} already exists, cannot store"
 		echo "        Use --force to overwrite existing container"
 		# TODO: implement --force :D
 		exit 1
