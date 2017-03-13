@@ -1,6 +1,6 @@
 HOMEPAGE = "https://github.com/projectatomic/skopeo"
 SUMMARY = "Work with remote images registries - retrieving information, images, signing content"
-LICENSE = "Apache"
+LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7e611105d3e369954840a6668c438584"
 
 DEPENDS = "go-cross-${TARGET_ARCH} \
