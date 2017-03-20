@@ -13,7 +13,6 @@ SYSTEMD_SERVICE_${PN} = "factory-reset.service"
 
 RDEPENDS_${PN} = "\
 	btrfs-tools \
-	python-smartpm \
 	python-argparse \
 	python-subprocess \
 	python-flask \
