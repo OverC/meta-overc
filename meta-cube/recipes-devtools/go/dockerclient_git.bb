@@ -7,6 +7,8 @@ PKG_NAME = "github.com/fsouza/go-dockerclient"
 SRC_URI = "git://${PKG_NAME}.git"
 SRCREV = "7e2450a717e8725de58dc1530218cd64117861b3"
 
+inherit go
+
 S = "${WORKDIR}/git"
 
 do_compile() {
