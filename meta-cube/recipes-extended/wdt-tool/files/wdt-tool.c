@@ -135,7 +135,6 @@ int main(int argc, char **argv)
 		   printf("Current watchdog interval is %d\n", read_interval);
 	   } else {
 		   fprintf(stderr, "Error: Cannot read watchdog interval\n");
-		   exit(EXIT_FAILURE);
 	   }
  
 	   /* Check if last boot is caused by watchdog */
@@ -145,7 +144,6 @@ int main(int argc, char **argv)
 			  (bootstatus != 0) ? "Watchdog" : "Power-On-Reset");
 	   } else {
 		   fprintf(stderr, "Error: Cannot read watchdog status\n");
-		   exit(EXIT_FAILURE);
 	   }
    }
    /* If user wants to change the watchdog interval */
@@ -155,7 +153,6 @@ int main(int argc, char **argv)
 	   if (ioctl(fd, WDIOC_SETTIMEOUT, &interval) != 0) {
 		   fprintf(stderr,
 			   "Error: Set watchdog interval failed\n");
-		   exit(EXIT_FAILURE);
 	   }
    }
    
