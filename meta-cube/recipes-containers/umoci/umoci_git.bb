@@ -3,9 +3,6 @@ SUMMARY = "umoci modifies Open Container images"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://COPYING;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
-DEPENDS = "go-cross-${TARGET_ARCH} \
-          "
-
 RDEPENDS_${PN} = "skopeo \
                  "
 
@@ -17,6 +14,7 @@ PV = "v0.1.0-dev+git${SRCPV}"
 S = "${WORKDIR}/git/src/github.com/openSUSE/umoci"
 
 inherit go-osarchmap
+inherit go
 
 # This disables seccomp and apparmor, which are on by default in the
 # go package. 
