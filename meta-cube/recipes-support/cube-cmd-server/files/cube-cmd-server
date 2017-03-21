@@ -136,7 +136,7 @@ for s in ${input_stream}; do
     (nanoserver -q $debug -L "ipc:///var/lib/cube/$s/cmd-pipe" -E "$topdir/cube-cmd-handler -l $logfile -r $s") &
 done
 
-output_and_log_msg "[INFO]: Wating for the cube-cmd-server exited ..."
+output_and_log_msg "[INFO]: Waiting for the cube-cmd-server to exit ..."
 wait
 
-output_and_log_msg "[INFO]: cube-cmd-server exiting (cleanly)"
+output_and_log_msg "[INFO]: cube-cmd-server has stopped (cleanly)"
