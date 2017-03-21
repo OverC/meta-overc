@@ -3,7 +3,7 @@ SUMMARY = "Work with remote images registries - retrieving information, images, 
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7e611105d3e369954840a6668c438584"
 
-DEPENDS = "go-cross-${TARGET_ARCH} \
+DEPENDS = "\
            go-urfave \
            containers-image \
            go-digest \
@@ -33,7 +33,12 @@ DEPENDS = "go-cross-${TARGET_ARCH} \
            go-mergo \
            go-zfs \
            go-uuid \
+           gpgme \
+           multipath-tools \
+           btrfs-tools \
           "
+
+inherit go
 
 RDEPENDS_${PN} = "gpgme \
                   lvm2 \
