@@ -43,10 +43,10 @@ FILES_${PN}-functions = "${sysconfdir}/cube-cmd-server-functions"
 
 pkg_postinst_${PN}-host-conf () {
 #!/bin/sh -e
-mv etc/cube-cmd-server.conf-host etc/cube-cmd-server.conf
+mv ${sysconfdir}/cube-cmd-server.conf-host ${sysconfdir}/cube-cmd-server.conf
 }
 
 pkg_postinst_${PN}-dom0-conf () {
 #!/bin/sh -e
-mv etc/cube-cmd-server.conf-dom0 etc/cube-cmd-server.conf
+mv ${sysconfdir}/cube-cmd-server.conf-dom0 ${sysconfdir}/cube-cmd-server.conf
 }
