@@ -1139,21 +1139,26 @@ case "${cmd}" in
 	    echo ""
 	    echo "${oci}"
 	else
+	    output=$(mktemp)
+	    echo "name type status" > ${output}
+	    echo "---- ---- ------" >> ${output}
 	    for l in ${open_container_running}; do
-		echo "${l} # oci, running"
+		echo "${l} oci running" >> ${output}
 	    done
 	    for l in ${open_container_stopped}; do
-		echo "${l} # oci, stopped"
+		echo "${l} oci stopped" >> ${output}
 	    done
 	    for l in ${cubes_running}; do
-		echo "${l} # cube, running"
+		echo "${l} cube running" >> ${output}
 	    done
 	    for l in ${open_container_available}; do
-		echo "${l} # oci, available"
+		echo "${l} oci available" >> ${output}
 	    done
 	    for l in ${cubes_available}; do
-		echo "${l} # cube, available"
+		echo "${l} cube available" >> ${output}
 	    done
+	    cat ${output} | column -t
+	    rm ${output}
 IFS=$OLDIFS
 	fi
 	;;
