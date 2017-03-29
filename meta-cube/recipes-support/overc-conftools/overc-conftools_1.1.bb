@@ -33,6 +33,7 @@ SRC_URI = " \
     file://source/ansible/setup_offset.yml \
     file://source/essential_rw.sh \
     file://source/oci-network \
+    file://source/oci-device \
 "
 
 S = "${WORKDIR}"
@@ -69,6 +70,7 @@ do_install() {
 
     install -d ${D}/${libexecdir}/oci/hooks.d/
     install -m 755 ${WORKDIR}/source/oci-network ${D}/${libexecdir}/oci/hooks.d/
+    install -m 755 ${WORKDIR}/source/oci-device ${D}/${libexecdir}/oci/hooks.d/
 }
 
 RDEPENDS_${PN} += " \

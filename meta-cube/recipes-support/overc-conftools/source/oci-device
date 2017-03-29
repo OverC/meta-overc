@@ -1,0 +1,24 @@
+#/bin/bash
+
+# we ge an action + startup json
+action=$1
+shift
+
+# yank what we need out of the json
+pid=$(echo "$@" | jq .pid)
+
+if [ "${action}" = "up" ]; then
+    echo "${pid}" > .cube.pid
+
+    # enter tthe mount namespace to manipulate devices
+    nsenter -t ${pid} -m --preserve-credentials ls /dev/console
+
+    # TODO: read a .cube.dev.whitelist and a .cube.dev.blacklist to manipulate
+    #       the available devices
+fi
+
+if [ "${action}" = "down" ]; then
+    path=$(echo "$@" | jq .bundlePath | sed 's%"%%g')
+
+    # nothing at the moment
+fi
