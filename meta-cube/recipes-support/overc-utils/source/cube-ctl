@@ -362,8 +362,8 @@ IFS="
 check_is_known_container()
 {
     local container_name=$1
-    local container_is_a_oci=""
-    local container_is_a_cube=""
+    container_is_a_oci=""
+    container_is_a_cube=""
 
     # if we are not in a container .. then there's no need to check anything
     # just return that this is not a known container
@@ -422,6 +422,7 @@ graft_binaries_to_essential()
     done
 }
 
+# arg1: path to the container rootfs
 tweak_container_fstab()
 {
     local rootfs=$1
@@ -439,25 +440,24 @@ tweak_container_fstab()
 
 #
 # arg1: the container name
-# arg2: the container directory (note: *not* the rootfs dir)
+# arg2: the container storage directory (note: *not* the rootfs dir)
 #
 # We generate a base configuration, and then tweak it for the
 # various container formats.
 #
-generate_lxc_container_config()
+generate_lxc_config()
 {
     local cn=$1
-    local pathtocontainer=$2
-    local lxcbase="/opt/container"
+    local container_storage=$2
 
-    cat << EOF >${pathtocontainer}/config
+    cat << EOF >${container_storage}/${cn}/config
 lxc.utsname = ${cn}
-lxc.rootfs = ${lxcbase}/${cn}/rootfs
+lxc.rootfs = ${container_storage}/${cn}/rootfs
 lxc.autodev = 1
 lxc.kmsg = 0
 lxc.tty = ${tty_num}
 lxc.pts = 0
-lxc.mount = ${lxcbase}/${cn}/fstab
+lxc.mount = ${container_storage}/${cn}/fstab
 lxc.network.type = veth
 lxc.network.name = veth0
 lxc.network.script.up = /etc/lxc/ovs-up
@@ -467,28 +467,107 @@ lxc.start.auto = ${autostart}
 overc.start.auto = ${peerstart}
 EOF
     if [ ${cn} == "dom0" ]; then
-	echo "lxc.uncontain = 1" >> ${pathtocontainer}/config
+	echo "lxc.uncontain = 1" >> ${container_storage}/${cn}/config
 	# Domain 0 wants to drive X onto a real console
-	echo "lxc.console = none" >>${pathtocontainer}/config
+	echo "lxc.console = none" >>${container_storage}/${cn}/config
     fi
 
     if [ -n "${subuid}" ]; then
 	# for unprivileged containers, we need to use the mixed structure to
 	# isolate the control of the container itself from the upper layer.
-	echo "lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed" >>${pathtocontainer}/config
+	echo "lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed" >>${container_storage}/${cn}/config
 	# subuid/subgid configuration for unprivileged container
-	echo "lxc.id_map = u 0 ${subuid} 65536" >>${pathtocontainer}/config
-	echo "lxc.id_map = g 0 ${subuid} 65536" >>${pathtocontainer}/config
+	echo "lxc.id_map = u 0 ${subuid} 65536" >>${container_storage}/${cn}/config
+	echo "lxc.id_map = g 0 ${subuid} 65536" >>${container_storage}/${cn}/config
     else
 	# privileged containers
-	echo "lxc.mount.entry = devpts ${lxcbase}/${cn}/rootfs/dev/pts devpts gid=5,mode=620 0 0" >>${pathtocontainer}/config
-	echo "lxc.mount.entry = proc ${lxcbase}/${cn}/rootfs/proc    proc defaults 0 0" >>${pathtocontainer}/config
-	echo "lxc.mount.entry = sysfs ${lxcbase}/${cn}/rootfs/sys     sysfs defaults 0 0" >>${pathtocontainer}/config
-	echo "lxc.hook.autodev = ${lxcbase}/${cn}/autodev" >>${pathtocontainer}/config
+	echo "lxc.mount.entry = devpts ${container_storage}/${cn}/rootfs/dev/pts devpts gid=5,mode=620 0 0" >>${container_storage}/${cn}/config
+	echo "lxc.mount.entry = proc ${container_storage}/${cn}/rootfs/proc    proc defaults 0 0" >>${container_storage}/${cn}/config
+	echo "lxc.mount.entry = sysfs ${container_storage}/${cn}/rootfs/sys     sysfs defaults 0 0" >>${container_storage}/${cn}/config
+	echo "lxc.hook.autodev = ${container_storage}/${cn}/autodev" >>${container_storage}/${cn}/config
     fi
 
     if [ ${havettyconsole} == 1 ]; then
-	echo "overc.screen-getty = 1" >>${pathtocontainer}/config
+	echo "overc.screen-getty = 1" >>${container_storage}/${cn}/config
+    fi
+}
+
+# arg1: the container name
+# arg2: the path to the container storage
+tweak_container_devices()
+{
+    local container_name=$1
+    local container_storage=$2
+
+    local mgr=$(${SBINDIR}/cube-cfg -o ${container_storage}/${container_name} get cube.device.mgr)
+
+    if [ "${mgr}" = "essential" ]; then
+	# we have to disable systemd udevd if it is in the container
+	if [ -e ${container_storage}/${container_name}/rootfs/etc/systemd/system ]; then
+	    ln -sf /dev/null ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd.service
+	    ln -sf /dev/null ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-kernel.socket
+	    ln -sf /dev/null ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-control.socket
+	fi
+    fi
+
+    # TODO: tty handling
+    # # harttyconsole == 1 means the container gets the real device
+    # if [ ${hardttyconsole} == 1  ]; then
+    #	# If container /dev is mounted by tmpfs (when lxc.autodev=1) then
+    #	# systemd fails to start dev-ttyXXXX.device service and this causes
+    #	# serial-getty@ttyXXXX.service fails to start.  Workaround for now
+    #	# is to remove the dependency to dev-%i.device service.
+    #	if [ -e ${pathtocontainer}/rootfs/lib/systemd/system/serial-getty@.service ] ; then
+    #		sed -i "s:After=dev-%i.device :After=:g" ${pathtocontainer}/rootfs/lib/systemd/system/serial-getty@.service
+    #	fi
+
+    #	# remove serial console in the metal in order to pass it to the container
+    #	serialconsoles=$( ls etc/systemd/system/getty.target.wants/serial-getty* etc/systemd/system/getty.target.wants/screen-getty* 2> /dev/null)
+    #	for k in ${serialconsoles}; do
+    #		ln -s -f /dev/null ${k}
+    #	done
+    # else
+    #	# Mask out the container service serial-getty@${ttyconsoledev}.service
+    #	serialconsoles=$( ls ${pathtocontainer}/rootfs/etc/systemd/system/getty.target.wants/serial-getty* 2> /dev/null)
+    #	for k in ${serialconsoles}; do
+    #		ln -s -f /dev/null ${k}
+    #	done
+    # fi
+
+    # TODO: VT handling
+    # if [ -n "$vty_num" ]; then
+    #	#disable the autoTV
+    #	sed -i "s/#NAutoVTs=.*$/NAutoVTs=0/g" ${pathtocontainer}/rootfs/etc/systemd/logind.conf
+    #	sed -i "s/#ReserveVT=.*$/ReserveVT=0/g" ${pathtocontainer}/rootfs/etc/systemd/logind.conf
+    #	gettys=$( ls ${pathtocontainer}/rootfs/etc/systemd/system/getty.target.wants/getty* )
+    #	for k in ${gettys}; do
+    #		ln -s -f /dev/null ${k}
+    #	done
+    #	ln -sf /lib/systemd/system/getty@.service ${pathtocontainer}/rootfs/etc/systemd/system/getty.target.wants/getty@tty${vty_num}.service
+    # fi
+
+}
+
+# arg1: the container name
+# arg2: the path to the container storage
+# arg3: allocate terminal ('t' or 'f')
+tweak_container_terminal()
+{
+    local container_name=$1
+    local container_path=$2
+    local alloc_terminal=$3
+
+    # if the command is interactive, we need to ensure that a terminal is allocated
+    # or it won't work / look like it is hung
+    terminal_json=$(jq -r '.process.terminal' ${container_path}/${container_name}/config.json)
+    if [ "${alloc_terminal}" = "t" ] && [ "${terminal_json}" = "false" ] ; then
+	jq -r  '.process.terminal = true' ${container_path}/${container_name}/config.json > ${container_path}/${container_name}/config.json.terminal
+	mv ${container_path}/${container_name}/config.json.terminal ${container_path}/${container_name}/config.json
+    fi
+
+    if [ "${alloc_terminal}" = "f" ] && [ "${terminal_json}" = "true" ] ; then
+	jq -r  '.process.terminal = false' ${container_path}/${container_name}/config.json > ${container_path}/${container_name}/config.json.terminal
+	mv ${container_path}/${container_name}/config.json.terminal ${container_path}/${container_name}/config.json
     fi
 }
 
@@ -610,7 +689,7 @@ case "${cmd}" in
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
-		echo "[INFO] Installing container ${container_name} to ${out_dir}/${container_nae}"
+		echo "[INFO] Installing container ${container_name} to ${out_dir}/${container_name}"
 		echo "[INFO] Extracting rootfs....."
 		tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
 		if [ $? != 0 ]; then
@@ -734,8 +813,14 @@ case "${cmd}" in
 
 		${SBINDIR}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
 		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-device up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
 		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+
+		# this will trigger the disabling of systemd udev services, and allow us to control
+		# the devices visible to the container
+		${SBINDIR}/cube-cfg set cube.device.mgr:essential
 
 		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
@@ -756,6 +841,7 @@ case "${cmd}" in
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
+	    tweak_container_devices ${container_name} ${out_dir}
 
 	    if [ -n "${auto}" ]; then
 		${SBINDIR}/cube-cfg -o ${out_dir}/${container_name} set autostart:${auto}
@@ -765,12 +851,7 @@ case "${cmd}" in
 	# LXC (lxc)
 	if [ "${container_type}" = "lxc" ]; then
 	    echo "[INFO] Performing lxc configuration ..."
-	    check_required ${overc_cctl}
-	    ${overc_cctl} add ${privilege_param} -d -a -c -g onboot -t 0 -n ${container_name} -f ${container_source}
-	    if [ $? != 0 ]; then
-		echo "Add container failed ..."
-		exit 1
-	    fi
+	    generate_lxc_config ${container_name} ${out_dir}
 	fi
 
 	if [ -n "${we_are_dom0}" ]; then
@@ -1016,6 +1097,12 @@ case "${cmd}" in
 
 			    echo "${open_container_running}" | grep -q ${container}
 			    if [ $? -ne 0 ]; then
+
+				# re-run the tweaks (in case a config changed)
+				tweak_container_terminal ${container} ${container_dir} f
+				tweak_container_fstab ${container_dir}/${container}/rootfs
+				tweak_container_devices ${container} ${container_dir}/${container}/
+
 				nsenter -P -t 1 -p -n -u -m -C /opt/container/${container}/oci.cmd
 				# TODO: move this cube-cfg call into a pre-start hook, same with the
 				#       delete of the key
@@ -1186,11 +1273,12 @@ IFS=$OLDIFS
 
 	    # if the command is interactive, we need to ensure that a terminal is allocated
 	    # or it won't work / look like it is hung
-	    terminal_json=$(jq -r '.process.terminal' /opt/container/${container_name}/config.json)
-	    if [ -n "${interactive}" ] && [ "${terminal_json}" = "false" ] ; then
-		jq -r  '.process.terminal = true' /opt/container/${container_name}/config.json > /opt/container/${container_name}/config.json.terminal
-		mv /opt/container/${container_name}/config.json.terminal /opt/container/${container_name}/config.json
+	    if [ -n "${interactive}" ]; then
+		terminal_flag="t"
+	    else
+		terminal_flag="f"
 	    fi
+	    tweak_container_terminal ${container_name} /opt/container ${terminal_flag}
 
 	    if [ -n "${verbose}" ]; then
 		echo "running: ${cmd}"

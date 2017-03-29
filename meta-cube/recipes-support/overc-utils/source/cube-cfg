@@ -54,14 +54,18 @@ cat << EOF
 
     add a device to a container
 
-       <type>:       network, network-virt or console/tty
-       <name>:<name> device name in essential : device name in container
+       <type>:           network, network-virt
+          <name>:<name>  device name in essential : device name in container
+
+       <type>:           whitelist, blacklist
+          <name>         name of the device to blacklist/whitelist
+
+       <type>:           console
+          <type>:<value> type: tty or vt. value: tty or VT number
 
  ${0##*/} [-n <container name>] id
 
     get the unique machine / platform identifier
-
-    -n <container name> : get the container identifier
 
  ${0##*/} get/set:
 
@@ -97,8 +101,9 @@ declare -A CONFIG_MAP
 #  <var> <db var>; <help text>
 #
 CONFIG_MAP[app]="cube.app;The application to start in the container"
-CONFIG_MAP[cube.container.mgr]="cube.container.mgr;The manager for the container"
-CONFIG_MAP[cube.console.mgr]="cube.console.mgr;The console manager (if access is not direct)"
+CONFIG_MAP[cube.container.mgr]="cube.container.mgr;The manager for the container: the path to the container runtime"
+CONFIG_MAP[cube.console.mgr]="cube.console.mgr;The console manager (if access is not direct): 'tty' or 'screen-tty'"
+CONFIG_MAP[cube.device.mgr]="cube.device.mgr;The device manager for the container: essential (static) or detected/standalone"
 CONFIG_MAP[autostart]="autostart;The autostart runlevel for the container"
 CONFIG_MAP[cube.network.type]="cube.network.type;The type of container networking: static or dynamic"
 CONFIG_MAP[cube.network.ip]="cube.network.ip;<ip>/<netmask>. The ip to assign to the container (must be supplied for static network type)"
