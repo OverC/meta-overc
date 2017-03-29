@@ -1209,6 +1209,11 @@ IFS=$OLDIFS
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
+	if [ -z "${container_name}" ]; then
+	    echo "[ERROR]: no container name provided"
+	    exit 1
+	fi
+
 	if ! check_is_known_container ${container_name}; then
 	    echo "[ERROR] Container ${container_name} not found, cannot stop."
 	    echo -n "Valid containers are: "
