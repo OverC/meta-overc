@@ -11,9 +11,9 @@ ExecStart=/usr/sbin/dom0-containers start
 ExecStop=/usr/sbin/dom0-containers stop
 # Environment=BOOTUP=serial
 # Environment=CONSOLETYPE=serial
-Delegate=yes
-StandardInput=tty
-StandardOutput=tty
+# Delegate=yes
+# StandardInput=tty
+# StandardOutput=tty
 # StandardError=syslog
 
 [Install]
