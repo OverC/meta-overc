@@ -32,6 +32,10 @@ cat << EOF
 
        <name>:<type> container name and type
 
+ ${0##*/} show <name>
+
+    show the configuration options for container <name>
+
  ${0##*/} [-n <container name>] mount <type>:<name>:<name>
 
     mount a directory into the container
@@ -308,6 +312,87 @@ clean_config_artifacts()
     if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
 	rm -f ${out_dir}/.cube.hooks.prestart ${out_dir}/.cube.hooks.poststop
     fi
+}
+
+#
+# arg1: name of the container
+# arg2: type of artifacts to show. 'all' will be assumed if nothing is passed
+#
+show_config_artifacts()
+{
+    local container_name=$1
+    local type=$2
+
+    if [ -z "${type}" ]; then
+	type="all"
+    fi
+
+    if [ "${type}" = "mount" ] || [ "${type}" = "all" ]; then
+	echo "mounts:"
+	echo "-------"
+	if [ -e "${out_dir}/.cube.mount" ]; then
+	    for b in $(cat ${out_dir}/.cube.mount); do
+		echo "mount: $b"
+	    done
+	fi
+	if [ -e "${out_dir}/.cube.mount.bind" ]; then
+	    for b in $(cat ${out_dir}/.cube.mount.bind); do
+		echo "mount (bind): $b"
+	    done
+	fi
+    fi
+
+    if [ "${type}" = "device" ] || [ "${type}" = "all" ]; then
+	echo ""
+	echo "devices:"
+	echo "--------"
+	if [ -e "${out_dir}/.cube.device" ]; then
+	    for b in $(cat ${out_dir}/.cube.device); do
+		echo "device: $b"
+	    done
+	fi
+	if [ -e "${out_dir}/.cube.device.network" ]; then
+	    for b in $(cat ${out_dir}/.cube.device.network); do
+		echo "network device: $b"
+	    done
+	fi
+    fi
+
+    if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
+	echo ""
+	echo "hooks:"
+	echo "------"
+	if [ -e "${out_dir}/.cube.hooks.prestart" ]; then
+OLDIFS=$IFS
+IFS='
+'
+	    for b in $(cat ${out_dir}/.cube.hooks.prestart); do
+		echo "hook (pre) : $b" | sed 's/##space##//g'
+	    done
+	fi
+	if [ -e "${out_dir}/.cube.hooks.poststop" ]; then
+	    for b in $(cat ${out_dir}/.cube.hooks.poststop); do
+		echo "hook (post): $b" | sed 's/##space##//g'
+	    done
+	fi
+IFS=$OLDIFS
+    fi
+
+    echo ""
+    output=$(mktemp)
+    echo "option:setting" > ${output}
+    echo "------:-------" >> ${output}
+    for K in "${!CONFIG_MAP[@]}"; do
+	echo -n "${K}: " >> ${output}
+	value=$(cube-cfg -n ${container_name} get ${K})
+	if [ -n "${value}" ]; then
+	    echo "${value}" >> ${output}
+	else
+	    echo "not set" >> ${output}
+	fi
+    done
+    cat ${output} | column -t -s:
+    rm ${output}
 }
 
 #
@@ -588,6 +673,12 @@ etcd_inject()
 case "${cmd}" in
     clean)
 	clean_config_artifacts
+	;;
+    show)
+	if [ -z "${container_name}" ]; then
+	    echo "[ERROR]: a container name must be provided"
+	fi
+	show_config_artifacts ${container_name}
 	;;
     gen)
 	name_temp=${cmd_options_non_dashed[1]}

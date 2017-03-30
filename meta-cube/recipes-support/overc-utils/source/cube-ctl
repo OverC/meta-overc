@@ -84,7 +84,7 @@ commands (and options):
  ${0##*/} status
  ${0##*/} list
 
-    show the status (list) of known containers
+    list of known containers
 
  ${0##*/} [-i] <target>:<command>
 
@@ -94,6 +94,7 @@ commands (and options):
       -i :    The command is interactive and a terminal should be allocated
 
  ${0##*/} info <name>
+ ${0##*/} show <name>
 
     display detailed information about container <name>
 
@@ -815,7 +816,7 @@ case "${cmd}" in
 		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-device up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
-		${SBINDIR}/cube-cfg hook-script prestart:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
 		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
 
 		# this will trigger the disabling of systemd udev services, and allow us to control
@@ -1099,7 +1100,7 @@ case "${cmd}" in
 			    if [ $? -ne 0 ]; then
 
 				# re-run the tweaks (in case a config changed)
-				tweak_container_terminal ${container} ${container_dir} f
+				tweak_container_terminal ${container} ${container_dir} t
 				tweak_container_fstab ${container_dir}/${container}/rootfs
 				tweak_container_devices ${container} ${container_dir}/${container}/
 
@@ -1162,7 +1163,7 @@ case "${cmd}" in
 IFS=$OLDIFS
 	fi
 	;;
-    info)
+    info|show)
 	build_container_lists
 
 	graft_binaries_to_essential runc
@@ -1181,12 +1182,12 @@ IFS=$OLDIFS
 	    if [ $? -eq 0 ]; then
 		container_is_a_cube=t
 	    fi
-	    echo ${open_containers} | grep -q ${container_name}
+	    echo ${open_containers} ${open_container_available} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
 		container_is_a_oci=t
 	    fi
 	    if [ -z "${container_is_a_cube}" ] && [ -z "${container_is_a_oci}" ]; then
-		echo "ERROR: container ${container_name} is not valid"
+		echo "ERROR: container ${container_name} is not known"
 		exit 1
 	    fi
 
@@ -1198,8 +1199,21 @@ IFS=$OLDIFS
 		fi
 	    fi
 	    if [ -n "${container_is_a_oci}" ]; then
-		cube-cmd ${runc_essential} state ${container_name}
+		echo "state:"
+		echo "------"
+		echo ${open_containers} | grep -q ${container_name}
+		if [ $? -eq 0 ]; then
+		    cube-cmd ${runc_essential} state ${container_name}
+		else
+		    echo "not running (or created)"
+		fi
+		echo ""
+		echo ""
+		cube-cfg -n ${container_name} show
 	    fi
+	else
+	    echo "[ERROR]: provide a container name to see detailed information"
+	    exit 1
 	fi
 	;;
     stop|pause)
