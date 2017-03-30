@@ -4,7 +4,7 @@ After=systemd-networkd.service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/overc/network_prime_port_forward.sh
+ExecStart=/bin/bash /etc/overc/network_prime_port_forward.sh
 
 [Install]
 WantedBy=multi-user.target
