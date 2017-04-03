@@ -17,13 +17,14 @@ SRC_URI += "file://xt-checksum.scc \
             file://lxc.scc \
             file://docker.scc \
             file://criu.scc \
-	    file://uncontain.scc \
+            file://uncontain.scc \
             "
 
 # was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
 LINUX_VERSION_EXTENSION = "-cube"
 
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
+KERNEL_FEATURES_append = " features/tmpfs/tmpfs-posix-acl.scc"
 
 KERNEL_MODULE_AUTOLOAD += "openvswitch"
 KERNEL_MODULE_AUTOLOAD += "kvm"
