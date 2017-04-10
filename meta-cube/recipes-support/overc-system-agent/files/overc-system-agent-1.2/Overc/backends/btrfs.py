@@ -144,6 +144,8 @@ class Btrfs(Utils):
             if os.path.islink(real_kernel):
                 real_kernel = '%s/%s/%s' % (SYSROOT, FACTORY_SNAPSHOT, os.path.realpath(real_kernel))
             os.system('cp -rf %s %s' % (real_kernel, self.kernel))
+            if os.path.exists(real_kernel + '.p7b'):
+               os.system('cp -rf %s.p7b %s.p7b' % (real_kernel, self.kernel))
 
             #if grub-efi exists, factory-reset those files from the original rootfs too.
             if os.path.exists('%s/%s/boot/efi/EFI/BOOT' % (SYSROOT, FACTORY_SNAPSHOT)):
@@ -274,7 +276,11 @@ class Btrfs(Utils):
             if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
                 #backup kernel
                 os.system('cp -f %s  %s_bakup' % (self.kernel, self.kernel))
+                if os.path.exists(self.kernel + '.p7b'):
+                    os.system('cp -f %s.p7b %s_bakup.p7b' % (self.kernel, self.kernel))
                 os.system('cp -f %s %s' % (upgrade_kernel, self.kernel))
+                if os.path.exists(upgrade_kernel + '.p7b'):
+                    os.system('cp -f %s.p7b %s.p7b' % (upgrade_kernel, self.kernel))
 
             #if grub-efi exists, replace the old one with it in case they are upgraded also
             if os.path.exists('%s/%s/boot/efi/EFI/BOOT' % (SYSROOT, self.next_rootfs)):
@@ -322,6 +328,8 @@ class Btrfs(Utils):
 
         if rollback_kernel_md5 != self.kernel_md5:
             os.system('cp -f %s %s' % (rollback_kernel, self.kernel))
+            if os.path.exists(rollback_kernel + '.p7b'):
+                os.system('cp -f %s.p7b %s.p7b' % (rollback_kernel, self.kernel))
 
         #if grub-efi exists, rollback it too
         if os.path.exists('%s/%s/boot/efi/EFI/BOOT' % (SYSROOT, self.next_rootfs)):
