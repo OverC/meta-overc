@@ -44,3 +44,6 @@ bind 7 select 7
 bind 8 select 8
 bind 9 select 9
 
+# Turn off alternate screen and allow scrollback for putty/gnome-terminal
+termcapinfo xterm ti@:te@
+
