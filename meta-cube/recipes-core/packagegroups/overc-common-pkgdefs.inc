@@ -58,7 +58,6 @@ OVERC_EXTRA_EXTENDED = "\
      pm-utils \
      polkit \
      sysstat \
-     tcf-agent \
      tzdata \
     "
 
