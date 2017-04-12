@@ -1,4 +1,4 @@
-From 82a99532d48799c83216f11554f276dabc4fe660 Mon Sep 17 00:00:00 2001
+From a09a1f07510b9b673005c91a6d3e572c79afb81a Mon Sep 17 00:00:00 2001
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 Date: Tue, 13 Jan 2015 11:14:43 -0500
 Subject: [PATCH] profile: add a tuning knob to allow sbin paths for non root
@@ -12,29 +12,22 @@ easily changed.
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
 diff --git a/profile b/profile
-index 88ab8d877b0d..e3fb04df1dcd 100644
+index ceaf15f799b7..3ae395c73c9e 100644
 --- a/profile
 +++ b/profile
-@@ -1,6 +1,10 @@
- # /etc/profile: system-wide .profile file for the Bourne shell (sh(1))
- # and Bourne compatible shells (bash(1), ksh(1), ash(1), ...).
+@@ -5,7 +5,11 @@ PATH="/usr/local/bin:/usr/bin:/bin"
+ EDITOR="vi"			# needed for packages like cron, git-commit
+ test -z "$TERM" && TERM="vt100"	# Basic terminal capab. For screen etc.
  
+-if [ "$HOME" = "ROOTHOME" ]; then
 +# Old school admins who expect to run /sbin/ifconfig as UID!=0 might
 +# want to set this to 1
 +SBIN_FOR_NON_ROOT=0
 +
- PATH="/usr/local/bin:/usr/bin:/bin"
- EDITOR="vi"			# needed for packages like cron, git-commit
- test -z "$TERM" && TERM="vt100"	# Basic terminal capab. For screen etc.
-@@ -11,7 +15,7 @@ if [ ! -e /etc/localtime -a ! -e /etc/TZ ]; then
- 	export TZ
- fi
- 
--if [ "$HOME" = "ROOTHOME" ]; then
 +if [ "$HOME" = "ROOTHOME" -o "$SBIN_FOR_NON_ROOT" = "1" ]; then
-    PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
+ 	PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin
  fi
  if [ "$PS1" ]; then
 -- 
-2.2.1
+2.11.1
 
