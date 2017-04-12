@@ -103,7 +103,7 @@ RDEPENDS_packagegroup-builder-debug = " \
     gdb \
     gdbserver \
     rsync \
-    strace
+    strace \
     "
 
 
