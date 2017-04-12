@@ -13,7 +13,7 @@ SRC_URI = "git://github.com/openSUSE/umoci;branch=master;name=umoci;destsuffix=g
 PV = "v0.1.0-dev+git${SRCPV}"
 S = "${WORKDIR}/git/src/github.com/openSUSE/umoci"
 
-inherit go-osarchmap
+inherit goarch
 inherit go
 
 # This disables seccomp and apparmor, which are on by default in the

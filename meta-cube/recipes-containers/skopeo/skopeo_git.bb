@@ -52,7 +52,7 @@ PV = "v0.1.19-dev+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
-inherit go-osarchmap
+inherit goarch
 
 # This disables seccomp and apparmor, which are on by default in the
 # go package. 
