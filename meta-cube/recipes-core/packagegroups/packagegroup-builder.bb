@@ -57,7 +57,7 @@ RRECOMMENDS_packagegroup-builder-host-tools = "\
     kernel-module-iptable-nat \
     kernel-module-iptable-mangle \
     kernel-module-iptable-filter \
-	"
+    "
 
 # eglibc-utils: for rpcgen
 RDEPENDS_packagegroup-builder-sdk = "\
@@ -103,8 +103,8 @@ RDEPENDS_packagegroup-builder-debug = " \
     gdb \
     gdbserver \
     rsync \
-    strace \
-    tcf-agent"
+    strace
+    "
 
 
 RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
