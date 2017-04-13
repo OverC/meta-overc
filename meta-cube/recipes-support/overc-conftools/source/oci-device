@@ -7,14 +7,27 @@ shift
 # yank what we need out of the json
 pid=$(echo "$@" | jq .pid)
 
+## TODO:
+##   - this should be run as a post-start hook to ensure that
+##     any mounted /dev/ filesystems can be overriden
+##   - if run as a pre-start hook, then we should bind mount
+##     the parents /dev/ as /dev-host and then copy device nodes
+##     from there to /dev/.
+##   - this should consule the cube.device.mgr settting to decide
+##     if it should run
+
 if [ "${action}" = "up" ]; then
     echo "${pid}" > .cube.pid
 
     # enter tthe mount namespace to manipulate devices
-    nsenter -t ${pid} -m --preserve-credentials ls /dev/console
+    #nsenter -t ${pid} -m --preserve-credentials ls /dev/console
 
     # TODO: read a .cube.dev.whitelist and a .cube.dev.blacklist to manipulate
     #       the available devices
+
+    if [ -e ".cube.dev.whitelist" ]; then
+	true
+    fi
 fi
 
 if [ "${action}" = "down" ]; then
