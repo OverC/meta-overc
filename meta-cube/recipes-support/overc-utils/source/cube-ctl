@@ -509,6 +509,14 @@ tweak_container_devices()
 	    ln -sf /dev/null ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-kernel.socket
 	    ln -sf /dev/null ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-control.socket
 	fi
+    else
+	# we have to re-enable systemd udevd if it is in the container. By simply removing
+	# the links to /dev/null (if they exist) we'll re-nable udevd
+	if [ -e ${container_storage}/${container_name}/rootfs/etc/systemd/system ]; then
+	    rm -f ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd.service
+	    rm -f ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-kernel.socket
+	    rm -f ${container_storage}/${container_name}/rootfs/etc/systemd/system/systemd-udevd-control.socket
+	fi
     fi
 
     # TODO: tty handling
@@ -1102,7 +1110,7 @@ case "${cmd}" in
 				# re-run the tweaks (in case a config changed)
 				tweak_container_terminal ${container} ${container_dir} t
 				tweak_container_fstab ${container_dir}/${container}/rootfs
-				tweak_container_devices ${container} ${container_dir}/${container}/
+				tweak_container_devices ${container} ${container_dir}
 
 				nsenter -P -t 1 -p -n -u -m -C /opt/container/${container}/oci.cmd
 				# TODO: move this cube-cfg call into a pre-start hook, same with the
