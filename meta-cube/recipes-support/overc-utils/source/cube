@@ -56,15 +56,8 @@ case ${command} in
 	shift
 	cube-cmd $@
 	;;
-    add)
-        cube-ctl $@
-        ;;
-    del|delete|remove)
-	cube-ctl $@
-	;;
-    run)
-        ;;
     *)
-	echo "[ERROR]: unknown command ${command}"
+	# front cube-ctl by default
+	cube-ctl $@
 	;;
 esac
