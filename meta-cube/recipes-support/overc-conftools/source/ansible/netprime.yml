@@ -7,6 +7,9 @@
   - name: Remove default configuration file for network-prime
     file: path=/opt/container/{{network_prime_container}}/rootfs/etc/systemd/network/20-wired.network state=absent
 
+  - name: Remove default veth configuration file for network-prime
+    file: path=/opt/container/{{network_prime_container}}/rootfs/etc/systemd/network/20-wired-veth.network state=absent
+
   - name: Add IPForward configuration for network-prime
     copy: content="[Match]\nName={{network_device}}\n\n[Network]\nDHCP=ipv4\nIPForward=ipv4\n"
       dest=/opt/container/{{network_prime_container}}/rootfs/etc/systemd/network/30-wired.network mode=0644

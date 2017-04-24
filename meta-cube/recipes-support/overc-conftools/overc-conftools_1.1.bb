@@ -33,6 +33,8 @@ SRC_URI = " \
     file://source/ansible/setup_offset.yml \
     file://source/essential_rw.sh \
     file://source/oci-network \
+    file://source/cube-network \
+    file://source/cube-netprime \
     file://source/oci-device \
 "
 
@@ -69,6 +71,9 @@ do_install() {
     install -m 0644 ${WORKDIR}/source/essential_rw.sh ${D}/${sysconfdir}/profile.d/
 
     install -d ${D}/${libexecdir}/oci/hooks.d/
+    install -d ${D}/${libexecdir}/cube/hooks.d/
+    install -m 755 ${WORKDIR}/source/cube-network ${D}/${libexecdir}/cube/hooks.d/
+    install -m 755 ${WORKDIR}/source/cube-netprime ${D}/${libexecdir}/cube/hooks.d/
     install -m 755 ${WORKDIR}/source/oci-network ${D}/${libexecdir}/oci/hooks.d/
     install -m 755 ${WORKDIR}/source/oci-device ${D}/${libexecdir}/oci/hooks.d/
 }
@@ -88,3 +93,4 @@ FILES_${PN} +=  " \
     ${base_libdir}/systemd \
 "
 FILES_${PN} += "${libexecdir}/oci/hooks.d/"
+FILES_${PN} += "${libexecdir}/cube/hooks.d/"

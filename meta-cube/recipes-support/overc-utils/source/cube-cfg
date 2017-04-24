@@ -51,7 +51,7 @@ cat << EOF
        hook         the hook is an executable
        hook-script  the hook is a script
 
-       <type>       type of hook: prestart or poststop
+       <type>       type of hook: prestart, poststart or poststop
        <name>       full path to the hook
 
  ${0##*/} [-n <container name>] device <type>:<name>:<name>
@@ -74,6 +74,7 @@ cat << EOF
  ${0##*/} get/set:
 
    NOTE: variables with embedded / are etcd set/get operations.
+   NOTE: --append or --prepend can be used in combination with 'set'
 
    set:
      ${0##*/} [-n <container name>] [-o <output dir>] set <setting>:<value>
@@ -112,7 +113,8 @@ CONFIG_MAP[autostart]="autostart;The autostart runlevel for the container"
 CONFIG_MAP[cube.network.type]="cube.network.type;The type of container networking: static or dynamic"
 CONFIG_MAP[cube.network.ip]="cube.network.ip;<ip>/<netmask>. The ip to assign to the container (must be supplied for static network type)"
 CONFIG_MAP[cube.network.mac]="cube.network.mac;The mac address to assign to the container interface"
-CONFIG_MAP[cube.network.gateway]="cube.network.gateway;The gatway to use for the container"
+CONFIG_MAP[cube.network.gateway]="cube.network.gateway;The gateway to use for the container"
+CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;The nameserver to use for the container"
 
 if [ -z "$1" ]; then
     usage
@@ -152,6 +154,14 @@ while [ $# -gt 0 ]; do
 	--parent)
 	    parent=${2}
 	    shift
+	    ;;
+	--prepend)
+	    # used with set
+	    prepend=t
+	    ;;
+	--append)
+	    # used with set
+	    append=t
 	    ;;
 	--name)
 	    container_name_temp=${2}
@@ -310,7 +320,7 @@ clean_config_artifacts()
     fi
 
     if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
-	rm -f ${out_dir}/.cube.hooks.prestart ${out_dir}/.cube.hooks.poststop
+	rm -f ${out_dir}/.cube.hooks.prestart ${out_dir}/.cube.hooks.poststart ${out_dir}/.cube.hooks.poststop
     fi
 }
 
@@ -367,12 +377,17 @@ OLDIFS=$IFS
 IFS='
 '
 	    for b in $(cat ${out_dir}/.cube.hooks.prestart); do
-		echo "hook (pre) : $b" | sed 's/##space##//g'
+		echo "hook (pre start) : $b" | sed 's/##space##//g'
+	    done
+	fi
+	if [ -e "${out_dir}/.cube.hooks.poststart" ]; then
+	    for b in $(cat ${out_dir}/.cube.hooks.poststart); do
+		echo "hook (post start) : $b" | sed 's/##space##//g'
 	    done
 	fi
 	if [ -e "${out_dir}/.cube.hooks.poststop" ]; then
 	    for b in $(cat ${out_dir}/.cube.hooks.poststop); do
-		echo "hook (post): $b" | sed 's/##space##//g'
+		echo "hook (post stop): $b" | sed 's/##space##//g'
 	    done
 	fi
 IFS=$OLDIFS
@@ -418,6 +433,7 @@ generate_base_config()
                   --cap-add SYS_ADMIN \
 		  --cap-add SYS_MODULE \
                   --cap-add SYS_RESOURCE \
+                  --cap-add NET_ADMIN \
                   --cap-add SYS_TTY_CONFIG"
 
     app="/sbin/init"
@@ -440,6 +456,21 @@ IFS='
 		hooks="${hooks} --prestart ${cmd}:${args}"
 	    else
 		hooks="${hooks} --prestart ${cmd}"
+	    fi
+	done
+    fi
+    if [ -e ".cube.hooks.poststart" ]; then
+	for hook in $(cat .cube.hooks.poststart); do
+	    cmd=$(echo ${hook} | cut -d' ' -f1)
+	    count=$(echo ${hook} | wc -w)
+	    if [ $count -gt 1 ]; then
+		# the oci generation tool will take : separated items as arguments
+		# to the main executable. So we replace our spaces with : to get
+		# everything into the config.json
+		args=$(echo ${hook} | sed 's/ /:/g')
+		hooks="${hooks} --poststart ${cmd}:${args}"
+	    else
+		hooks="${hooks} --poststart ${cmd}"
 	    fi
 	done
     fi
@@ -554,9 +585,9 @@ convert_base_config_to_cube()
     fi
 
     # hooks ?
-    prestart_hooks=$(jq -r '.hooks.prestart' config.json)
-    if [ "${prestart_hooks}" != "null" ]; then
-	prestart_hooks=$(jq -r '.hooks.prestart | map("\(.path) \(.args)") | . []' config.json)
+    poststart_hooks=$(jq -r '.hooks.poststart' config.json)
+    if [ "${poststart_hooks}" != "null" ]; then
+	poststart_hooks=$(jq -r '.hooks.poststart | map("\(.path) \(.args)") | . []' config.json)
     fi
     poststop_hooks=$(jq -r '.hooks.poststop' config.json)
     if [ "${poststop_hooks}" != "null" ]; then
@@ -573,6 +604,8 @@ convert_base_config_to_cube()
     pflask_args="${pflask_args}	-p ${container_name} --uncontain -d --escape-char=255 --root ${rootfs}"
 
     echo "#!/bin/bash" > pflask.cmd
+    echo "date > /tmp/pflask-hook.log" >> pflask.cmd
+
     if [ -e "cube.console.mgr" ]; then
 	grep -q "screen-tty" cube.console.mgr
 	if [ $? -eq 0 ]; then
@@ -584,13 +617,11 @@ convert_base_config_to_cube()
     fi
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
 
-    if [ -n "${prestart_hooks}" ]; then
-	# let's give the container time to start. this may go away later.
-	echo "sleep 0.5" >> pflask.cmd
+    if [ -n "${poststart_hooks}" ]; then
 	OLDIFS=$IFS
 IFS='
 '
-	for h in ${prestart_hooks}; do
+	for h in ${poststart_hooks}; do
 	    # drop any "null" strings, since that means "no args"
 	    h=$(echo "${h}" | sed 's/null//g')
 
@@ -600,14 +631,34 @@ IFS='
 	    if [ $? -eq 0 ]; then
 		zztop=$(echo ${h} | sed -e 's/.*\[\(.*\)\]/\1/')
 		if [ -n "${zztop}" ]; then
+		    # drop quotes and commas
 		    zztop=$(echo ${zztop} | tr -d '"')
 		    zztop=$(echo ${zztop} | sed 's/,/ /g')
 		    h=${zztop}
 		fi
 	    fi
 
-	    # put the conditioned hook into the pflask command
-	    echo "${h}" >> pflask.cmd
+	    # was it a script call ? if it was, we need to put quotes back
+	    # arond the -c "<command>"
+	    echo ${h} | grep -q "sh -c"
+	    if [ $? -eq 0 ]; then
+		h=$(echo ${h} | sed "s/-c /-c '/")
+		h=$(echo ${h} | sed "s/$/'/")
+	    fi
+
+	    # put the conditioned hook into the pflask command, with a retry loop (since these can have timing issues)
+	    echo "count=0" >> pflask.cmd
+	    echo "while [ \$count -lt 10 ]; do" >> pflask.cmd
+	    echo "    ${h}" >> pflask.cmd
+	    echo "    if [ \$? -ne 0 ]; then" >> pflask.cmd
+	    echo "        echo \"Hook fail [\"${h}\"] (\$count)!\" >> /tmp/pflask-hook.log" >> pflask.cmd
+	    echo "        count=\`expr \$count + 1\`" >> pflask.cmd
+	    echo "        sleep 0.5" >> pflask.cmd
+	    echo "    else" >> pflask.cmd
+	    echo "        echo \"Hook success [\"${h}\"] (\$count)\" >> /tmp/pflask-hook.log" >> pflask.cmd
+	    echo "        count=10" >> pflask.cmd
+	    echo "    fi" >> pflask.cmd
+	    echo "done" >> pflask.cmd
 	done
 	IFS=$OLDIFS
     fi
@@ -762,6 +813,8 @@ case "${cmd}" in
 
 	    if [ "${type}" == "prestart" ]; then
 		echo "${hookname}" >> ${out_dir}/.cube.hooks.prestart
+	    elif [ "${type}" == "poststart" ]; then
+		echo "${hookname}" >> ${out_dir}/.cube.hooks.poststart
 	    elif [ "${type}" == "poststop" ]; then
 		echo "${hookname}" >> ${out_dir}/.cube.hooks.poststop
 	    else
@@ -862,7 +915,16 @@ case "${cmd}" in
 	    fi
 	else
 	    if [ "${cmd}" = "set" ]; then
-		echo "${value}" > ${out_dir}/${db_var}
+		if [ -f ${out_dir}/${db_var} ]; then
+		    previous=$(cat ${out_dir}/${db_var})
+		fi
+		if [ -n "${prepend}" ]; then
+		    echo "${value} ${previous}" > ${out_dir}/${db_var}
+		elif [ -n "${append}" ]; then
+		    echo "${previous} ${value}" > ${out_dir}/${db_var}
+		else
+		    echo "${value}" > ${out_dir}/${db_var}
+		fi
 	    else
 		if [ -e "${out_dir}/${db_var}" ]; then
 		    cat "${out_dir}/${db_var}"
