@@ -63,6 +63,44 @@ Console access is available through several mechanisms:
                      Access to both types of consoles is provided via the 'cube-console'
                      utility.
 
+Networking
+----------
+
+Networking for the platform is initially configured/controlled by the installer, but
+is subsequently managed at runtime via configuration values associated with a given
+installer.
+
+ essential: ansible manages the base networking configuration of the platform
+ 
+ cube*: pflask configures and manages the networking of cubes via hooks and 
+        cube-cfg values
+
+ *: all other containers are OCI format, and hence are managed via runc + hooks
+    and the same cube-cfg variables as cube*
+
+While the networking configuration can vary, there are some constant/known values
+to ensure minimal connectivity:
+
+ - network prime: The network prime container manages the physical device and
+                  hence external network connectivity for the platform. Any
+                  container can be the network prime, but dom0 or a cube-* are
+                  typically used, since they are known quantities.
+
+                  The network prime also hosts dhcp and DNS services for all
+                  other containers. Hence why it must be a fully functional
+                  container (and a known quantity).
+
+  - internal network: containers are all connected via 192.168.42.x connected
+                      to an OVS instance. virtual ethernet devices are created
+                      for each container, receive a dhcp address (by default)
+                      and route through the netprime for services
+
+  - 192.168.42.1 : is always the network prime
+  - 192.168.42.2 : is always essential
+  - 192.168.42.3 : is always dom0
+
+  - if dom0 is the net prime, it is both 42.1 and 42.3 
+
 access examples:
 ----------------
 

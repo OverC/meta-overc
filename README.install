@@ -165,12 +165,21 @@ We now have a bootable device, with an embedded installer + installation payload
 
 NOTES:
 
-  * Puppet - The installer is able to apply puppet configurations
-    during the installation. To use this functionality set
-    INSTALL_PUPPET_DIR in the install config script to enable puppet
-    configuration of your installation. Puppet is run in the context
-    of the installed 'cube-essential' at the end of the installation
-    if using cube-install.sh.
+  * The containers listed in HDINSTALL_CONTAINERS can have attributes that
+    instruct the installer to perform configuration steps.
+
+     net=1        : the container is the network prime
+     console      : the container should be granted (physical) console access
+     vty=<num>    : allocate/reserver VT <num> for the container
+
+  * To pass devices through to the network prime, specify them via the following
+    variables:
+
+       NETWORK_DEVICE="enp0s3"
+       NETWORK_DEVICE_CLASSES="en*"
+
+   And substitute the device that applies to your platform
+     
 
 OverC installation
 ------------------
