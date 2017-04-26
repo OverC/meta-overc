@@ -75,14 +75,14 @@ function console_listener() {
 			echo ${mgr} | grep -q runc
 			if [ $? -eq 0 ]; then
 			    # OCI. Use the configured container manager
-			    cmd="${mgr} exec -- ${target} /sbin/agetty -J -"
+			    cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
 			fi
                     fi
                 fi
                 # send the number of the console to the caller
                 /usr/bin/dtach -N /var/lib/cube/${cname}/cmd-output -r none -w -W 5 echo -n ${console_file}
                 # exec the console command .. or proxy
-                /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
+                eval /usr/bin/dtach -N /var/lib/cube/${cname}/${console_file} -r none -w -W 5 -Q ${cmd}
             fi
             if [ "${type}" = "namespace" ]; then
                 if [ "${connectorname}" == "dom0" ]; then

@@ -199,12 +199,12 @@ function do_console()
 	mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
 	echo ${mgr} | grep -q runc
 	if [ $? -eq 0 ]; then
-	    cmd="${mgr} exec -- ${target} /sbin/agetty -J -"
+	    cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
 	    local nsargs=""
 	    if [ -e /proc/1/ns/cgroup ] ; then
 		nsargs=-C
 	    fi
-	    nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/local/${console_device} -r none -w -W 5 -Q ${cmd}
+	    eval nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/local/${console_device} -r none -w -W 5 -Q ${cmd}
 	    connect_console
 	fi
 	return
