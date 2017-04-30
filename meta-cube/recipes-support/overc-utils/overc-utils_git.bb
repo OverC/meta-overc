@@ -37,6 +37,12 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-cfg ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
 
+    # alias "cube" as "c3"
+    (
+	cd ${D}${sbindir}/
+	ln -s cube c3
+    )
+
     # device manamage support
     install -m755 ${WORKDIR}/source/cube-device ${D}${sbindir}
     install -d ${D}${sysconfdir}/udev/scripts
