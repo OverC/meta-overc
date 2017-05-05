@@ -134,7 +134,7 @@ build: $(build_targets)
 
 clean: $(clean_targets)
 
-install: build $(install_targets)
+install: $(install_targets)
 
 uninstall: $(uninstall_targets)
 
