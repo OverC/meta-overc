@@ -78,6 +78,9 @@ do_install() {
 	install -d ${D}/lib/systemd/system/
 	install -m 0644 ${S}/contrib/systemd/etcd.service ${D}/lib/systemd/system/
 
+	# make sure etcd is willing to listen for more than localhost
+	sed -i 's%ExecStart.*%ExecStart=/usr/bin/etcd -listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 -advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001%g' ${D}/lib/systemd/system/etcd.service
+
 	# etcd state is in /var/lib/etcd
 	install -d ${D}/${localstatedir}/lib/${BPN}
 
