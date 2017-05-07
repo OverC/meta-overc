@@ -71,6 +71,10 @@ cat << EOF
 
     get the unique machine / platform identifier
 
+ ${0##*/} [-n <container name>] attribute [+][-] <attribute>
+
+    associated an attribute with a container. + to add, - to remove.
+
  ${0##*/} get/set:
 
    NOTE: variables with embedded / are etcd set/get operations.
@@ -391,6 +395,14 @@ IFS='
 	    done
 	fi
 IFS=$OLDIFS
+    fi
+
+    if [ -e "${out_dir}/cube.attributes" ]; then
+	echo ""
+	echo "attributes:"
+	echo "-----------"
+	cat "${out_dir}/cube.attributes"
+	echo ""
     fi
 
     echo ""
@@ -784,6 +796,65 @@ case "${cmd}" in
 	else
 	    echo ""
 	fi
+	;;
+    attribute)
+	op=${cmd_options_non_dashed[1]}
+	attribute=${cmd_options_non_dashed[2]}
+
+	if [ -z "${attribute}" ]; then
+	    # was there a + or - as part of the attribute ?
+	    case ${op} in
+		-*)
+		    attribute=$(echo ${op} | sed 's/^-//')
+		    op="-"
+		    ;;
+		+*)
+		    attribute=$(echo ${op} | sed 's/^+//')
+		    op="+"
+		    ;;
+		*)
+		    attribute=${op}
+		    op=""
+		    ;;
+	    esac
+	fi
+
+	if [ -z "${op}" ] && [ -z "${attribute}" ]; then
+	    # we should output the attributes if they exist
+	    if [ -e ${out_dir}/cube.attributes ]; then
+		cat ${out_dir}/cube.attributes
+	    fi
+	    exit 0
+	fi
+	if [ -z "${op}" ]; then
+	    echo "ERROR: no operation was specified (+ or -)"
+	    exit 1
+	fi
+	if [ -z "${attribute}" ]; then
+	    echo "ERROR: no attribute was specified"
+	    exit 1
+	fi
+
+	## TODO combine this with the get/set code below, since this really
+	## is just a variant that uses append/remove
+	if [ -e ${out_dir}/cube.attributes ]; then
+	    cat ${out_dir}/cube.attributes | grep -q -w ${attribute}
+	    if [ $? -eq 0 ]; then
+		alreadyset=t
+	    fi
+	fi
+	case ${op} in
+	    +)
+		if [ -z "${alreadyset}" ]; then
+		    echo -n "${attribute} " >> ${out_dir}/cube.attributes
+		fi
+		;;
+	    -)
+		if [ -n "${alreadyset}" ]; then
+		    cat ${out_dir}/cube.attributes | sed "s/${attribute}//g" > ${out_dir}/cube.attributes
+		fi
+		;;
+	esac
 	;;
     hook|hook-script)
 	# drop "hook" from the command options, and then output everything

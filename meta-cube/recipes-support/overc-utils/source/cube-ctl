@@ -35,6 +35,12 @@ commands (and options):
 
        <name>: name of the container to be stopped
 
+ ${0##*/} netprime <name>
+
+    set container as the netprime:
+
+       <name>: name of the container to be the netprime
+
  ${0##*/} stack <container a> <container b>
 
     stack (connect) two containers. This ensures that container a can communicate
@@ -1149,22 +1155,27 @@ case "${cmd}" in
 	    echo "${oci}"
 	else
 	    output=$(mktemp)
-	    echo "name type status" > ${output}
-	    echo "---- ---- ------" >> ${output}
+	    echo "name type status attributes" > ${output}
+	    echo "---- ---- ------ ----------" >> ${output}
 	    for l in ${open_container_running}; do
-		echo "${l} oci running" >> ${output}
+		attributes=$(cube-cfg -n ${l} attribute)
+		echo "${l} oci running ${attributes}" >> ${output}
 	    done
 	    for l in ${open_container_stopped}; do
-		echo "${l} oci stopped" >> ${output}
+		attributes=$(cube-cfg -n ${l} attribute)
+		echo "${l} oci stopped ${attributes}" >> ${output}
 	    done
 	    for l in ${cubes_running}; do
-		echo "${l} cube running" >> ${output}
+		attributes=$(cube-cfg -n ${l} attribute)
+		echo "${l} cube running ${attributes}" >> ${output}
 	    done
 	    for l in ${open_container_available}; do
-		echo "${l} oci available" >> ${output}
+		attributes=$(cube-cfg -n ${l} attribute)
+		echo "${l} oci available ${attributes}" >> ${output}
 	    done
 	    for l in ${cubes_available}; do
-		echo "${l} cube available" >> ${output}
+		attributes=$(cube-cfg -n ${l} attribute)
+		echo "${l} cube available ${attributes}" >> ${output}
 	    done
 	    cat ${output} | column -t
 	    rm ${output}
@@ -1223,6 +1234,24 @@ IFS=$OLDIFS
 	    echo "[ERROR]: provide a container name to see detailed information"
 	    exit 1
 	fi
+	;;
+    netprime)
+	# the second non dashed argument will be the container name
+	container_name=${cmd_options_non_dashed[1]}
+
+	if [ -z "${container_name}" ]; then
+	    echo "[ERROR]: no container name provided"
+	    exit 1
+	fi
+
+	if ! check_is_known_container ${container_name}; then
+	    echo "[ERROR] Container ${container_name} not found, cannot set as netprime."
+	    echo -n "Valid containers are: "
+	    echo ${cubes} ${open_containers}
+	    exit 1
+	fi
+
+	# TODO: runtime switching of the container netprime
 	;;
     stop|pause)
 	graft_binaries_to_essential runc
