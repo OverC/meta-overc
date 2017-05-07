@@ -53,4 +53,21 @@ if [ "${action}" = "netprime" ]; then
 	    exit 0
 	fi
     fi
+
+    netdevs=$(cat .cube.device.network)
+    for n in ${netdevs}; do
+	echo ${n} | grep -q veth
+	if [ $? -ne 0 ]; then
+	    # we have a real device
+	    device=$(echo ${n} | cut -f1 -d:)
+
+	    # forwarding (for other containers to the external network)
+	    nsenter -t ${pid} -n --preserve-credentials iptables -t nat -A POSTROUTING -o ${device} -j MASQUERADE
+	    nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+
+	    # etcd -> forward to dom0 (incoming)
+	    nsenter -t ${pid} -n --preserve-credentials iptables -A PREROUTING -t nat -i ${device} -p tcp --dport 2379 -j DNAT --to 192.168.42.3:2379
+	    nsenter -t ${pid} -n --preserve-credentials iptables -A FORWARD -p tcp -d 192.168.42.3 --dport 2379 -j ACCEPT
+	fi
+    done
 fi
