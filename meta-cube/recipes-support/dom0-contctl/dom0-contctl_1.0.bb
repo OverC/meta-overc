@@ -6,6 +6,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425
 
 RDEPENDS_${PN} = "util-linux lxc bash python cgmanager"
 
+S = "${WORKDIR}"
+
 SRC_URI = "file://dom0_contctl \
            file://lxc_driver.sh \
            file://dom0-containers \

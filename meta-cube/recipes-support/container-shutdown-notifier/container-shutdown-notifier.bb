@@ -6,6 +6,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425
 
 RDEPENDS_${PN} = "bash overc-utils cube-cmd-server-functions"
 
+S = "${WORKDIR}"
+
 SRC_URI = "file://container-shutdown-notifier \
            file://container-shutdown-notifier.service \
 "
