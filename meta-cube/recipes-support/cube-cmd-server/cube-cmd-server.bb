@@ -10,6 +10,9 @@ SRC_URI = "file://cube-cmd-server \
            file://cube-cmd-server.conf \
            file://cube-cmd-server-functions \
 "
+
+S = "${WORKDIR}"
+
 RDEPENDS_${PN} = "bash gawk dtach cube-cmd-server-functions nanoio nanoio-server"
 
 inherit systemd
