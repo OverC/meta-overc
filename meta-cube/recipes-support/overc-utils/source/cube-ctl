@@ -837,11 +837,13 @@ case "${cmd}" in
 		# the devices visible to the container
 		${SBINDIR}/cube-cfg set cube.device.mgr:essential
 
-		${SBINDIR}/cube-cfg gen ${container_name}:oci
+		${SBINDIR}/cube-cfg set cube.console.mgr:tty
 
 		# update the container manager
 		graft_binaries_to_essential runc
 		${SBINDIR}/cube-cfg set cube.container.mgr:/var/lib/cube/essential/sbin/runc
+
+		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
 		# see if someone arranged for /var/lib/cube to be mounted into out_dir, if
 		# not, we need to go directly at /var/lib/cube
