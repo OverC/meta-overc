@@ -58,6 +58,10 @@ commands (and options):
        <location>:  storage location. dir:// for directories, cube:// or docker:// for
                     registries.
 
+ ${0##*/} prep <container>
+
+    Execute any tweaks/prep against the specified container
+
  ${0##*/} add [-n <name>] [-u <subuid>] <source>
 
     add a container to the platform. Once added, the container is monitored, but
@@ -549,17 +553,24 @@ tweak_container_devices()
     #	done
     # fi
 
-    # TODO: VT handling
-    # if [ -n "$vty_num" ]; then
-    #	#disable the autoTV
-    #	sed -i "s/#NAutoVTs=.*$/NAutoVTs=0/g" ${pathtocontainer}/rootfs/etc/systemd/logind.conf
-    #	sed -i "s/#ReserveVT=.*$/ReserveVT=0/g" ${pathtocontainer}/rootfs/etc/systemd/logind.conf
-    #	gettys=$( ls ${pathtocontainer}/rootfs/etc/systemd/system/getty.target.wants/getty* )
-    #	for k in ${gettys}; do
-    #		ln -s -f /dev/null ${k}
-    #	done
-    #	ln -sf /lib/systemd/system/getty@.service ${pathtocontainer}/rootfs/etc/systemd/system/getty.target.wants/getty@tty${vty_num}.service
-    # fi
+    # VT handling
+    local vts=$(${SBINDIR}/cube-cfg -o ${container_storage}/${container_name} device vt)
+    if [ -n "${vts}" ]; then
+	# Disable the autoTV (we don't want systemd to spawn services on VT switch)
+	sed -i "s/#NAutoVTs=.*$/NAutoVTs=0/g" ${container_storage}/${container_name}/rootfs/etc/systemd/logind.conf
+	sed -i "s/#ReserveVT=.*$/ReserveVT=0/g" ${container_storage}/${container_name}/rootfs/etc/systemd/logind.conf
+	gettys=$( ls ${container_storage}/${container_name}/rootfs/etc/systemd/system/getty.target.wants/getty* )
+	for k in ${gettys}; do
+		ln -s -f /dev/null ${k}
+	done
+
+	for v in ${vts}; do
+	    vty_num=$(echo $v | cut -f1 -d: | sed 's%/dev/tty%%')
+	    ln -sf /lib/systemd/system/getty@.service ${container_storage}/${container_name}/rootfs/etc/systemd/system/getty.target.wants/getty@tty${vty_num}.service
+	done
+
+	sed -i "s%ConditionPathExists=/dev/tty0%#ConditionPathExists=/dev/tty0%g" ${container_storage}/${container_name}/rootfs/lib/systemd/system/getty@.service
+    fi
 
 }
 
@@ -812,6 +823,7 @@ case "${cmd}" in
 	    )
 
 	    tweak_container_fstab ${out_dir}/${container_name}/rootfs
+	    tweak_container_devices ${container_name} ${out_dir}
 
 	    if [ -n "${auto}" ]; then
 		${SBINDIR}/cube-cfg -o ${out_dir}/${container_name} set autostart:${auto}
@@ -875,6 +887,23 @@ case "${cmd}" in
 	    # now we need to restart the command server, so the new container can be monitored
 	    systemctl restart cube-cmd-server
 	fi
+	;;
+    prep)
+	if [ -z "${container_type}" ]; then
+	    container_type="oci"
+	fi
+
+	if [ -z "${container_name}" ]; then
+	    # the first non dashed argument will be the container name/source
+	    container_name=${cmd_options_non_dashed[1]}
+	    if [ -z "${container_name}" ]; then
+		echo "[ERROR]: no container name provided"
+		exit 1
+	    fi
+	fi
+
+	tweak_container_fstab ${out_dir}/${container_name}/rootfs
+	tweak_container_devices ${container_name} ${out_dir}
 	;;
     store)
 	# stores (copies, pushes, clones ..) a container

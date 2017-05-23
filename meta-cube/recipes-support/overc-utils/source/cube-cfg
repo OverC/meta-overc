@@ -58,7 +58,7 @@ cat << EOF
 
     add a device to a container
 
-       <type>:           network, network-virt
+       <type>:           network, network-virt, vt
           <name>:<name>  device name in essential : device name in container
 
        <type>:           whitelist, blacklist
@@ -320,7 +320,7 @@ clean_config_artifacts()
     fi
 
     if [ "${type}" = "device" ] || [ "${type}" = "all" ]; then
-	rm -f ${out_dir}/.cube.device ${out_dir}/.cube.device.network
+	rm -f ${out_dir}/.cube.device ${out_dir}/.cube.device.network ${out_dir}/.cube.device.vt
     fi
 
     if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
@@ -368,6 +368,11 @@ show_config_artifacts()
 	if [ -e "${out_dir}/.cube.device.network" ]; then
 	    for b in $(cat ${out_dir}/.cube.device.network); do
 		echo "network device: $b"
+	    done
+	fi
+	if [ -e "${out_dir}/.cube.device.vt" ]; then
+	    for b in $(cat ${out_dir}/.cube.device.vt); do
+		echo "VT device: $b"
 	    done
 	fi
     fi
@@ -434,6 +439,14 @@ generate_base_config()
     if [ -e ".cube.mount.bind" ]; then
 	for d in $(cat .cube.mount.bind); do
 	    mount_args="${mount_args} --bind $d"
+	done
+    fi
+
+    # temp. once the oci-runtime-tool is updated, we can pass devices
+    #       directly. for now this is a bind mount.
+    if [ -e ".cube.device.vt" ]; then
+	for d in $(cat .cube.device.vt); do
+	    mount_args="${mount_args} --bind ${d}"
 	done
     fi
 
@@ -905,7 +918,15 @@ case "${cmd}" in
 	fi
 
 	colons=$(echo ${name_temp} | sed -e 's/\(.\)/\1\n/g' | grep : | wc -l)
-	if [ ${colons} -eq 2 ]; then
+	if  [ ${colons} -eq 0 ]; then
+	    # this is a get, i.e. cube-cfg device vt
+	    device_type=${name_temp}
+	    if [ -e "${out_dir}/.cube.device.${device_type}" ]; then
+		cat "${out_dir}/.cube.device.${device_type}"
+	    else
+		echo ""
+	    fi
+	elif [ ${colons} -eq 2 ]; then
 	    # we have <type>:<source>:<dest>
 	    device_type=$(echo ${name_temp} | cut -f1 -d:)
 	    essential_device=$(echo ${name_temp} | cut -f2 -d:)
@@ -918,6 +939,9 @@ case "${cmd}" in
 		    ;;
 		network-virt)
 		    echo "veth:$essential_device:$container_device"  >> ${out_dir}/.cube.device.network
+		    ;;
+		vt)
+		    echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.vt
 		    ;;
 	    esac
 	else
