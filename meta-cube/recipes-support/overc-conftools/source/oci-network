@@ -64,8 +64,20 @@ if [ "${action}" = "up" ]; then
 	    echo "ERROR: static networking selected and no IP provided"
 	    exit 1
 	fi
-	nsenter -t ${pid} -n --preserve-credentials ip addr add $ip dev veth-br-int
-	primary_ip=$(echo $ip | cut -d/ -f1)
+
+	# the first entry is the primary, any others are aliases
+	count=0
+	for i in ${ip}; do
+	    if [ ${count} -eq 0 ]; then
+		nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev veth-br-int
+		primary_ip=$(echo $i | cut -d/ -f1)
+	    else
+		nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev veth-br-int:${count}
+	    fi
+	    let count=${count}+1
+	done
+	#nsenter -t ${pid} -n --preserve-credentials ip addr add $ip dev veth-br-int
+	#primary_ip=$(echo $ip | cut -d/ -f1)
     fi
 
     if [ -f "cube.network.mac" ]; then
