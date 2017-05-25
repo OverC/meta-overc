@@ -459,6 +459,7 @@ generate_base_config()
 		  --cap-add SYS_MODULE \
                   --cap-add SYS_RESOURCE \
                   --cap-add NET_ADMIN \
+                  --cap-add NET_BROADCAST \
                   --cap-add SYS_TTY_CONFIG"
 
     app="/sbin/init"
