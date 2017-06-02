@@ -4,7 +4,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
 SRC_URI = " \
-    file://${BPN}-${PV}/* \
+    file://${BPN}-${PV} \
 "
 inherit distutils systemd
 
