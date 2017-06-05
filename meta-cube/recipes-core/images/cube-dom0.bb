@@ -33,7 +33,6 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   packagegroup-oci \
                   packagegroup-service-discovery \
                   cube-cmd-server \
-                  cube-cmd-server-dom0-conf \
                   overc-device-utils \
                   ${CUBE_DOM0_EXTRA_INSTALL} \
                  "

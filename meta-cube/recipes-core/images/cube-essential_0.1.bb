@@ -73,9 +73,6 @@ read_only_essential () {
         rm ${IMAGE_ROOTFS}/etc/system-id -f
     fi
     ln -s ../run/systemd/resolve/system-id ${IMAGE_ROOTFS}/etc/system-id
-    if [ -e ${IMAGE_ROOTFS}${systemd_system_unitdir}/cube-cmd-server.service ]; then
-	sed -i '/^\[Service\]/a\\ExecStartPre=/bin/sh -c "mkdir -p  /opt/container/dom0 /opt/container/cube-desktop /opt/container/all /opt/container/local"' ${IMAGE_ROOTFS}${systemd_system_unitdir}/cube-cmd-server.service
-    fi
     if [ -e ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service ]; then
 	sed -i '/ExecStart/d' ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service
 	sed -i '/^\[Service\]/a\\ \
@@ -107,7 +104,6 @@ local_tmp      = /var/lib/misc \
     fi
     ln -s ../run/systemd/resolve/localtime ${IMAGE_ROOTFS}/etc/localtime
     ln -s ../run/systemd/resolve/timezone ${IMAGE_ROOTFS}/etc/timezone
-    ln -s /run/systemd/resolve/cube-cmd-server.log ${IMAGE_ROOTFS}/var/log/cube-cmd-server.log
 }
 
 read_write_essential () {

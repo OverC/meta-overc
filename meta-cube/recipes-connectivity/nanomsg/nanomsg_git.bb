@@ -13,6 +13,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=587b3fd7fd291e418ff4d2b8f3904755"
 
 SRC_URI = " \
 	   git://github.com/nanomsg/nanomsg.git \
+           file://0001-nanocat-add-stdin-processing.patch \
+           file://0001-nanocat-add-EOF-transmission-for-faster-exit.patch \
 	  "
 
 SRCREV = "7e12a20e038234060d41d03c20721d08117f8607"

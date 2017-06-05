@@ -9,72 +9,11 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #  See the GNU General Public License for more details.
 
-# only dom0 has visibility to essential
-if [ -d "/var/lib/cube/essential" ]; then
-    we_are_dom0=t
-fi
-
-function wait_for_files()
-{
-    local wait_count=${1:-200} # 200 is the default
-    shift
-    local files=$@ # files to wait for
-    local wait_increment=0.1 # second sleeps
-
-    while [ ${wait_count} -gt 0 ]; do
-	for f in ${files}; do
-	    ls -alF ${f} > /dev/null 2>&1
-	    if [ -e "${f}" ]; then
-		echo "${f}"
-		return 0
-	    fi
-	done
-	sleep ${wait_increment}
-	wait_count=$((wait_count - 1))
-    done
-
-    return 1
-}
-
-function do_essential_cmd()
-{
-    local cmd=$@
-
-    # When in dom0 we use the direct route and just exec the command
-    # with no checking
-    if [ -n "${we_are_dom0}" ]; then
-	DIRECT="${cmd}" /sbin/cube-cmd-handler -r dom0
-	exit $?
-    fi
-
-    if [ -e "/var/lib/cube/local/cmd-pipe" ]; then
-	# send the command
-	(echo "${cmd}" | nanoclient -q -R "ipc:///var/lib/cube/local/cmd-pipe") &
-	file=`wait_for_files 200 /var/lib/cube/local/cmd-error /var/lib/cube/local/cmd-output`
-	if [ -n "${file}" ]; then
-	    if [ "${file}" = /var/lib/cube/local/cmd-output ] ; then
-		/usr/bin/dtach -a ${file} -q -C -z -T -R -r none
-		exit 0
-	    else
-		# TBD: 2>&1 for stderr messages in env's that try and eat it! (systemd)
-		/usr/bin/dtach -a ${file} -q -C -z -T -R -r none
-		exit 1
-	    fi
-	else
-	    echo "ERROR: no response recv'd on: /var/lib/cube/local/cmd-pipe"
-	    exit 2
-	fi
-    else
-	echo "ERROR: command channel is not available at /var/lib/cube/local/cmd-pipe"
-	exit 1
-    fi
-}
-
 usage()
 {
 cat << EOF
 
-  cube-cmd <cmd>
+ ${0##*/} <cmd>
 
   Execute <cmd> against a monitoring layer of the system. Note that
   this command does no sanity checking or other processing. It is
@@ -84,7 +23,41 @@ cat << EOF
 EOF
 }
 
-# take the remaining command into an array
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
+    we_are_dom0=t
+fi
+
+function do_essential_cmd()
+{
+    # When in dom0 we use the direct route and just exec the command
+    # with no checking
+    if [ -n "${we_are_dom0}" ]; then
+	PATH="/var/lib/cube-cmd-server/functions.d/:$PATH"
+
+	# This bumps us up to the parent namespace by default. We could also
+	# use "host-cmd" from the functions.d, or have a way to explicitly
+	# indicate if a command needs to go up to the next level of
+	# namespaces.
+	if [ -n "${raw_mode}" ]; then
+	    ${cmd_options}
+	else
+	    nctl ${cube_cmd_options} ${cmd_options}
+	fi
+	exit $?
+    else
+	if [ -f "/etc/cube-cmd.auth" ]; then
+	    echo "${cube_cmd_options}" | grep -q -w "auth"
+	    if [ $? -ne 0 ]; then
+		# we have an auth file, and no --auth on the command line
+		auth_file="--auth /etc/cube-cmd.auth"
+	    fi
+	fi
+	nctl --ctrl-ipc /var/lib/cube/common/control.ipc ${auth_file} ${cube_cmd_options} ${cmd_options}
+    fi
+}
+
+# take the command into an array
 raw_command=($@)
 
 if [ ${#raw_command[*]} -lt 1 ]; then
@@ -92,4 +65,35 @@ if [ ${#raw_command[*]} -lt 1 ]; then
     exit
 fi
 
-do_essential_cmd ${raw_command[@]}
+dashdash=
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	--raw)
+	    rawmode=t
+	    ;;
+	--)
+	    dashdash=t
+	    ;;
+        *)
+	    if [ -z "${dashdash}" ]; then
+		cube_cmd_options="${cube_cmd_options} $1"
+	    else
+		cmd_options="${cmd_options} $1"
+	    fi
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${cmd_options}" ]; then
+    cmd_options="${cube_cmd_options}"
+    cube_cmd_options=""
+fi
+
+do_essential_cmd

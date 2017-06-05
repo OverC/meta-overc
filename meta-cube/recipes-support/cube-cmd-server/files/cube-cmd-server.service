@@ -4,9 +4,9 @@ After=local-fs.target
 
 [Service]
 Type=simple
-ExecStart=/sbin/cube-cmd-server -l /var/log/cube-cmd-server.log
+ExecStart=/usr/sbin/nctl --verbose --server --conf /etc/cube-cmd-server.conf --ctrl-ipc /var/lib/cube/all/control.ipc --logfile /var/log/cube-cmd-server.log
 RemainAfterExit=yes
-Restart=on-success
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

@@ -10,6 +10,7 @@ SRC_URI = " \
     file://source/cube-cmd \
     file://source/cube-ctl \
     file://source/cube-cfg \
+    file://source/nctl \
     file://source/cube \
     file://source/cube-console \
     file://source/COPYING \
@@ -22,8 +23,6 @@ SRC_URI = " \
 S = "${WORKDIR}/git"
 
 do_install() {
-    # TODO: add overc-cctl here, instead of overc-installer package
-
     install -d ${D}${bindir}
     install -d ${D}${sbindir}
 
@@ -36,11 +35,15 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-cmd ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-cfg ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/nctl ${D}${sbindir}
 
     # alias "cube" as "c3"
     (
 	cd ${D}${sbindir}/
-	ln -s cube c3
+	ln -sf cube c3
+	ln -sf cube-cfg c3-cfg
+	ln -sf cube-cmd c3-cmd
+	ln -sf cube-ctl c3-ctl
     )
 
     # device manamage support
@@ -56,8 +59,8 @@ do_install() {
 PACKAGES =+ "overc-device-utils"
 
 FILES_${PN} += "/opt/${BPN} \
-               ${bindir} ${sbindir}"
+               ${bindir} ${sbindir} ${localstatedir}/lib/cube-cmd-server/"
 
 FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
 
-RDEPENDS_${PN} += "bash dtach nanoio nanoio-client udev systemd-extra-utils jq"
+RDEPENDS_${PN} += "bash dtach nanomsg udev systemd-extra-utils jq"

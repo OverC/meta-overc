@@ -34,8 +34,9 @@ SRC_URI = " \
     file://source/essential_rw.sh \
     file://source/oci-network \
     file://source/cube-network \
-    file://source/cube-netprime \
+    file://source/cube-netconfig \
     file://source/oci-device \
+    file://source/dhclient-script.container \
 "
 
 S = "${WORKDIR}"
@@ -73,9 +74,12 @@ do_install() {
     install -d ${D}/${libexecdir}/oci/hooks.d/
     install -d ${D}/${libexecdir}/cube/hooks.d/
     install -m 755 ${WORKDIR}/source/cube-network ${D}/${libexecdir}/cube/hooks.d/
-    install -m 755 ${WORKDIR}/source/cube-netprime ${D}/${libexecdir}/cube/hooks.d/
+    install -m 755 ${WORKDIR}/source/cube-netconfig ${D}/${libexecdir}/cube/hooks.d/
     install -m 755 ${WORKDIR}/source/oci-network ${D}/${libexecdir}/oci/hooks.d/
     install -m 755 ${WORKDIR}/source/oci-device ${D}/${libexecdir}/oci/hooks.d/
+
+    install -d ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/dhclient-script.container ${D}${sbindir}
 }
 
 RDEPENDS_${PN} += " \
@@ -91,6 +95,7 @@ SYSTEMD_SERVICE_${PN} = "overc-conftools.service"
 
 FILES_${PN} +=  " \
     ${base_libdir}/systemd \
+    ${sbindir} \
 "
 FILES_${PN} += "${libexecdir}/oci/hooks.d/"
 FILES_${PN} += "${libexecdir}/cube/hooks.d/"

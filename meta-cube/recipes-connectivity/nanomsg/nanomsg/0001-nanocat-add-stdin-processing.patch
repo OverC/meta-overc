@@ -1,0 +1,565 @@
+From 5723922c4efa54ea7feb45063c5a71ff3694487a Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Wed, 17 May 2017 23:32:59 -0400
+Subject: [PATCH] nanocat: add stdin processing
+
+Add the processing of stdin for pair/resp socket types. This allows
+nanocat to be the client/server for commands simply by manipulating
+standard input.
+
+We also add parameters for timeout behaviour, buffered/unbuffered
+and oneshot operation.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ tools/nanocat.c | 450 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 423 insertions(+), 27 deletions(-)
+
+diff --git a/tools/nanocat.c b/tools/nanocat.c
+index 4b5116ffba92..1b9719b9591c 100644
+--- a/tools/nanocat.c
++++ b/tools/nanocat.c
+@@ -43,6 +43,8 @@
+ #include <unistd.h>
+ #endif
+ 
++#include <limits.h>
++
+ enum echo_format {
+     NN_NO_ECHO,
+     NN_ECHO_RAW,
+@@ -52,26 +54,43 @@ enum echo_format {
+     NN_ECHO_HEX
+ };
+ 
++enum stdin_types {
++   NN_STDIN_UNBUFFERED,
++   NN_STDIN_BUFFERED,
++   NN_STDIN_NONE,
++};
++
++enum timeout_modes {
++   NN_TIMEOUT_EXIT_ON_TIMEOUT,
++   NN_TIMEOUT_EXIT_AFTER_FIRST_DATA,
++   NN_TIMEOUT_NO_EXIT_ON_TIMEOUT,
++};
++
+ typedef struct nn_options {
+-    /* Global options */
+-    int verbose;
+-
+-    /* Socket options */
+-    int socket_type;
+-    struct nn_string_list bind_addresses;
+-    struct nn_string_list connect_addresses;
+-    float send_timeout;
+-    float recv_timeout;
+-    struct nn_string_list subscriptions;
+-    char *socket_name;
+-
+-    /* Output options */
+-    float send_delay;
+-    float send_interval;
+-    struct nn_blob data_to_send;
+-
+-    /* Input options */
+-    enum echo_format echo_format;
++   /* Global options */
++   int verbose;
++
++   /* Socket options */
++   int socket_type;
++   struct nn_string_list bind_addresses;
++   struct nn_string_list connect_addresses;
++   float send_timeout;
++   float recv_timeout;
++   struct nn_string_list subscriptions;
++   char *socket_name;
++
++   /* Output options */
++   float send_delay;
++   float send_interval;
++   struct nn_blob data_to_send;
++
++   /* Input options */
++   enum echo_format echo_format;
++
++   enum stdin_types stdin;
++   enum timeout_modes timeout_mode;
++   float inactivity_timeout;
++   int oneshot;
+ } nn_options_t;
+ 
+ /*  Constants to get address of in option declaration  */
+@@ -119,6 +138,19 @@ struct nn_enum_item echo_formats[] = {
+     {NULL, 0},
+ };
+ 
++struct nn_enum_item stdin_types[] = {
++    {"buffered", NN_STDIN_BUFFERED},
++    {"unbuffered", NN_STDIN_UNBUFFERED},
++    {NULL, 0},
++};
++
++struct nn_enum_item timeout_modes[] = {
++    {"exit", NN_TIMEOUT_EXIT_ON_TIMEOUT},
++    {"exit-after-data", NN_TIMEOUT_EXIT_AFTER_FIRST_DATA},
++    {"no-exit", NN_TIMEOUT_NO_EXIT_ON_TIMEOUT},
++    {NULL, 0},
++};
++
+ /*  Constants for conflict masks  */
+ #define NN_MASK_SOCK 1
+ #define NN_MASK_WRITEABLE 2
+@@ -293,6 +325,26 @@ struct nn_option nn_options[] = {
+      NN_MASK_DATA, NN_MASK_DATA, NN_MASK_WRITEABLE,
+      "Output Options", "PATH", "Same as --data but get data from file PATH"},
+ 
++    {"timeout-mode", 'T', NULL,
++     NN_OPT_ENUM, offsetof (nn_options_t, timeout_mode), &timeout_modes,
++     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_READABLE,
++     "General", "MODE", "Timeout mode: exit, exit-after-data, no-exit"},
++
++    {"stdin", 0, NULL,
++     NN_OPT_ENUM, offsetof (nn_options_t, stdin), &stdin_types,
++     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_READABLE,
++     "General", "TYPE", "read data from stdin. TYPE can be \"buffered\" (default) or \"unbuffered\""},
++
++    {"inactivity-timeout", 0, NULL,
++     NN_OPT_FLOAT, offsetof (nn_options_t, inactivity_timeout), NULL,
++     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_READABLE,
++     "General", "MSEC", "Set timeout for inactivity (no rx/tx). Action on timeout depends on --timeout-mode"},
++
++    {"oneshot", 0, NULL,
++     NN_OPT_INCREMENT, offsetof (nn_options_t, oneshot), NULL,
++     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_NO_REQUIRES,
++     "General", NULL, "Send/Reply once, and then exit"},
++
+     /* Sentinel */
+     {NULL, 0, NULL,
+      0, 0, NULL,
+@@ -346,6 +398,14 @@ void nn_set_recv_timeout (int sock, int millis)
+     nn_assert_errno (rc == 0, "Can't set recv timeout");
+ }
+ 
++void nn_set_send_timeout (int sock, int millis)
++{
++    int rc;
++    rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SNDTIMEO,
++                       &millis, sizeof (millis));
++    nn_assert_errno (rc == 0, "Can't set send timeout");
++}
++
+ int nn_create_socket (nn_options_t *options)
+ {
+     int sock;
+@@ -449,7 +509,7 @@ void nn_print_message (nn_options_t *options, char *buf, int buflen)
+         }
+         fprintf (stdout, "\"\n");
+         break;
+-    
++
+     }
+     fflush (stdout);
+ }
+@@ -514,6 +574,9 @@ void nn_recv_loop (nn_options_t *options, int sock)
+         }
+         nn_print_message (options, buf, rc);
+         nn_freemsg (buf);
++
++	if ( options->oneshot > 0 )
++	   break;
+     }
+ }
+ 
+@@ -570,6 +633,37 @@ void nn_rw_loop (nn_options_t *options, int sock)
+     }
+ }
+ 
++#include <termios.h> /* termios, TCSANOW, ECHO, ICANON */
++#include <unistd.h>
++
++static struct termios oldt, newt;
++void terminal_nonbuffered()
++{
++   int c;
++
++   /* tcgetattr gets the parameters of the current terminal
++      STDIN_FILENO will tell tcgetattr that it should write the settings
++      of stdin to oldt */
++   tcgetattr( STDIN_FILENO, &oldt);
++
++   /* now the settings will be copied */
++   newt = oldt;
++
++   /* ICANON normally takes care that one line at a time will be processed
++      that means it will return if it sees a "\n" or an EOF or an EOL */
++   newt.c_lflag &= ~(ICANON);
++
++   /* Those new settings will be set to STDIN
++      TCSANOW tells tcsetattr to change attributes immediately. */
++   tcsetattr( STDIN_FILENO, TCSANOW, &newt);
++}
++
++void terminal_restore()
++{
++   /* restore the old settings */
++   tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
++}
++
+ void nn_resp_loop (nn_options_t *options, int sock)
+ {
+     int rc;
+@@ -584,15 +678,309 @@ void nn_resp_loop (nn_options_t *options, int sock)
+         }
+         nn_print_message (options, buf, rc);
+         nn_freemsg (buf);
+-        rc = nn_send (sock,
+-            options->data_to_send.data, options->data_to_send.length,
+-            0);
++
++	if( options->stdin == NN_STDIN_UNBUFFERED ||
++	    options->stdin == NN_STDIN_BUFFERED)
++	{
++	   void *sbuf = NULL;
++	   sbuf = nn_allocmsg(PIPE_BUF,0);
++	   if( options->stdin == NN_STDIN_BUFFERED ) {
++	      ssize_t buf_len = read(STDIN_FILENO, sbuf, PIPE_BUF);
++	      rc = nn_send( sock, sbuf, buf_len, 0 );
++	      nn_freemsg(sbuf);
++	   } else {
++	      terminal_nonbuffered();
++	      unsigned int count = 0;
++	      int c = getchar();
++	      if ( c == EOF || c == '\n' )
++	      {
++		 count = 0;
++	      }
++	      memcpy(sbuf, &c, sizeof(int));
++	      rc = nn_send( sock, sbuf, 1, 0 );
++	      if (rc < 0 && errno == EAGAIN) {
++		 fprintf (stderr, "Message not sent (EAGAIN)\n");
++	      } else {
++		 nn_assert_errno (rc >= 0, "Can't send");
++	      }
++
++	      ++count;
++	      nn_freemsg(sbuf);
++	      terminal_restore();
++	   }
++	}
++	else
++	{
++	   rc = nn_send (sock,
++			 options->data_to_send.data, options->data_to_send.length,
++			 0);
++	}
+         if (rc < 0 && errno == EAGAIN) {
+             fprintf (stderr, "Message not sent (EAGAIN)\n");
+         } else {
+             nn_assert_errno (rc >= 0, "Can't send");
+         }
++
++	if ( options->oneshot > 0 )
++	   break;
++    }
++}
++
++int stdin_data_avail()
++{
++   struct timeval tv = { 0L, 0L };
++   fd_set fds;
++   FD_ZERO(&fds);
++   FD_SET(0, &fds);
++   return select(1, &fds, NULL, NULL, &tv);
++}
++
++void nn_stdin_loop (nn_options_t *options, int sock)
++{
++    int rc;
++    void *buf;
++    uint64_t start_time;
++    int64_t time_to_sleep, recv_timeout, send_timeout;
++    int64_t inactive_time;
++    int timeout_count = 0;
++    int rx_data_active = 0;
++    int tx_data_active = 0;
++    int rx_data_start_flag = 0;
++    int tx_data_start_flag = 0;
++    unsigned int rcount;
++    ssize_t tot_sent = 0;
++    ssize_t buf_len = 0;
++    void * sbuf = NULL;
++    int send_exit_cond = 0;
++    int recv_exit_cond = 0;
++    int exit_pending = 0;
++    int inactivity_timeout;
++
++    if ( options->stdin == NN_STDIN_UNBUFFERED ) {
++       terminal_nonbuffered();
++    }
++
++    /* forcing this to be milliseconds, even though the help says seconds */
++    recv_timeout = (int)(options->recv_timeout /* *1000 */ );
++    send_timeout = (int)(options->send_timeout /* *1000 */ );
++    inactivity_timeout = (int)(options->inactivity_timeout /* *1000 */ );
++
++    /* inactivity timeout must be greater than rx + tx timeout */
++    if ( inactivity_timeout != -1 ) {
++       if ( recv_timeout + send_timeout > inactivity_timeout ) {
++	  inactivity_timeout = recv_timeout + send_timeout;
++       }
++    }
++
++    for (;;) {
++        start_time = nn_clock_ms();
++
++        for (;;) {
++
++	   /* failsafe timeout checks:
++	        - 1) inactivity
++		- 2) many tx or rx timeouts, with no good transfers (TODO)
++	   */
++	   if ( tx_data_active == 0 && rx_data_active == 0 ) {
++	      inactive_time = nn_clock_ms() - start_time;
++	      if ( inactivity_timeout != -1 ) {
++		 if ( (options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA) &&
++		      (rx_data_start_flag || tx_data_start_flag) ) {
++		    if ( inactive_time > inactivity_timeout ) {
++		       if ( options->verbose > 0 ) {
++			  fprintf( stderr, "EXIT: inactivity timeout of %d msec\n", (int) inactivity_timeout);
++		       }
++		       goto terminal_exit;
++		    }
++		 }
++		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_ON_TIMEOUT ) {
++		    if ( inactive_time > inactivity_timeout ) {
++		       if ( options->verbose > 0 ) {
++			  fprintf( stderr, "EXIT: inactivity timeout of %d msec\n", (int) inactivity_timeout);
++		       }
++		       goto terminal_exit;
++		    }
++		 }
++	      }
++	   }
++
++	   /* send checks */
++	   if (stdin_data_avail()) {
++	      if ( buf_len == 0 ) {
++		 sbuf = NULL;
++		 sbuf = nn_allocmsg(PIPE_BUF,0);
++		 if ( options->stdin == NN_STDIN_BUFFERED ) {
++		    buf_len = read(STDIN_FILENO, sbuf, PIPE_BUF);
++		    if ( buf_len > 0 ) {
++		       tot_sent = 0;
++		       /* we read some data, so we clear the sent flag */
++		       tx_data_active = 0;
++		    }
++		    if ( buf_len == 0 ) {
++		       if ( tot_sent == 0 ) {
++			  /* we did read, but nothing was sent, so we sent a single empty
++			     byte. Next time around, we'll exit */
++			  memcpy( sbuf, " ", 1 );
++			  buf_len = 1;
++			  /* indicate that we really have to leave if this fails to send */
++			  exit_pending = 1;
++		       } else {
++			  /* it said data was available, but we couldn't read it
++			     stdin is very likely closed .. we need to flee */
++			  if ( options->verbose > 0 ) {
++			     fprintf( stderr, "EXIT: stdin stream closed and no data is pending\n");
++			  }
++			  nn_freemsg(sbuf);
++			  goto terminal_exit;
++		       }
++		    }
++		 } else {
++		    unsigned int count = 0;
++		    int c;
++		    rcount = 0;
++		    tot_sent = 0;
++		    while ( count < PIPE_BUF ) {
++		       if (stdin_data_avail()) {
++			  c = getchar();
++			  if ( c == EOF || c == '\n' )
++			  {
++			     //printf( "The length of the line is %u\n", count );
++			     //count = 0;
++			  }
++			  if ( c == -1 ) {
++			     if ( rcount == 0 ) {
++				/* if we got a -1, the input stream has been closed, time to flee */
++				if ( options->verbose > 0 ) {
++				   fprintf( stderr, "EXIT: stdin stream closed and no data is pending: %d\n", rcount);
++				}
++				nn_freemsg(sbuf);
++				goto terminal_exit;
++			     }
++			  } else {
++			     memcpy(sbuf+rcount, &c, sizeof(int));
++			     rcount++;
++			  }
++		       }
++		       count++;
++		    }
++		    if ( rcount > 0 ) {
++		       /* we read some data, so we clear the sent flag */
++		       tx_data_active = 0;
++		    }
++		    buf_len = rcount;
++		 }
++	      }
++	      if ( buf_len > 0 ) {
++		 nn_set_send_timeout( sock, send_timeout );
++		 rc = nn_send( sock, sbuf + tot_sent, buf_len, 0 );
++		 if ( rc > 0 )
++		 {
++		    timeout_count = 0;
++		    tx_data_active = 1;
++		    tot_sent = tot_sent + rc;
++		    buf_len = buf_len - rc;
++		    tx_data_start_flag = 1;
++		    start_time = nn_clock_ms();
++		 }
++
++		 if (rc < 0 && errno == EAGAIN) {
++		    fprintf (stderr, "Message not sent (EAGAIN)\n");
++		 } else {
++
++		    /* if the exiting pending flag has been set then one of our
++		       streams has closed. If we timeout on the send many times,
++		       we need to exit. This avoid hung processes */
++		    if ( exit_pending ) {
++		       if ( timeout_count > 10000 ) {
++			  if ( options->verbose > 0 ) {
++			     fprintf( stderr, "EXIT: stdin. max send timeout after input stream close\n");
++			  }
++			  goto terminal_exit;
++		       }
++		    }
++
++		    if ( options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA ) {
++		       if( tx_data_start_flag ) {
++			  nn_assert_errno (rc >= 0, "Can't send");
++		       }
++		    } else {
++		       nn_assert_errno (rc >= 0, "Can't send");
++		    }
++		    timeout_count++;
++		 }
++
++		 if ( buf_len == 0 ) {
++		    timeout_count = 0;
++		    nn_freemsg(sbuf);
++		    tx_data_active = 0;
++		 }
++	      } else {
++		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA ) {
++		    if( tx_data_start_flag ) {
++		       if ( options->verbose > 0 ) {
++			  fprintf( stderr, "EXIT: stdin. send timeout after data\n");
++		       }
++		       goto terminal_exit;
++		    }
++		 }
++		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_ON_TIMEOUT ) {
++		    if ( options->verbose > 0 ) {
++		       if ( options->verbose > 0 ) {
++			  fprintf( stderr, "EXIT: send timeout\n");
++		       }
++		    }
++		    goto terminal_exit;
++		 }
++	      }
++	   }
++
++	   nn_set_recv_timeout (sock, (int) recv_timeout);
++	   rc = nn_recv (sock, &buf, NN_MSG, 0 );
++	   if (rc < 0) {
++	      if (errno == EAGAIN) {
++		 continue;
++	      } else if (errno == ETIMEDOUT || errno == EFSM) {
++		 timeout_count++;
++		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA ) {
++		    if ( rx_data_start_flag ) {
++		       /* TODO: might be able to remove this for the inactivity timeout, since the
++			        rx timeouts are so short to keep interactivity up, this doesn't make
++				as much sense now */
++		       //fprintf( stderr, "EXIT: rx timeout after data start\n");
++		       //goto terminal_exit;
++		    }
++		 }
++		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_ON_TIMEOUT ) {
++		    /* TODO: might be able to remove this for the inactivity timeout, since the
++		       rx timeouts are so short to keep interactivity up, this doesn't make
++		       as much sense now */
++		    //fprintf( stderr, "EXIT: rx timeout\n");
++		    //goto terminal_exit;
++		 }
++		 rx_data_active = 0;
++		 continue;
++	      }
++	   }
++	   else
++	   {
++	      if ( rc > 0 ) {
++		 start_time = nn_clock_ms();
++		 rx_data_active = 1;
++		 rx_data_start_flag = 1;
++		 timeout_count = 0;
++	      }
++	      nn_assert_errno (rc >= 0, "Can't recv");
++	      nn_print_message (options, buf, rc);
++	   }
++	   nn_freemsg (buf);
++        }
++    }
++
++terminal_exit:
++    if ( options->stdin == NN_STDIN_UNBUFFERED ) {
++       terminal_restore();
+     }
++    return;
+ }
+ 
+ int main (int argc, char **argv)
+@@ -610,7 +998,11 @@ int main (int argc, char **argv)
+         /* send_delay        */ 0.f,
+         /* send_interval     */ -1.f,
+         /* data_to_send      */ {NULL, 0, 0},
+-        /* echo_format       */ NN_NO_ECHO
++        /* echo_format       */ NN_NO_ECHO,
++        /* stdin             */ NN_STDIN_NONE,
++        /* timeout mode      */ NN_TIMEOUT_EXIT_ON_TIMEOUT,
++        /* inactivity timeout*/ -1.f,
++        /* oneshot           */ 0,
+     };
+ 
+     nn_parse_options (&nn_cli, &options, argc, argv);
+@@ -628,8 +1020,10 @@ int main (int argc, char **argv)
+         break;
+     case NN_BUS:
+     case NN_PAIR:
+-        if (options.data_to_send.data) {
+-            nn_rw_loop (&options, sock);
++        if (options.stdin == NN_STDIN_UNBUFFERED || options.stdin == NN_STDIN_BUFFERED ) {
++	   nn_stdin_loop (&options, sock);
++        } else if (options.data_to_send.data) {
++	   nn_rw_loop (&options, sock);
+         } else {
+             nn_recv_loop (&options, sock);
+         }
+@@ -640,7 +1034,9 @@ int main (int argc, char **argv)
+         break;
+     case NN_REP:
+     case NN_RESPONDENT:
+-        if (options.data_to_send.data) {
++        if (options.data_to_send.data ||
++	    options.stdin == NN_STDIN_UNBUFFERED ||
++	    options.stdin == NN_STDIN_BUFFERED) {
+             nn_resp_loop (&options, sock);
+         } else {
+             nn_recv_loop (&options, sock);
+-- 
+2.4.0.53.g8440f74
+

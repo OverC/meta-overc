@@ -15,7 +15,7 @@ usage()
 {
 cat << EOF
 
-  cube <command> <args>
+   ${0##*/} <command> <args>
 
   example:
     

@@ -69,64 +69,6 @@ if [ -d "/var/lib/cube/essential" ]; then
     we_are_dom0=t
 fi
 
-generate_console_name() {
-    local max=${1} # max number we'll generate
-    local dir=${2} # directory to check for existing files
-    local prefix=${3} # optional
-
-    local number=$RANDOM
-
-    let "number %= ${max}"
-    console_name="console-$prefix-$number"
-    while [ -e ${dir}/${console_name} ]; do
-        number=$RANDOM
-        let "number %= ${max}"
-        console_name="console-$prefix-$number"
-    done
-
-    echo ${console_name}
-}
-
-function exec_console()
-{
-    local file
-
-    file=`wait_for_files 0.1 100 /var/lib/cube/local/cmd-output /var/lib/cube/local/cmd-error`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-    if [ "${file}" = "/var/lib/cube/local/cmd-error" ]; then
-	/usr/bin/dtach -a ${file} -q -C -z -r none
-	exit 1
-    fi
-    if [ "${file}" = "/var/lib/cube/local/cmd-output" ]; then
-	console_device=`/usr/bin/dtach -a ${file} -q -C -z -r none`
-    fi
-    connect_console
-}
-
-function connect_console()
-{
-    file=`wait_for_files 0.1 100 /var/lib/cube/local/${console_device}`
-    if [ -z "${file}" ]; then
-	echo "[ERROR]: No console is available, and no error reported"
-	exit 2
-    fi
-
-    if [ -z "${notraps}" ]; then
-	echo "Escape character is '^\\'."
-    else
-	escape="-E"
-    fi
-
-    /usr/bin/dtach -a /var/lib/cube/local/${console_device} $escape -q -C -z -r none
-    ret=$?
-    if [ -n "${verbose}" ]; then
-	echo "console connection exited with: $ret"
-    fi
-}
-
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
@@ -146,88 +88,41 @@ function am_i_a_container()
     return 0
 }
 
-function wait_for_files()
-{
-    local wait_increment=${1:-1} # 1 is the default
-    shift
-    local wait_count=${1:-200} # 200 is the default
-    shift
-    local files=$@ # files to wait for
-
-    while [ ${wait_count} -gt 0 ]; do
-	for f in ${files}; do
-	    ls -alF ${f} > /dev/null 2>&1
-	    if [ -e "${f}" ]; then
-		echo "${f}"
-		return 0
-	    fi
-	done
-	sleep ${wait_increment}
-	wait_count=$((wait_count - 1))
-    done
-
-    return 1
-}
-
-# essential is only available from dom0, so we need extra checks
-function do_essential_console()
-{
-    if [ -n "${we_are_dom0}" ]; then
-	console_device=`generate_console_name 200 /var/lib/cube/local/`
-	cmd="/sbin/agetty -J -"
-	local nsargs=""
-	if [ -e /proc/1/ns/cgroup ] ; then
-	    nsargs=-C
-	fi
-	nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/local/${console_device} -r none -w -W 5 -Q ${cmd}
-	connect_console
-	return
-    else
-	echo "ERROR: essential console can only spawn from dom0"
-	exit 1
-    fi
-}
-
-
 function do_console()
 {
     local target=$1
     local type=$2 # namspace or login
 
     if [ -n "${we_are_dom0}" ]; then
-	console_device=`generate_console_name 200 /var/lib/cube/local/`
-	mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
-	echo ${mgr} | grep -q runc
-	if [ $? -eq 0 ]; then
-	    cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
-	    local nsargs=""
-	    if [ -e /proc/1/ns/cgroup ] ; then
-		nsargs=-C
+	if [ "${target}" == "essential" ]; then
+	    cmd="script -q -c '/sbin/agetty -J -' /dev/null"
+	else
+	    mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
+	    echo ${mgr} | grep -q runc
+	    if [ $? -eq 0 ]; then
+		cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
 	    fi
-	    eval nsenter -P -t 1 -p -n -i -u -m $nsargs /usr/bin/dtach -n /var/lib/cube/local/${console_device} -r none -w -W 5 -Q ${cmd}
-	    connect_console
 	fi
+	local nsargs=""
+	if [ -e /proc/1/ns/cgroup ] ; then
+	    nsargs=-C
+	fi
+	eval nsenter -P -t 1 -p -n -i -u -m $nsargs ${cmd}
 	return
-    fi
-
-    if [ ! -e "/var/lib/cube/local/cmd-pipe" ]; then
-	echo "[ERROR]: /var/lib/cube/local/cmd-pipe not found, cannot create console"
-	exit 1
     fi
 
     if [ -z "${type}" ]; then
 	type=login
     fi
 
-    [ -n "$verbose" ] && debug="-v "
-
     if [ -n "${namespace}" ]; then
-        (echo "nsenter ${target}" | nanoclient -q $debug -R ipc:///var/lib/cube/local/cmd-pipe) &
+        #(echo "nsenter ${target}" | nanoclient -q $debug -R ipc:///var/lib/cube/local/cmd-pipe) &
+	true
     else
-	(echo "console ${target}" | nanoclient -q $debug -R ipc:///var/lib/cube/local/cmd-pipe) &
+	# TODO: can we just detect the streams closing now and forget about
+	#       the timeout ?
+	cube-cmd --unbuffered --timeout 9000 -- agetty -J -
     fi
-
-    exec_console
 }
 
 # Parms: $1: target container/console
@@ -247,7 +142,7 @@ function enter_console
 	    ;;
 	*essential*)
 	    if [ -n "${we_are_dom0}" ]; then
-		do_essential_console
+		do_console essential
 	    else
 		echo "ERROR: essential console is only available to dom0"
 		exit 1

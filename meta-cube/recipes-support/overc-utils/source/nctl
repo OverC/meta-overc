@@ -1,0 +1,1269 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+usage()
+{
+cat << EOF
+
+  ${0##*/} --client | --server 
+            [--verbose] [--debug] [--logfile <file>]
+            [--ctrl-ipc  <path to control ipc channel>]
+            [--local-ipc <path to client ipc response dir>]
+            [--loop]
+            [--buffered] [--unbuffered]
+	    [--auth <id> <hash>]
+            [--cap <capability manipulation>]
+	    [--clean] [--echo] [--timeout <msecs>] 
+            [-h|--help]
+
+  commands (and options):
+
+    ${0##*/} --clean
+
+	kill any hung/executing command channels and exit.
+
+    ${0##*/} --server [/path/to/control.ipc]
+
+	start the server. 
+
+        Applicable options are:
+
+            --debug    : enable debug mode. disables client authentication
+            --verbose  : extended logging of operations
+            --logfile  : log messages to a file (as well as stdout)
+            --ctrl-ipc : location to use for the control ipc. defaults to './'
+
+    ${0##*/} --client <command to run>
+
+	command to send to the server side. This is the default mode if --server or --client
+	are not specified.
+
+        Applicable options are:
+
+	     --debug
+
+		  enable debug mode. disables client authentication prompts.
+
+             --ctrl-ipc
+
+                 location to use for the control ipc. defaults to './'
+
+             --local-ipc <path>
+
+                 path to use for local ipc, i.e. answers from the server
+
+             --timeout <msecs>
+
+                 specify an inactivity timeout. default is 2000 ms. timeout is transmitted
+                 to the server, hence applies to both ends of a connnection.
+
+             --buffered
+             --unbuffered
+
+                 input/output should be buffered (line by line) or unbuffered
+                 (character by character). Transmitted to the server, hence applies
+                 to both ends of a connection
+
+              --echo
+
+                 echo characters locally (as well as transmitting them). default is
+                 to *not* echo characters.  
+
+              --auth '<id> <hash>'
+
+                 To perform actions over IPC channels, clients must be
+                 authorized.  Authoritization is based on an identifier and
+                 associated password.
+
+                   'id' is system dependent, but is typically the name of the
+                   container.
+
+                   openssl hashed passwords are used (openssl passwd -salt <salt> ..)
+                   versus passing clear text strings over the IPC channel.
+
+                 Client authentication can be in passed in several ways:
+
+                   1) nothing supplied on the command line. id and password will be
+                      prompted. The authentication hash generated and passed to the
+                      server.
+
+                   2) 'gen'
+
+                      If gen is passed, then the id and password will be
+                      prompted, the authentication hash generated, displayed
+                      and the client will exit.  The output of this operation can
+                      then be supplied to future client operations.
+
+                   3) '<id> <hash>'
+
+                      Supply authentication id and hashed password on the command line.
+
+                   4) /path/to/auth-file
+
+                      path to a file that contains the '<id> <hash>' string,
+                      which will be read and used for the transaction.
+
+              --cap 'add|del' <file>|<command>
+
+                 If properly authenticated, add or delete a capability for the client.
+
+                 If adding a file capability, the file is tranferred to the server
+                 side and made available. If a command (i.e. not locally found) then
+                 the command must exist on the server side.
+
+                 Note: the authenticated client must have "cap-add" and "cap-del"
+                       capabilities on the server side.
+
+
+EOF
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit
+fi
+
+NANOCAT=$(which nanocat)
+if [ -z "${NANOCAT}" ]; then
+    NANOCAT="./nanocat"
+fi
+timeout=1000
+client=t
+server=
+FUNCTIONS_DIR="/var/lib/cube-cmd-server/functions.d"
+AUTH_FILE="/var/lib/cube-cmd-server/auth.db"
+CONF_FILE="cube-cmd-server.conf"
+buffermode="buffered"
+server_auth_name=
+cverbose=
+echo=
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v|--verbose)
+	    verbose=t
+	    ;;
+	--debug)
+	    debug=t
+	    ;;
+	--clean)
+	    clean=t
+	    ;;
+	--timeout)
+	    timeout=$2
+	    shift
+	    ;;
+	--server)
+	    server=t
+	    client=
+	    ;;
+	--client)
+	    server=
+	    client=t
+	    ;;
+	--buffered)
+	    buffermode=buffered
+	    ;;
+	--unbuffered)
+	    buffermode=unbuffered
+	    ;;
+	--auth)
+	    client_auth_hash="$2"
+	    shift
+	    ;;
+	--echo)
+	    echo=t
+	    ;;
+	--cap)
+	    cap=t
+	    ;;
+	--conf)
+	    CONF_FILE=$2
+	    shift
+	    ;;
+	--ctrl-ipc|--control-ipc)
+	    CONTROL_IPC_CHAN=$2
+	    shift
+	    ;;
+	--local-ipc)
+	    CLIENT_IPC_DIR=$2
+	    shift
+	    ;;
+	-l|--logfile)
+	    logfile=$2
+	    shift
+	    ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	--*)
+	    # if the next argument is dashed, we just add $1 to our collection
+	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
+	    # to the --dashed option, and we grab it as well. Don't try and mix
+	    # dashed and non-dashed, since we'll grab them!
+	    case $2 in
+		--*)
+		    dashed="${dashed} $1"
+		    ;;
+		*)
+		    # sneak a : in between, so we can split it later
+		    dashed="${dashed} $1:$2"
+		    shift
+		    ;;
+	    esac
+	    ;;
+	*)
+	    if [ -z "${non_dashed}" ]; then
+		# this is the first non-dashed entry on the command line, everything
+		# else is the command to exec
+		cmd_input="$@"
+	    fi
+	    non_dashed="${non_dashed} $1"
+	    ;;
+    esac
+    shift
+done
+
+# take out the trash!
+clean() {
+    killall -9 nanocat &> /dev/null
+    rm -f /tmp/nanofifo*
+    if [ -n "${CONTROL_IPC_CHAN}" ]; then
+	rm -f ${CONTROL_IPC_CHAN}
+    fi
+    done=t
+}
+
+if [ -n "${clean}" ]; then
+    clean
+    exit 1
+fi
+
+if [ -n "${server}" ]; then
+    if [ -z "${CONTROL_IPC_CHAN}" ]; then
+	echo "[ERROR]: server requires --ctrl-ipc-chan <channel>"
+	exit 1
+	#CONTROL_IPC_CHAN="control.ipc"
+    fi
+    if [ ! -f "${CONF_FILE}" ]; then
+	echo "[ERROR]: conf file \"${CONF_FILE}\" not found"
+	exit 1
+    fi
+fi
+
+if [ -n "${client}" ]; then
+    if [ -z "${CONTROL_IPC_CHAN}" ]; then
+	if [ -n "${verbose}" ]; then
+	    echo "[INFO]: no control ipc channel passed, running in loopback mode"
+	fi
+	loopback=t
+    fi
+    if [ -n "${CONTROL_IPC_CHAN}" ]; then
+	if [ ! -S "${CONTROL_IPC_CHAN}" ]; then
+	    echo "[ERROR]: control ipc channel \"${CONTROL_IPC_CHAN}\" not found"
+	    exit 1
+	fi
+    fi
+fi
+
+function output_and_log_msg()
+{
+    local msg="$1"
+    local output_file=$2
+
+    redir="> /dev/null"
+    if [ -n "${verbose}" ]; then
+        redir=""
+    fi
+
+    if [ -n "${output_file}" ]; then
+	outfile="|tee ${output_file}"
+    fi
+
+    # depending on the launch, this goes to stdout and/or the output file
+    eval echo "\"${msg}\"" $outfile $redir
+    
+    # and this goes to the logfile if configured. We add a timestamp for better tracking as well
+    if [ -n "${logfile}" ]; then
+	date | tr -d '\n' >> ${logfile}
+	echo -n ": " >> ${logfile}
+	echo ${msg} >> ${logfile}
+    fi
+}
+
+# returns 1 if we are container, 0 otherwise
+function am_i_a_container()
+{
+    local virt=`systemd-detect-virt`
+    case ${virt} in
+	lxc*)
+	    return 1
+	    ;;
+	container*)
+	    return 1
+	    ;;
+	docker*)
+	    return 1
+	    ;;
+    esac
+
+    return 0
+}
+
+# this is the main coproc routine. It listens on the ${CONTROL_IPC_CHAN} channel
+# and sends responses.
+#
+# responses come through stdin, and are sent here via the coproc array
+#
+# sends "EOF" if it exits
+server_control_loop() {
+    ${NANOCAT} --rep --bind ipc://${CONTROL_IPC_CHAN} --stdin buffered --format raw
+    rm ${CONTROL_IPC_CHAN}
+    echo EOF
+}
+
+server_action_and_response() {
+    local ipc_chan=$1
+    shift
+    local outfile="$@"
+
+    local inactivity_timeout=${timeout}
+    # ctimeout comes from the client -> server as a set value
+    if [ -n "${ctimeout}" ]; then
+	inactivity_timeout=${ctimeout}
+    fi
+
+    resp="ACK"
+    output="> ${FUNCTIONS_DIR}/${outfile}"
+    if [ ! -d "${FUNCTIONS_DIR}" ]; then
+	resp="NACK"
+	output="> /dev/null"
+    fi
+
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: nanocat ${cverbose} --recv-timeout 2 --rep -D "${resp}" --bind-ipc ${ipc_chan} --format raw ${output} &> /dev/null"
+    fi
+
+    eval ${NANOCAT} ${cverbose} --recv-timeout 2 --rep -D \"${resp}\" --bind-ipc ${ipc_chan} --format raw ${output} &> /dev/null
+
+    if [ -e "${FUNCTIONS_DIR}/${outfile}" ]; then
+	chmod +x ${FUNCTIONS_DIR}/${outfile}
+    fi
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: server resp has completed"
+    fi
+}
+
+server_client_control() {
+    local ipc_chan=$1
+    shift
+    local command="$@"
+
+    # stage 1: wait for the request .. command ? setting ?
+    ipc_id=$(basename ${ipc_chan} .ipc)
+    request=$(${NANOCAT} --recv-timeout 10 --oneshot --rep --bind ipc://${ipc_chan} --format raw)
+
+    case ${request} in
+	CMD*)
+	    cmd=$(echo ${request} | sed 's/^CMD *//')
+	    command=${cmd}
+
+	    if [ -n "${verbose}" ]; then
+		output_and_log_msg "[INFO]: command: \"${command}\""
+	    fi
+	    if [ -n "${command}" ]; then
+		acl_check ${ipc_id} ${command}
+		if [ $? -eq 1 ]; then
+		    if [ -n "${verbose}" ]; then
+			output_and_log_msg "[INFO]: ACL: check succeeded"
+		    fi
+		    ipc_send ${ipc_chan} "ACK"
+		else
+		    if [ -n "${verbose}" ]; then
+			output_and_log_msg "[INFO]: ACL: check failed"
+		    fi
+		    command=
+		    ipc_send ${ipc_chan} "NACK: permission denied"
+		fi
+	    else
+		ipc_send ${ipc_chan} "ACK"
+	    fi
+	    ;;
+	CAP*)
+	    # adding a capability
+	    cmd=$(echo ${request} | sed 's/^CAP *//')
+
+	    op=$(echo ${cmd} | cut -d' ' -f1)
+	    owner=$(echo ${cmd} | cut -d' ' -f2)
+	    type=$(echo ${cmd} | cut -d' ' -f3)
+	    file=$(echo ${cmd} | cut -d' ' -f4)
+
+	    if [ -n "${verbose}" ]; then
+		output_and_log_msg "[INFO]: capability add for $owner of command $file"
+	    fi
+
+	    case ${op} in
+		ADD)
+		    if [ -n "${verbose}" ]; then
+			output_and_log_msg "[INFO]: CAP: request to add commands/file called: ${file}"
+		    fi
+		    allowed=t
+
+		    caps=$(capabilities_get ${server_auth_name})
+		    echo "$caps" | grep -q "cap-add"
+		    if [ $? -ne 0 ]; then
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[ERROR]: domain ${server_auth_name} is not allowed to add capabilities"
+			fi
+			allowed=
+		    fi
+
+		    if [ -n "${allowed}" ]; then
+			if [ -z "${file}" ]; then
+			    allowed=
+			fi
+		    fi
+
+		    if [ -n "${allowed}" ]; then
+			ipc_send ${ipc_chan} "ACK"
+		    else
+			ipc_send ${ipc_chan} "NACK"
+		    fi
+
+		    if [ -n "${allowed}" ]; then
+			if [ "${type}" == "FILE" ]; then
+			    server_action_and_response ${ID}.ipc ${file}
+			    acl_add ${owner} $(basename "${file}")
+			elif [ "${type}" == "CMD" ]; then
+			    acl_add ${owner} $(basename "${file}")
+			fi
+		    fi
+		    ;;
+		DEL)
+		    if [ -n "${verbose}" ]; then
+			output_and_log_msg "[INFO]: CAP: request to remove commands/file called: ${file}"
+		    fi
+		    allowed=t
+
+		    caps=$(capabilities_get ${server_auth_name})
+		    echo "$caps" | grep -q "cap-del"
+		    if [ $? -ne 0 ]; then
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[ERROR]: domain ${server_auth_name} is not allowed to delete capabilities"
+			fi
+			allowed=
+		    fi
+
+		    if [ -n "${allowed}" ]; then
+			ipc_send ${ipc_chan} "ACK"
+		    else
+			ipc_send ${ipc_chan} "NACK"
+		    fi
+
+		    if [ -n "${allowed}" ]; then
+			if [ "${type}" == "FILE" ]; then
+			    if [ -e "${FUNCTIONS_DIR}/${outfile}" ]; then
+				rm -f "${FUNCTIONS_DIR}/${file}"
+			    fi
+			fi
+			acl_remove ${owner} $(basename "${file}")
+		    fi
+		    ;;
+		*)
+		    ;;
+	    esac
+	    ;;
+	*)
+	    echo "[ERROR]: unknown request or timeout"
+	    command=
+	    ;;
+    esac
+
+    if [ -n "${command}" ]; then
+	(server_client_handler ${ipc_chan} ${command}) &
+    fi
+}
+
+server_client_handler() {
+    local ipc_chan=$1
+    shift
+    local command=$@
+
+    if [ -z "${command}" ]; then
+	return
+    fi
+
+    local inactivity_timeout=${timeout}
+    # ctimeout comes from the client -> server as a set value
+    if [ -n "${ctimeout}" ]; then
+	inactivity_timeout=${ctimeout}
+    fi
+
+    if [ -n "${command}" ]; then
+	PATH="${PATH}:${FUNCTIONS_DIR}"
+	app_no_args=$(echo "${command}" | cut -d' ' -f1)
+	app=$(basename ${app_no_args})
+	app_path=$(which ${app})
+	if [ -z "${app_path}" ]; then
+	    if [ -n "${verbose}" ]; then
+		output_and_log_msg "[ERROR]: could not find app: $app"
+		cmd_not_found=t
+	    fi
+	fi
+
+	if [ -n "${cmd_not_found}" ]; then
+	    echo "[ERROR}: command \"${command}\" not found" | ${NANOCAT} --recv-timeout 10 \
+									  --stdin buffered --pair \
+									  --bind-ipc ${ipc_chan} \
+									  --format raw
+	else
+	    ipc_dir=$(dirname ${ipc_chan})
+	    ipc_name=$(basename ${ipc_chan})
+	    fifo="${ipc_dir}/nanofifo${ipc_name}"
+	    mkfifo ${fifo}
+	    if [ -n "${verbose}" ]; then
+		output_and_log_msg "[INFO]: script -q -c \"${command}\" /dev/null  < ${fifo} | \ "
+		output_and_log_msg "          ${NANOCAT} --inactivity-timeout ${inactivity_timeout} --send-timeout 1 --recv-timeout 1 \ "
+		output_and_log_msg "                     --timeout-mode exit-after-data ${cverbose} \ "
+		output_and_log_msg "                     --stdin ${buffermode} --pair --bind-ipc ${ipc_chan} \ "
+		output_and_log_msg "                     --format raw > ${fifo}"
+	    fi
+	    eval stdbuf -i0 -o0 -e0 script -q -c \"${command}\" /dev/null < ${fifo} | \
+		 stdbuf -i0 -o0 -e0 ${NANOCAT} --inactivity-timeout ${inactivity_timeout} --send-timeout 1 --recv-timeout 1 \
+			   ${cverbose} --timeout-mode exit-after-data \
+			   --stdin ${buffermode} --pair --bind-ipc ${ipc_chan} \
+			   --format raw > ${fifo}
+	    rm ${fifo}
+	    rm -f ${ipc_chan}
+	fi
+    else
+	${NANOCAT} --recv-timeout 10 --stdin buffered --pair --bind-ipc ${ipc_chan} --format raw
+    fi
+
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: server -> client pair handler has exited"
+    fi
+}
+
+ipc_send() {
+    local chan=$1
+    local data="$@"
+
+    ${NANOCAT} --oneshot --rep --bind ipc://${chan} --format raw -D"${data}" > /dev/null
+}
+
+# sends data on the control channel
+server_control_send() {
+    # commented version is for coproc operation
+    # echo "$@" >&${serverfd[1]}
+    echo "$@" | ${NANOCAT} --oneshot --rep --bind ipc://${CONTROL_IPC_CHAN} --stdin buffered --format raw &> /dev/null
+}
+
+# reads data from the control channel
+server_control_read() {
+    # commented version is for coproc operation
+    # read DATA <&${serverfd[0]}
+    DATA=$(${NANOCAT} --oneshot --rep --bind ipc://${CONTROL_IPC_CHAN} --format raw)
+}
+
+# sends a command from the client, and either ack/nacks it or returns
+# the response.
+#
+# arg: type
+#    acknack
+#          ack:  returns 1
+#          nack: returns 0
+#    reponse
+#          outputs the response
+#
+clientcmd() {
+    local ipc_chan=$1
+    local type=$2
+    shift
+    shift
+    local command=$@
+
+    #>&2 echo "$command"
+    #>&2 echo "${NANOCAT} --req --connect ipc://${ipc_chan} --data \"${command}\" --format raw --recv-timeout 3"
+
+    # only works for ack/nack types, response will always be nothing
+    if [ -n "${loopback}" ]; then
+	return 1
+    fi
+
+    answer=$(${NANOCAT} --req --connect ipc://${ipc_chan} --data "${command}" --format raw --recv-timeout 3)
+    if [ "${type}" == "response" ]; then
+	echo "${answer}"
+    fi
+    if [ "${type}" == "acknack" ]; then
+	echo "${answer}" | grep -q -w "ACK"
+	if [ $? -eq 0 ]; then
+	    return 1
+	else
+	    client_err_reason=$(echo "${answer}" | cut -f2 -d:)
+	    return 0
+	fi
+    fi
+}
+# wrapper to clientcmd
+clientcmd_acknack() {
+    local channel="${CONTROL_IPC_CHAN}"
+    echo "${1}" | grep -q .ipc
+    if [ $? -eq 0 ]; then
+	channel=$1
+	shift
+    fi
+    action="$@"
+
+    clientcmd ${channel} acknack ${action}
+}
+# wrapper to clientcmd
+clientcmd_response() {
+    local channel="${CONTROL_IPC_CHAN}"
+    echo "${1}" | grep -q .ipc
+    if [ $? -eq 0 ]; then
+	channel=$1
+	shift
+    fi
+    action="$@"
+
+    clientcmd "${CONTROL_IPC_CHAN}" response $@
+}
+
+# connects to a data channel after sending a command to the server
+clientpair() {
+    local channel="$@"
+
+    local inactivity_timeout=${timeout}
+    # ctimeout comes from the client -> server as a set value
+    if [ -n "${ctimeout}" ]; then
+	inactivity_timeout=${ctimeout}
+    fi
+    
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: nanocat --stdin ${buffermode} \ "
+	output_and_log_msg "                ${cverbose} --recv-timeout 1 --send-timeout 1 \ "
+	output_and_log_msg "                --inactivity-timeout ${inactivity_timeout} --timeout-mode exit-after-data \ "
+	output_and_log_msg "                --pair --format raw --connect-ipc ${channel}"
+    fi
+    if [ -z "${echo}" ]; then
+	stty -echo
+    fi
+    ${NANOCAT} --stdin ${buffermode} --recv-timeout 1 \
+	       --send-timeout 1 --inactivity-timeout ${inactivity_timeout} \
+	       ${cverbose} --timeout-mode exit-after-data \
+	       --pair --format raw --connect-ipc ${channel}
+
+    if [ -z "${echo}" ]; then
+	stty echo
+    fi
+}
+# connects to the data channel and sends the contents of a file
+clientsend() {
+    local channel="$1"
+    local file="$2"
+
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: nanocat --send-timeout 10 --req --format raw --connect-ipc ${channel} -F ${file}"
+    fi
+    resp=$(${NANOCAT} --send-timeout 10 --req --format raw --connect-ipc ${channel} -F ${file})
+}
+
+## derived from https://gist.github.com/epiloque/8cf512c6d64641bde388
+## works for arrays of hashes, as long as the hashes do not have arrays
+function parse_yaml_conf_file() {
+    local prefix=$2
+    local s
+    local w
+    local fs
+    s='[[:space:]]*'
+    w='[a-zA-Z0-9_]*'
+    fs="$(echo @|tr @ '\034')"
+    sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+	-e "s|^\($s\)\($w\)$s[:-]$s\(.*\)$s\$|\1$fs\2$fs\3|p" "$1" |
+    awk -F"$fs" '{
+      indent = length($1)/2;
+      if (length($2) == 0) { conj[indent]="+";} else {conj[indent]="";}
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+	      vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+	      printf("%s%s%s%s=(\"%s\")\n", "'"$prefix"'",vn, $2, conj[indent-1],$3);
+	      printf("global_yaml_arrays+=(\"%s%s\")\n",vn, $2);
+      }
+    }' | sed 's/_=/+=/g' | sed 's/_\"/\"/g'
+}
+
+# 0: command is not allowed
+# 1: command is allowed
+acl_check() {
+    local requestor=$1
+    shift
+    local cmd=$@
+
+    # We need to take the first part of the command, and drop the path.
+    executable=$(echo ${cmd} | cut -f1 -d' ')
+    # And we may also need co check the first argument, i.e. for something
+    # like "cube-ctl list"
+    first_arg=$(echo ${cmd} | cut -f2 -d' ')
+    executable=$(basename ${executable})
+   
+    #echo "executable: $executable"
+    #echo "first arg: $first_arg"			    
+    
+    # check for a wildcard
+    eval acl=\${${requestor}_commands[@]}
+    echo "$acl" | grep -q -w \-
+    if [ $? -eq 0 ]; then
+	return 1
+    fi
+
+    # We'll test 4 things:
+    #   - the command against the ACL
+    #   - the command against the dynamic ACL
+    #   - the command + first arg against the ACL
+    #   - the command + first arg agaisnt the dyanmic ACL
+    
+    eval acl=\${${requestor}_commands[@]}
+    
+    # To make checking for the commands "easier", we convert the acl string
+    # into an array, loop that array and make a hash from the commands. (we
+    # could use IFS for this, but using array's is just as clean.
+    #
+    # Once we have the hash, we can test if a command is present by indexing
+    # the associative array and looking for 't'.
+    local acl_values=($acl)
+    declare -A acl_hash
+    for i in "${acl_values[@]}"; do
+	acl_hash[$i]="t"
+    done
+
+    #echo "one: ${acl_hash[$executable]}"
+    #echo "two: ${acl_hash[$executable#${first_arg}]}"
+
+    if [ -n "${acl_hash[${executable}]}" ]; then
+	return 1
+    fi
+    if [ -n "${acl_hash[${executable}#${first_arg}]}" ]; then
+	return 1
+    fi
+
+    # check the specfic command's dynamic ACL
+    eval acl=\${${requestor}_dyn_commands[@]}
+
+    acl_values=($acl)
+    declare -A acl_hash_dyn
+    for i in "${acl_values[@]}"; do
+	echo "adding $i"
+	acl_hash_dyn[$i]="t"
+    done
+    if [ -n "${acl_hash_dyn[${executable}]}" ]; then
+	return 1
+    fi
+    if [ -n "${acl_hash_dyn[${executable}#${first_arg}]}" ]; then
+	return 1
+    fi
+
+    return 0
+}
+
+capabilities_get() {
+    local name=$1
+    eval caps=\${${name}_capabilities[@]}
+    echo "${caps}"
+}
+
+acl_add() {
+    requestor=$1
+    cmd=$2
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: ACL: adding ${cmd} to ${requestor}"
+    fi
+    eval acl=\${${requestor}_dyn_commands[@]}
+    if [ -z "${acl}" ]; then
+	dyn_array="${requestor}_dyn_commands"
+	eval $dyn_array=\(\)
+    fi
+    eval $dyn_array+=\(${cmd}\)
+}
+
+acl_remove() {
+    requestor=$1
+    cmd=$2
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: ACL: removing ${cmd} from ${requestor}"
+    fi
+
+    dyn_array="${requestor}_dyn_commands"
+    eval acl=\${${requestor}_dyn_commands[@]}
+    if [ -n "${acl}" ]; then
+	acl=(${acl[@]/${cmd}/})
+	eval ${dyn_array}=\(${acl}\)
+    fi
+}
+
+acl_read() {
+    # create arrays of the values found in the yaml config file
+    eval $(parse_yaml_conf_file $CONF_FILE)
+    if [ -n "${verbose}" ]; then
+	# if verbose, this will just dump the variables and their values to stdout
+	output_and_log_msg "[INFO]: start ACL dump"
+	a=$(parse_yaml_conf_file $CONF_FILE)
+	o=$(echo "${a}" | sed 's/^/    /')
+	output_and_log_msg "$o"
+	output_and_log_msg "[INFO]: end ACL dump"
+    fi
+}
+
+acl_dump() {
+    local acl_name=$1
+
+    eval acl=\${${acl_name}[@]}
+    echo "$acl"
+}
+
+# resets all the ACLs
+acl_reset() {
+    for array in ${global_yaml_arrays[@]}; do
+	eval unset ${array}
+    done
+
+    unset ${global_yaml_arrays}
+}
+
+acl_free() {
+    local tgt_id=$1
+
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: ACL: freeing for ${tgt_id}"
+    fi
+    eval unset ${tgt_id}_commands
+    eval unset ${tgt_id}_dyn_commands
+
+    global_yaml_arrays=(${global_yaml_arrays[@]/${tgt_id}_commands/})
+    global_yaml_arrays=(${global_yaml_arrays[@]/${tgt_id}_dyn_commands/})
+}
+
+acl_copy() {
+    local existing_acl=$1
+    local new_acl=$2
+
+    if [ -n "${verbose}" ]; then
+	output_and_log_msg "[INFO]: ACL: copying from ${existing_acl} to ${new_acl}"
+    fi
+    eval ${new_acl}_commands=\("\${${existing_acl}_commands[@]}"\)
+    eval ${new_acl}_dyn_commands=\("\${${existing_acl}_dyn_commands[@]}"\)
+    global_yaml_arrays+=(${new_acl}_commands ${new_acl}_dyn_commands)
+}
+
+# 0: not authorized
+# 1: authorized
+server_check_auth() {
+    local auth_string="$@"
+
+    server_auth_name=$(echo ${auth_string} | cut -d' ' -f1)
+    server_auth_hash=$(echo ${auth_string} | cut -d' ' -f2)
+
+    # if debugging, all clients are ok!
+    if [ -n "${debug}" ]; then
+	return 1
+    fi
+
+    # to work around the fact that our yaml parser can't take a "-", we need
+    # to change -'s for _'s in the name that we use for the ACL. But we still
+    # need to test for - and _ in the actual authentication DB
+    local server_auth_name_orig="${server_auth_name}"
+    server_auth_name=$(echo "${server_auth_name}" | sed 's/-/_/g')
+
+    if [ -e "${AUTH_FILE}" ]; then
+	auth_string="${server_auth_name} ${server_auth_hash}"
+	grep -q "${auth_string}" ${AUTH_FILE}
+	if [ $? -ne 0 ]; then
+	    auth_string="${server_auth_name_orig} ${server_auth_hash}"
+	    grep -q "${auth_string}" ${AUTH_FILE}
+	    if [ $? -eq 0 ]; then
+		if [ -n "${verbose}" ]; then
+		    output_and_log_msg "[INFO]: ID \"${server_auth_name}\" saved as authorized client"
+		fi
+		return 1
+	    fi
+	    if [ -n "${verbose}" ]; then
+		output_and_log_msg "[INFO]: ID \"${server_auth_name}\" failed authentication"
+	    fi
+	    server_auth_name=
+	    return 0
+	fi
+	if [ -n "${verbose}" ]; then
+	    output_and_log_msg "[INFO]: ID \"${server_auth_name}\" saved as authorized client"
+	fi
+	return 1
+    else
+	if [ -n "${verbose}" ]; then
+	    output_and_log_msg "[INFO]: authentication DB not found, client \"${server_auth_name}\" failed authentication"
+	fi
+	server_auth_name=
+	return 0
+    fi
+}
+
+# This starts the control channel, waits for requests on it and
+# then spawns handler ipc channels.
+if [ -n "${server}" ]; then
+    trap "clean" SIGINT SIGTERM
+
+    # Set initial time of the conf file read
+    ACL_LTIME=$(stat -c %Z ${CONF_FILE})
+    acl_read
+
+    # no longer used. saved.
+    # coproc serverfd { server_control_loop; }
+
+    done=
+    command=
+    while [ -z "${done}" ] ; do
+	server_control_read
+
+	# as soon as the server control thread's done, we're done
+	if [ "EOF" == "$DATA" ]; then
+	    break;
+	fi
+
+	# check for conf file modifications
+	ATIME=$(stat -c %Z ${CONF_FILE})
+	if [[ "${ATIME}" != "${ACL_LTIME}" ]];	then
+	    output_and_log_msg "[INFO]: ACL changed. reloading."
+	    acl_reset
+	    acl_read
+	    ACL_LTIME=${ATIME}
+	fi
+
+	case ${DATA} in
+	    AUTH*)
+		auth=$(echo ${DATA} | sed 's/^AUTH *//')
+		if [ -n "${verbose}" ]; then
+		    output_and_log_msg "[INFO]: auth: ${auth}"
+		fi
+
+		server_check_auth ${auth}
+		if [ $? -eq 1 ]; then
+		    server_control_send "ACK"
+		else
+		    server_control_send "NACK"
+		fi
+		;;
+	    SET*)
+		# setting a variable for future commands
+		var_value="${DATA}"
+		var=$(echo ${var_value} | cut -d' ' -f2)
+		value=$(echo ${var_value} | cut -d' ' -f3)
+		case ${var} in
+		    timeout)
+			ctimeout="${value}"
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[INFO]: set timeout to: ${ctimeout}"
+			fi
+			server_control_send "ACK"
+			;;
+		    verbose)
+			if [ "${value}" = "true" ]; then
+			    cverbose="--verbose"
+			else
+			    cverbose=""
+			fi
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[INFO]: set verbosity to: ${cverbose}"
+			fi
+			server_control_send "ACK"
+			;;
+		    buffermode)
+			buffermode="${value}"
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[INFO]: set buffer mode to: ${buffermode}"
+			fi
+			server_control_send "ACK"
+			;;
+		    *)
+			server_control_send "NACK"
+			;;
+		esac
+		;;
+	    CHAN*)
+		# requesting/killing/modifying a data channel
+		cmd=$(echo ${DATA} | sed 's/^CHAN *//')
+		op=$(echo ${cmd} | cut -d' ' -f1)
+		opval=$(echo ${cmd} | cut -d' ' -f2)
+
+		case ${op} in
+		    # CHAN REQ <optional directory to put the client ipc>
+		    REQ*)
+			# channel request
+			# channel kill <name>
+			date=$(date +%Y%m%d%H%M%S)
+			rand=$(cat /dev/urandom | tr -cd [:alpha:] | head -c 4)
+			ID="${rand}_${date}"
+
+			path=$(dirname ${CONTROL_IPC_CHAN})
+			if [ -n "${opval}" ] && [ "${opval}" != "REQ" ]; then
+			    path="${opval}"
+			    rpath="${opval}/"
+			fi
+
+			# set up a default ACL
+			acl_copy ${server_auth_name} ${ID}
+
+			if [ -n "${verbose}" ]; then
+			    output_and_log_msg "[INFO]: channel: ipc://${path}/${ID}.ipc created. sent client ${rpath}${ID}.ipc"
+			fi
+			server_control_send "${rpath}${ID}.ipc"
+
+			# start the handler
+			server_client_control ${path}/${ID}.ipc ${command}
+
+			acl_free ${ID}
+			;;
+		    KILL*)
+			;;
+		esac
+		;;
+	esac
+    done
+
+    exit 0
+fi
+
+client_get_id() {
+    tty -s
+    if [ $? -ne 0 ]; then
+	# if we are *not* interactive ' ' is our delimiter
+	local extra_args="-d' '"
+    fi
+    eval read ${extra_args} -p "id:" client_id
+}
+client_get_password() {
+    tty -s
+    if [ $? -eq 0 ]; then
+	echo -n "Enter password: "
+    fi
+    while IFS= read -p "$prompt" -r -s -n 1 char
+    do
+	# Enter - accept password
+	if [[ $char == $'\0' ]] ; then
+	    break
+	fi
+	# Backspace
+	if [[ $char == $'\177' ]] ; then
+	    prompt=$'\b \b'
+	    password="${password%?}"
+	else
+	    prompt='*'
+	    password+="$char"
+	fi
+    done
+    client_password=${password}
+    tty -s
+    if [ $? -eq 0 ]; then
+	echo
+    fi
+}
+
+client_generate_auth_hash() {
+    client_auth_hash=$(echo "${client_password}" | openssl passwd -salt overc -1 -stdin)
+    client_auth_hash=$(printf "%s %s" ${client_id} ${client_auth_hash})
+}
+
+client_check_authentication() {
+    if [ -z "${client_auth_hash}" ]; then
+	if [ -n "${debug}" ] || [ -n "${loopback}" ]; then
+	    return
+	fi
+
+	if [ -z "${client_id}" ]; then
+	    client_get_id
+	fi
+	if [ -z "${client_password}" ]; then
+	    client_get_password
+	fi
+
+	client_generate_auth_hash
+    else
+	client_id=$(echo ${client_auth_hash} | cut -d' ' -f1)
+
+	if [ -n "${client_id}" ]; then
+	    if [ "${client_id}" == "gen" ]; then
+		client_get_id
+		client_get_password
+		client_generate_auth_hash
+
+		echo "${client_auth_hash}"
+		exit 0
+	    fi
+
+	    if [ -f "${client_id}" ]; then
+		# we are reading from a file
+		client_auth_hash=$(cat ${client_id} | head -1)
+	    fi
+	fi
+
+	client_id=$(echo ${client_auth_hash} | cut -d' ' -f1)
+	client_hash=$(echo ${client_auth_hash} | cut -d' ' -f2)
+    fi
+}
+
+client_authenticate() {
+    clientcmd_acknack AUTH ${client_auth_hash}
+    if [ $? -eq 0 ]; then
+	return 0
+    fi
+
+    return 1
+}
+
+client_get_ipcchan() {
+    local resp_dir
+    local ipc_chan
+
+    if [ -n "${loopback}" ]; then
+	echo "/dev/null"
+	return
+    fi
+
+    if [ -n "${CLIENT_IPC_DIR}" ]; then
+	resp_dir="${CLIENT_IPC_DIR}"
+    fi
+    ipc_chan=$(clientcmd_response CHAN REQ ${resp_dir})
+
+    echo ${ipc_chan} | grep -q "ipc"
+    if [ $? -ne 0 ]; then
+	>&2 echo "[ERROR]: could not obtain an IPC channel"
+	exit 1
+    fi
+
+    # if we get an absolute path back, trust it. Otherwise, we'll look
+    # locally as well
+    case ${ipc_chan} in
+	/*)
+	    echo "${ipc_chan}"
+	    ;;
+	*)
+	    if [ ! -S "${ipc_chan}" ]; then
+		resp_dir=$(dirname ${CONTROL_IPC_CHAN})
+		if [ -n "${CLIENT_IPC_DIR}" ]; then
+		    resp_dir="${CLIENT_IPC_DIR}"
+		fi
+		ipc_chan="${resp_dir}/${ipc_chan}"
+	    fi
+	    echo "${ipc_chan}"
+	    ;;
+    esac
+}
+
+if [ -n "${client}" ]; then
+    client_input=$(echo ${cmd_input} | sed 's/^[ \t]*//;s/[ \t]*$//')
+
+    client_check_authentication
+
+    if [ -z "${client_input}" ]; then
+	echo "[ERROR]: no client command was specified"
+	exit 1
+    fi
+
+    if [ -n "${cap}" ]; then
+	cap=$(echo ${client_input} | sed 's/^cap[ \t]*//;s///')
+	op=$(echo ${cap} | cut -d' ' -f1)
+	opval=$(echo ${cap} | cut -d' ' -f2)
+
+	if [ -z "${opval}" ]; then
+	    echo "[ERROR]: no file or command was provided"
+	    exit 1
+	fi
+
+	client_authenticate
+	if [ $? -eq 0 ]; then
+	    echo "[ERROR]: authentication failed for \"${client_auth_hash}\""
+	    exit 1
+	fi
+
+	ipc_chan=$(client_get_ipcchan)
+
+	if [ "${op}" == "add" ]; then
+	    if [ -e "${opval}" ]; then
+		clientcmd_acknack ${ipc_chan} CAP ADD ${client_id} FILE $(basename ${opval})
+		if [ $? -eq 0 ]; then
+		    echo "[ERROR]: capability add was nack'd"
+		    exit 1
+		fi
+		clientsend ${ipc_chan} ${opval}
+	    else
+		clientcmd_acknack ${ipc_chan} CAP ADD ${client_id} CMD $(basename ${opval})
+		if [ $? -eq 0 ]; then
+		    echo "[ERROR]: capability add was nack'd"
+		    exit 1
+		fi
+	    fi
+	else
+	    clientcmd_acknack ${ipc_chan} CAP DEL ${client_id} CMD $(basename ${opval})
+	    if [ $? -eq 0 ]; then
+		echo "[ERROR]: capability add was nack'd"
+		exit 1
+	    fi
+	fi
+    else
+	case ${client_input} in
+	    *)
+		if [ -n "${verbose}" ]; then
+		    clientcmd_acknack SET verbose true
+		else
+		    clientcmd_acknack SET verbose faluse
+		fi
+		clientcmd_acknack SET timeout ${timeout}
+		if [ -n "${buffermode}" ]; then
+		    clientcmd_acknack SET buffermode ${buffermode}
+		fi
+
+		client_authenticate
+		if [ $? -eq 0 ]; then
+		    echo "[ERROR]: authentication failed for \"${client_auth_hash}\""
+		    exit 1
+		fi
+
+		# if we are in loopback mode, we try and execute the command directly against
+		# pid 1's namespace. If you aren't root this won't work, but that isn't our
+		# issue to fix.
+		if [ -n "${loopback}" ]; then
+		    if [ -e /proc/1/ns/cgroup ]; then
+			nsenter -C -t1 touch /dev/null 2> /dev/null
+			if [ $? -eq 0 ]; then
+			    nsargs="-C"
+			fi
+			nsenter -P -t1 touch /dev/null 2> /dev/null
+			if [ $? -eq 0 ]; then
+			    nsargs="${nsargs} -P"
+			fi
+		    fi
+		    
+		    nsenter ${nsargs} -t1 -p -n -i -u -m ${client_input}
+		else
+	       	    ipc_chan=$(client_get_ipcchan)
+		    clientcmd_acknack ${ipc_chan} CMD ${client_input}
+		    if [ $? -eq 0 ]; then
+			if [ -n "${client_err_reason}" ]; then
+			    client_err_reason=$(echo ${client_err_reason} | sed 's/^[ \t]*//;s/[ \t]*$//')
+			    echo "[ERROR]: '${client_input}' ${client_err_reason}"
+			else
+			    echo "[ERROR]: command \"${client_input}\" was nack'd or timedout"
+			fi
+			exit 1
+		    fi
+		    clientpair ${ipc_chan}
+		fi
+	esac
+    fi
+fi

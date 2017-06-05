@@ -1,0 +1,273 @@
+From f1135570659943f6abfe81aa8f390ece5696772b Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Fri, 26 May 2017 14:25:53 -0400
+Subject: [PATCH] nanocat: add EOF transmission for faster exit
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ tools/nanocat.c | 157 +++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 98 insertions(+), 59 deletions(-)
+
+diff --git a/tools/nanocat.c b/tools/nanocat.c
+index 1b9719b9591c..490da5049b8a 100644
+--- a/tools/nanocat.c
++++ b/tools/nanocat.c
+@@ -692,8 +692,7 @@ void nn_resp_loop (nn_options_t *options, int sock)
+ 	      terminal_nonbuffered();
+ 	      unsigned int count = 0;
+ 	      int c = getchar();
+-	      if ( c == EOF || c == '\n' )
+-	      {
++	      if ( c == EOF || c == '\n' ) {
+ 		 count = 0;
+ 	      }
+ 	      memcpy(sbuf, &c, sizeof(int));
+@@ -760,7 +759,10 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+        terminal_nonbuffered();
+     }
+ 
+-    /* forcing this to be milliseconds, even though the help says seconds */
++    /*
++      forcing this to be milliseconds, even though the help says seconds
++      we are special.
++    */
+     recv_timeout = (int)(options->recv_timeout /* *1000 */ );
+     send_timeout = (int)(options->send_timeout /* *1000 */ );
+     inactivity_timeout = (int)(options->inactivity_timeout /* *1000 */ );
+@@ -777,7 +779,8 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 
+         for (;;) {
+ 
+-	   /* failsafe timeout checks:
++	   /* Failsafe timeout checks:
++
+ 	        - 1) inactivity
+ 		- 2) many tx or rx timeouts, with no good transfers (TODO)
+ 	   */
+@@ -805,7 +808,7 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 	   }
+ 
+ 	   /* send checks */
+-	   if (stdin_data_avail()) {
++	   if ( stdin_data_avail()) {
+ 	      if ( buf_len == 0 ) {
+ 		 sbuf = NULL;
+ 		 sbuf = nn_allocmsg(PIPE_BUF,0);
+@@ -820,6 +823,8 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 		       if ( tot_sent == 0 ) {
+ 			  /* we did read, but nothing was sent, so we sent a single empty
+ 			     byte. Next time around, we'll exit */
++
++			  /* TODO: combine this with the EOF send ? */
+ 			  memcpy( sbuf, " ", 1 );
+ 			  buf_len = 1;
+ 			  /* indicate that we really have to leave if this fails to send */
+@@ -830,8 +835,16 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 			  if ( options->verbose > 0 ) {
+ 			     fprintf( stderr, "EXIT: stdin stream closed and no data is pending\n");
+ 			  }
+-			  nn_freemsg(sbuf);
+-			  goto terminal_exit;
++			  if ( exit_pending == 0 ) {
++			     fprintf( stderr, "EXIT: sending EOF\n");
++			     exit_pending = 1;
++			     tot_sent = 0;
++			     *((int*) sbuf) = -1;
++			     buf_len = sizeof(int);
++			  } else {
++			     nn_freemsg(sbuf);
++			     goto terminal_exit;
++			  }
+ 		       }
+ 		    }
+ 		 } else {
+@@ -839,22 +852,32 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 		    int c;
+ 		    rcount = 0;
+ 		    tot_sent = 0;
+-		    while ( count < PIPE_BUF ) {
++		    while ( count < PIPE_BUF && rcount < PIPE_BUF ) {
+ 		       if (stdin_data_avail()) {
+ 			  c = getchar();
+-			  if ( c == EOF || c == '\n' )
+-			  {
++
++			  if ( c == EOF || c == '\n' ) {
++			     /* kept around for cooked / unbuffered mode emulation */
+ 			     //printf( "The length of the line is %u\n", count );
+ 			     //count = 0;
+ 			  }
+ 			  if ( c == -1 ) {
+ 			     if ( rcount == 0 ) {
+-				/* if we got a -1, the input stream has been closed, time to flee */
+-				if ( options->verbose > 0 ) {
+-				   fprintf( stderr, "EXIT: stdin stream closed and no data is pending: %d\n", rcount);
++				if ( exit_pending == 0 ) {
++				   exit_pending = 1;
++				   /* TODO: make this an 'escape' char option and a EOF option */
++				   tot_sent = 0;
++				   *((int*) sbuf) = -1;
++				   buf_len = sizeof(int);
++				   count = PIPE_BUF; /* so we'll exit the loop */
++				} else {
++				   /* if we got a -1, the input stream has been closed, time to flee */
++				   if ( options->verbose > 0 ) {
++				      fprintf( stderr, "EXIT: stdin stream closed and no data is pending: %d\n", rcount);
++				   }
++				   nn_freemsg(sbuf);
++				   goto terminal_exit;
+ 				}
+-				nn_freemsg(sbuf);
+-				goto terminal_exit;
+ 			     }
+ 			  } else {
+ 			     memcpy(sbuf+rcount, &c, sizeof(int));
+@@ -863,74 +886,80 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 		       }
+ 		       count++;
+ 		    }
++
+ 		    if ( rcount > 0 ) {
+ 		       /* we read some data, so we clear the sent flag */
+ 		       tx_data_active = 0;
++		       buf_len = rcount;
+ 		    }
+-		    buf_len = rcount;
+-		 }
+-	      }
+-	      if ( buf_len > 0 ) {
+-		 nn_set_send_timeout( sock, send_timeout );
+-		 rc = nn_send( sock, sbuf + tot_sent, buf_len, 0 );
+-		 if ( rc > 0 )
+-		 {
+-		    timeout_count = 0;
+-		    tx_data_active = 1;
+-		    tot_sent = tot_sent + rc;
+-		    buf_len = buf_len - rc;
+-		    tx_data_start_flag = 1;
+-		    start_time = nn_clock_ms();
+ 		 }
++	      } /* if ( buf_len == 0 ) */
++	   } /* stdin_data_avail */
++
++	   /* If the buffer length is non-zero, try and send it.
++
++	      Note: this is no longer predicated on us reading new data, but
++	            only that the data hasn't been sent and recv'd.
++
++		    IF this causes a problem with slow to connect clients, then
++		    this may have to go back into the stdin read OR have some
++		    sort of check for an incrementing buffer. The "tx_data_active"
++		    flag would be an option
++	   */
++	   if ( buf_len > 0 ) {
+ 
+-		 if (rc < 0 && errno == EAGAIN) {
++	      nn_set_send_timeout( sock, send_timeout );
++	      rc = nn_send( sock, sbuf + tot_sent, buf_len, 0 );
++	      if ( rc > 0 ) {
++		 timeout_count = 0;
++		 tx_data_active = 1;
++		 tot_sent = tot_sent + rc;
++		 buf_len = buf_len - rc;
++		 tx_data_start_flag = 1;
++		 start_time = nn_clock_ms();
++	      }
++	      if (rc < 0 ) {
++		 if ( errno == EAGAIN) {
+ 		    fprintf (stderr, "Message not sent (EAGAIN)\n");
+ 		 } else {
+-
+ 		    /* if the exiting pending flag has been set then one of our
+ 		       streams has closed. If we timeout on the send many times,
+ 		       we need to exit. This avoid hung processes */
+-		    if ( exit_pending ) {
++		    /* if ( exit_pending ) { */
+ 		       if ( timeout_count > 10000 ) {
+ 			  if ( options->verbose > 0 ) {
+-			     fprintf( stderr, "EXIT: stdin. max send timeout after input stream close\n");
++			     fprintf( stderr, "EXIT: stdin. max (%d) send timeouts after input stream close\n", 10000);
+ 			  }
+ 			  goto terminal_exit;
+-		       }
++		       /* } */
+ 		    }
+ 
+ 		    if ( options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA ) {
+ 		       if( tx_data_start_flag ) {
++			  fprintf( stderr, "EXIT: stdin. send timeout after data\n");
+ 			  nn_assert_errno (rc >= 0, "Can't send");
++			  goto terminal_exit;
++		       }
++		    } else if ( options->timeout_mode == NN_TIMEOUT_EXIT_ON_TIMEOUT ) {
++		       if ( options->verbose > 0 ) {
++			  if ( options->verbose > 0 ) {
++			     fprintf( stderr, "EXIT: send timeout\n");
++			  }
+ 		       }
++		       goto terminal_exit;
+ 		    } else {
+ 		       nn_assert_errno (rc >= 0, "Can't send");
+ 		    }
+ 		    timeout_count++;
+ 		 }
++	      }
+ 
+-		 if ( buf_len == 0 ) {
+-		    timeout_count = 0;
+-		    nn_freemsg(sbuf);
+-		    tx_data_active = 0;
+-		 }
+-	      } else {
+-		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_AFTER_FIRST_DATA ) {
+-		    if( tx_data_start_flag ) {
+-		       if ( options->verbose > 0 ) {
+-			  fprintf( stderr, "EXIT: stdin. send timeout after data\n");
+-		       }
+-		       goto terminal_exit;
+-		    }
+-		 }
+-		 if ( options->timeout_mode == NN_TIMEOUT_EXIT_ON_TIMEOUT ) {
+-		    if ( options->verbose > 0 ) {
+-		       if ( options->verbose > 0 ) {
+-			  fprintf( stderr, "EXIT: send timeout\n");
+-		       }
+-		    }
+-		    goto terminal_exit;
+-		 }
++	      /* if the buffer lenght is zero, we've sent it all, so we free the
++		 buffer, and clear our counts */
++	      if ( buf_len == 0 ) {
++		 timeout_count = 0;
++		 nn_freemsg(sbuf);
++		 tx_data_active = 0;
+ 	      }
+ 	   }
+ 
+@@ -960,10 +989,20 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 		 rx_data_active = 0;
+ 		 continue;
+ 	      }
+-	   }
+-	   else
+-	   {
++	   } else { /* rc < 0 */
+ 	      if ( rc > 0 ) {
++		 if ( rc == sizeof(int) ) {
++		    /* peek for an exit code. TODO: this should be optional */
++		    if ( *((int*)buf) == -1 ) {
++		       if ( options->verbose > 0 ) {
++			  fprintf( stderr, "EXIT: EOF recv'd\n");
++		       }
++		       nn_freemsg (buf);
++		       goto terminal_exit;
++		    }
++		 } else {
++		       /* TODO: peek for a programmable exit code */
++		 }
+ 		 start_time = nn_clock_ms();
+ 		 rx_data_active = 1;
+ 		 rx_data_start_flag = 1;
+-- 
+2.4.0.53.g8440f74
+

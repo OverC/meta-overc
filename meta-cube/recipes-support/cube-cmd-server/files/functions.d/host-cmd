@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# This simply executes a command in the namespace of the host
+# ACLs prevent most containers from running this
+
+nsenter -C -P -t1 -p -n -i -u -m $@
