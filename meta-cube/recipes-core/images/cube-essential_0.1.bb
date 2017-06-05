@@ -12,6 +12,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 # configure with --enable-container=yes
 USE_DEPMOD = "1"
 CUBE_ESSENTIAL_EXTRA_INSTALL ?= "kernel-modules"
+CUBE_ESSENTIAL_EXTRA_UNINSTALL ?= ""
 
 PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later
@@ -29,6 +30,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  iw \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
+IMAGE_INSTALL_remove += "${CUBE_ESSENTIAL_EXTRA_UNINSTALL}"
 
 IMAGE_FEATURES += "package-management"
 

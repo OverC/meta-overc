@@ -9,6 +9,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
 CUBE_DOM0_EXTRA_INSTALL ?= " "
+CUBE_DOM0_EXTRA_UNINSTALL ?= ""
 
 PACKAGE_EXCLUDE = "busybox* "
 # Exclude documention packages, which can be installed later
@@ -33,6 +34,7 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   overc-device-utils \
                   ${CUBE_DOM0_EXTRA_INSTALL} \
                  "
+IMAGE_INSTALL_remove += "${CUBE_DOM0_EXTRA_UNINSTALL}"
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 
