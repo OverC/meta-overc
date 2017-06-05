@@ -9,13 +9,6 @@ localstatedir="/var"
 # Autostart containers?
 DOM0_AUTO="true"
 
-# BOOTGROUPS - What groups should start on bootup?
-#	Comma separated list of groups.
-#	Leading comma, trailing comma or embedded double
-#	comma indicates when the NULL group should be run.
-# Example (default): boot the onboot group first then the NULL group
-BOOTGROUPS="peer"
-
 # SHUTDOWNDELAY - Wait time for a container to shut down.
 #	Container shutdown can result in lengthy system
 #	shutdown times.  Even 5 seconds per container can be
@@ -53,11 +46,6 @@ case "$1" in
 
         # cgmanager -m name=systemd --daemon
 
-        if [ -n "$BOOTGROUPS" ]; then
-            BOOTGROUPS="-g $BOOTGROUPS"
-        fi
-
-        # Start autoboot containers first then the NULL group "peer".
         /usr/sbin/cube-ctl --auto dom0 start
         touch "$lockdir"/dom0
     ;;
