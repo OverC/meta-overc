@@ -1,0 +1,29 @@
+From 9348d0eb207e7152fe47e06f64062fc71c1b0aa3 Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Mon, 29 Aug 2016 14:34:37 -0400
+Subject: [PATCH] lib: Makefile: allow '~' chars in the uname output
+
+Since we use '~' as our sed delimeter we run into issues if there is a
+'~' found in the output of 'uname -a'. We could potentially use a
+different delimeter but that just shifts the problem to a different
+character. We therefor escape the '~' characters to allow them to
+survive the sed expression without causing an error.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+ src/lib/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lib/Makefile b/src/lib/Makefile
+index e96b8f3..7d5f003 100644
+--- a/src/lib/Makefile
++++ b/src/lib/Makefile
+@@ -35,4 +35,4 @@ $(LIB_NAME).a: $(OBJS_$(LIB_NAME))
+ 
+ nnio_build.c: nnio_build.c.in
+ 	sed -e "s~@@NANOIO_GIT_COMMIT@@~$(shell if [ -d $(TOPDIR)/.git ]; then git log -1 --pretty=format:%H | tr -d '\n'; elif [ -f $(TOPDIR)/commit ]; then cat $(TOPDIR)/commit | tr -d '\n'; else echo -n ???????; fi)~" \
+-		-e "s~@@NANOIO_BUILD_MACHINE@@~$(shell whoami | tr -d '\n'; echo -n @; uname -a | tr -d '\n')~" < $^ > $@
++		-e "s~@@NANOIO_BUILD_MACHINE@@~$(shell whoami | tr -d '\n'; echo -n @; uname -a | tr -d '\n' | awk '{gsub("~","\\~"); print $0 }')~" < $^ > $@
+-- 
+2.1.4
+
