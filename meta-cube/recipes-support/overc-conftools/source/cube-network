@@ -27,6 +27,7 @@ veth_name=$(eval echo veth-${cubename})
 if [ "${action}" = "up" ]; then
     echo "${pid}" > .cube.pid
     echo "${veth_name}" > .cube.veth
+    cname=$(basename `pwd`)
 
     network=dynamic
     if [ -f cube.network.type ]; then
@@ -81,7 +82,12 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up
     if [ "${network}" == "dynamic" ]; then
-	nsenter -t ${pid} -n --preserve-credentials dhclient ${veth_name}
+	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid veth-br-int >> /dev/null 2>&1"
+	eval nsenter -t ${pid} -n -- ${command}
+	if [ -e "/etc/resolv.conf.${cname}" ]; then
+	    mv /etc/resolv.conf.${cname} /opt/container/${cname}/rootfs/etc/resolv.conf
+	fi
+	#nsenter -t ${pid} -n --preserve-credentials dhclient ${veth_name}
 	primary_ip=$(nsenter -t ${pid} -n ip -o -4 addr list ${veth_name} | awk '{print $4}' | cut -d/ -f1)
     else
 	# the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
@@ -151,6 +157,7 @@ if [ "${action}" = "up" ]; then
 	nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
     fi
 
+    # note: this should be conditional with the fixed dhclient call abovee
     nameserver="192.168.42.1"
     if [ -f "cube.network.nameserver" ]; then
 	nameserver=$(cat cube.network.nameserver)

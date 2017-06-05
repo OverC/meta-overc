@@ -17,9 +17,9 @@ usage()
 {
 cat << EOF
 
-  cube-ctl <options> <cmd>
+ ${0##*/} <options> <cmd>
 
-commands (and options):
+ commands (and options):
 
  ${0##*/} start [--peer] [--nested] [--auto] <name>
 
@@ -44,10 +44,10 @@ commands (and options):
  ${0##*/} stack <container a> <container b>
 
     stack (connect) two containers. This ensures that container a can communicate
-    with container b.
+    with container b via a defined port.
 
-       <container a>: name of the first container to be stacked
-       <container b>: name of the second container to be stacked
+       <container a>: name of the first container and port to be stacked
+       <container b>: name of the second container and port to be stacked
 
  ${0##*/} store <container> <location>
 
@@ -132,7 +132,7 @@ DEFAULT_SUBUID=800000
 
 while [ $# -gt 0 ]; do
     case "$1" in
-	-v) verbose=t
+	-v|--verbose) verbose=t
             ;;
         --peer)
 	    peer=t
@@ -253,6 +253,11 @@ fi
 am_i_a_container
 if [ $? -eq 1 ]; then
     we_are_a_container=t
+fi
+
+if [ -z "${we_are_dom0}" ] && [ -n "${we_are_a_container}" ]; then
+    cube-cmd cube-ctl ${raw_command}
+    exit $?
 fi
 
 # make an array from whatever was non-dashed
@@ -610,6 +615,37 @@ spinner()
         printf "\b\b\b\b\b\b"
     done
     printf "    \b\b\b\b"
+}
+
+get_container_ips() {
+    local container_name=$1
+
+    dpid=$(cat ${container_dir}/${container_name}/.cube.pid)
+    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
+    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f5)
+
+    if [ "${ip_ext}" == "${ip_int}" ]; then
+	echo ${ip_ext}
+    else
+	echo "${ip_int},${ip_ext}"
+    fi
+}
+
+get_container_type() {
+    local container_name=$1
+
+    if [ -e "${container_dir}/${container_name}/pflask.cmd" ]; then
+	echo cube
+    else
+	echo oci
+    fi
+}
+
+get_container_attributes() {
+    local container_name=$1
+    local attributes=$(cube-cfg -n ${container_name} attribute | sed 's/^ *$//')
+
+    echo ${attributes}
 }
 
 #
@@ -1062,7 +1098,66 @@ case "${cmd}" in
 	fi
 	;;
     stack)
-	# TODO
+	container_name=${cmd_options_non_dashed[1]}
+	if [ -e ${container_dir}/${container_name}/cube.network.stack ]; then
+	    if [ -n "${verbose}" ]; then
+		echo "[INFO]: network stack detected, excuting commands"
+	    fi
+	    (
+		cd ${container_dir}/${container_name}
+
+		# we need to resolve an variable references. Currently this
+		# is IPS and devices
+		vars=$(cat cube.network.stack | grep -o -E '\${[A-Za-z0-9])*[A-Za-z](_?[A-Za-z0-9])*}' | uniq)
+		spid=$(cat .cube.pid)
+
+		for v in $vars; do
+		    case $v in
+			*device*)
+			    netdevs=$(cat .cube.device.network)
+			    for n in ${netdevs}; do
+				echo ${n} | grep -q veth
+				if [ $? -ne 0 ]; then
+				    # we have a real device. Last one wins.
+				    device=$(echo ${n} | cut -f1 -d:)
+				fi
+			    done
+			    ;;
+			*_ip*)
+			    cname=$(echo $v | sed -r 's/.*\$\{(.+)_.*\}.*/\1/')
+			    # this doesn't actually go out on the wire, but it is the best
+			    # way to get the IP of the interface in the container. If we need
+			    # something besides the external route for the IP, this can be
+			    # tweaked.
+			    dpid=$(cat ${container_dir}/${cname}/.cube.pid)
+			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
+			    eval ${cname}_ip=${ip}
+			    ;;
+		    esac
+		done
+
+		# read the commands, resolve variables and execute them in the proper
+		# namespace
+		while read -u 10 cmd; do
+		    # With the variable creation above, these will echo without any unknown
+		    # variables .. if there are remaining vars, it is an error.
+		    echo ${cmd} | grep -q iptables
+		    if [ $? -eq 0 ]; then
+			cmd_check=$(echo ${cmd} | sed 's/iptables -A/iptables -C/')
+			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_check" 2> /dev/null
+		    else
+			# just so $? can run the command without a check :D
+			false
+		    fi
+		    if [ $? -ne 0 ]; then
+			if [ -n "${verbose}" ]; then
+			    echo "INFO: nsenter -t ${spid} -n --preserve-credentials \"$cmd\""
+			fi
+			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
+		    fi
+		done 10<cube.network.stack
+	    )
+	fi
 	;;
     del|delete|remove)
 	graft_binaries_to_essential runc
@@ -1086,22 +1181,25 @@ case "${cmd}" in
 	    echo ${cubes} ${open_containers} ${open_container_available}
 	    exit 1
 	fi
-	echo "[INFO] deleting container ${container_name}"
 
 	if [ -n "${container_is_a_cube}" ]; then
 	    # nothing to do at the moment
 	    true
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
-	    # TODO: the container state needs to be tracked better, and only
-	    #       do this if it is running
-	    cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
-	    if [ -d "${out_dir}/${container_name}" ]; then
-		echo "[INFO] removing container source .."
-		rm -rf "${out_dir}/${container_name}"
+	    echo ${open_container_running} | grep -q ${container_name}
+	    if [ $? -ne 0 ]; then
+		echo "[INFO] deleting container ${container_name}"
+		cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
+		if [ -d "${out_dir}/${container_name}" ]; then
+		    echo "[INFO] removing container source .."
+		    rm -rf "${out_dir}/${container_name}"
+		fi
+		machine=$(cube-cfg id)
+		cube-cfg set overc/$machine/oci/${container_name}/:
+	    else
+		echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
 	    fi
-	    machine=$(cube-cfg id)
-	    cube-cfg set overc/$machine/oci/${container}/:
 	fi
 	;;
     start)
@@ -1163,12 +1261,12 @@ case "${cmd}" in
 			fi
 		    )
 		fi
-	    else
-		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
-		    rm -f /tmp/${container}-console
-		    dtach -n /tmp/${container}-console ${container_dir}/${container}/pflask.cmd
-		fi
 	    fi
+	done
+
+	# once everything has started, look for stacked network commands
+	for container in ${container_names}; do
+	    cube-ctl stack ${container}
 	done
 	;;
     status|list)
@@ -1186,27 +1284,44 @@ case "${cmd}" in
 	    echo "${oci}"
 	else
 	    output=$(mktemp)
-	    echo "name type status attributes" > ${output}
-	    echo "---- ---- ------ ----------" >> ${output}
+	    echo "name type status attributes addresses" > ${output}
+	    echo "---- ---- ------ ---------- ---------" >> ${output}
 	    for l in ${open_container_running}; do
 		attributes=$(cube-cfg -n ${l} attribute)
-		echo "${l} oci running ${attributes}" >> ${output}
+		if [ -z "${attributes}" ]; then
+		    attributes="--"
+		fi
+		ip=$(get_container_ips ${l})
+		echo "${l} oci running ${attributes} ${ip}" >> ${output}
 	    done
 	    for l in ${open_container_stopped}; do
-		attributes=$(cube-cfg -n ${l} attribute)
-		echo "${l} oci stopped ${attributes}" >> ${output}
+		attributes=$(get_container_attributes ${l})
+		if [ -z "${attributes}" ]; then
+		    attributes="--"
+		fi
+		echo "${l} oci stopped ${attributes} --" >> ${output}
 	    done
 	    for l in ${cubes_running}; do
-		attributes=$(cube-cfg -n ${l} attribute)
-		echo "${l} cube running ${attributes}" >> ${output}
+		ip=$(get_container_ips ${l})
+		attributes=$(get_container_attributes ${l})
+		if [ -z "${attributes}" ]; then
+		    attributes="--"
+		fi
+		echo "${l} cube running ${attributes} ${ip}" >> ${output}
 	    done
 	    for l in ${open_container_available}; do
-		attributes=$(cube-cfg -n ${l} attribute)
-		echo "${l} oci available ${attributes}" >> ${output}
+		attributes=$(get_container_attributes ${l})
+		if [ -z "${attributes}" ]; then
+		    attributes="--"
+		fi
+		echo "${l} oci available ${attributes} --" >> ${output}
 	    done
 	    for l in ${cubes_available}; do
-		attributes=$(cube-cfg -n ${l} attribute)
-		echo "${l} cube available ${attributes}" >> ${output}
+		attributes=$(get_container_attributes ${l})
+		if [ -z "${attributes}" ]; then
+		    attributes="--"
+		fi
+		echo "${l} cube available ${attributes} --" >> ${output}
 	    done
 	    cat ${output} | column -t
 	    rm ${output}
@@ -1282,14 +1397,111 @@ IFS=$OLDIFS
 	    exit 1
 	fi
 
-	# TODO: runtime switching of the container netprime
+	attributes=$(${SBINDIR}/cube-cfg -n ${container_name} attribute)
+	echo ${attributes} | grep -q netprime
+	if [ $? -eq 0 ]; then
+	    echo "[INFO]: container \"${container_name}\" is already the netprime"
+	    exit 0
+	fi
+
+	if [ -z "${out_dir}" ]; then
+	    out_dir="${container_dir}"
+	fi
+
+	# TODO: this could be an etcd lookup, not this ...
+        containers_available=$(ls ${out_dir})
+	for c in ${containers_available}; do
+	    attributes=$(${SBINDIR}/cube-cfg -n ${c} attribute)
+	    echo ${attributes} | grep -q netprime
+	    if [ $? -eq 0 ]; then
+		network_prime_old=${c}
+	    fi
+	done
+	network_prime=${container_name}
+
+	# step 1: stop the old network prime (if it exists)
+	if [ -n "${network_prime_old}" ]; then
+	    (
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: stopping current netprime (${network_prime_old})"
+		fi
+		cd ${out_dir}/${network_prime_old}
+		# TODO: how to detect if we are the installer and not run this ?
+		${SBINDIR}/cube-ctl stop ${network_prime_old}
+	    )
+	fi
+
+	# step 2: configure the new network prime
+	(
+	    if [ -n "${verbose}" ]; then
+		echo "[INFO]: configuring new netprime (${network_prime})"
+	    fi
+	    cd ${out_dir}/${network_prime}
+
+	    ${SBINDIR}/cube-cfg set cube.network.type:static
+	    ${SBINDIR}/cube-cfg --prepend set cube.network.ip:192.168.42.1/24
+
+	    devs=$(${SBINDIR}/cube-cfg -o ${out_dir}/${network_prime_old} device network)
+	    for d in ${devs}; do
+		${SBINDIR}/cube-cfg device network:$d
+	    done
+
+	    ${SBINDIR}/cube-cfg attribute +netprime
+
+	    # ensure that etcd (on dom0) is accessible
+	    ${SBINDIR}/cube-cfg link ${network_prime}:2379 dom0:2379
+
+	    type=$(get_container_type ${network_prime})
+	    if [ "${type}" == "oci" ]; then
+		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
+		#${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig vrf \$\(cat\)
+	    else
+		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime /opt/container/${network_prime}
+		#${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig vrf /opt/container/${network_prime}	
+	    fi
+
+	    ${SBINDIR}/cube-cfg gen ${network_prime}:$type
+	)
+
+	# step 3: reconfigure the old network prime (if it exists)
+	# TODO: there could be an option to skip this (so you could switch back without needing
+	#       to rerun the netprime command
+	if [ -n "${network_prime_old}" ]; then
+	    (
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: reconfiging previous netprime"
+		fi
+		# TODO: this won't work if called from the installer, the dir for containers
+		#       needs to vary and we can't stop the container
+		cd ${out_dir}/${network_prime_old}
+		${SBINDIR}/cube-cfg attribute -netprime
+		${SBINDIR}/cube-cfg set cube.network.type:dynamic
+		${SBINDIR}/cube-cfg set -cube.network.ip:192.168.42.1/24
+
+		devs=$(${SBINDIR}/cube-cfg -o ${out_dir}/${network_prime_old} device network)
+		for d in ${devs}; do
+		    echo "${d}" | grep -q veth
+		    # drop any h/w devices that were passed through, leave the veth
+		    if [ $? -ne 0 ]; then
+			${SBINDIR}/cube-cfg device -network:$d
+		    fi
+		done
+
+		# remove the old hook and etcd port forward
+		${SBINDIR}/cube-cfg hook-script -poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
+		${SBINDIR}/cube-cfg link -${network_prime}:2379 dom0:2379
+
+		type=$(get_container_type ${network_prime})
+		${SBINDIR}/cube-cfg gen ${network_prime}:type
+	    )
+	fi
 	;;
     stop|pause)
 	graft_binaries_to_essential runc
 	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
 	    runc_essential="/var/lib/cube/essential/sbin/runc"
 	else
-	    echo "ERROR: unable to execute runc on essential"
+	    echo "[ERROR]: unable to execute runc on essential"
 	    exit 1
 	fi
 
@@ -1302,23 +1514,28 @@ IFS=$OLDIFS
 	fi
 
 	if ! check_is_known_container ${container_name}; then
-	    echo "[ERROR] Container ${container_name} not found, cannot stop."
+	    echo "[ERROR]: container ${container_name} not found, cannot stop."
 	    echo -n "Valid containers are: "
 	    echo ${cubes} ${open_containers}
 	    exit 1
 	fi
-	echo "[INFO] stopping container ${container_name}"
 
 	if [ -n "${container_is_a_cube}" ]; then
 	    cube-cmd machinectl stop ${container_name}
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
-	    cube-cmd ${runc_essential} kill ${container_name} KILL
-	    if [ "${cmd}" == "stop" ]; then
-		cube-cmd ${runc_essential} delete ${container_name}
+	    echo ${open_container_running} | grep -q ${container_name}
+	    if [ $? -eq 0 ]; then
+		echo "[INFO] stopping container ${container_name}"
+		cube-cmd ${runc_essential} kill ${container_name} KILL
+		if [ "${cmd}" == "stop" ]; then
+		    cube-cmd ${runc_essential} delete ${container_name}
+		fi
+		machine=$(cube-cfg id)
+		cube-cfg set overc/$machine/oci/${container_name}/status:inactive
+	    else
+		echo "[INFO]: container ${container_name} is not running, cannot stop"
 	    fi
-	    machine=$(cube-cfg id)
-	    cube-cfg set overc/$machine/oci/${container_name}/status:inactive
 	fi
 	;;
     exec)

@@ -11,6 +11,7 @@ veth_name=$(eval echo veth${pid})
 if [ "${action}" = "up" ]; then
     echo "${pid}" > .cube.pid
     echo "${veth_name}" > .cube.veth
+    cname=$(basename `pwd`)
 
     network=dynamic
     if [ -f cube.network.type ]; then
@@ -55,7 +56,11 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up
 
     if [ "${network}" == "dynamic" ]; then
-	nsenter -t ${pid} -n --preserve-credentials dhclient veth-br-int
+	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid veth-br-int >> /dev/null 2>&1"
+	eval nsenter -t ${pid} -n -- ${command}
+	if [ -e "/etc/resolv.conf.${cname}" ]; then
+	    mv /etc/resolv.conf.${cname} /opt/container/${cname}/rootfs/etc/resolv.conf
+	fi
 	primary_ip=$(nsenter -t ${pid} -n ip -o -4 addr list veth-br-int | awk '{print $4}' | cut -d/ -f1)
     else
 	# the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
@@ -76,8 +81,6 @@ if [ "${action}" = "up" ]; then
 	    fi
 	    let count=${count}+1
 	done
-	#nsenter -t ${pid} -n --preserve-credentials ip addr add $ip dev veth-br-int
-	#primary_ip=$(echo $ip | cut -d/ -f1)
     fi
 
     if [ -f "cube.network.mac" ]; then
@@ -105,6 +108,7 @@ if [ "${action}" = "up" ]; then
 		device=$(echo ${n} | cut -f1 -d:)
 		# push the device into the namespace
 		ip link set ${device} netns ${pid}
+		nsenter -t ${pid} -n --preserve-credentials ip link set dev ${device} up
 
 		# setup nat and forwarding. this is what systemd-networkd does as well
 		nsenter -t ${pid} -n --preserve-credentials iptables -t nat -A POSTROUTING -o ${device} -j MASQUERADE
@@ -115,16 +119,22 @@ if [ "${action}" = "up" ]; then
 	nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
     fi
 
+    # note: this should be conditional with the fixed dhclient call above
     nameserver="192.168.42.1"
     if [ -f "cube.network.nameserver" ]; then
 	nameserver=$(cat cube.network.nameserver)
     fi
     nsenter -t ${pid} -m sh -c "echo nameserver ${nameserver} > /etc/resolv.conf"
+
+    # and now some network namespace accounting
+    mkdir -p /var/run/netns
+    ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
 fi
 
 if [ "${action}" = "down" ]; then
     path=$(echo "$@" | jq .bundlePath | sed 's%"%%g')
     veth_name_down=$(cat ${path}/.cube.veth)
+    cname=$(basename ${path})
 
     ovs-vsctl del-port br-int ${veth_name_down}
     ip link del dev ${veth_name_down}
@@ -138,9 +148,19 @@ if [ "${action}" = "down" ]; then
 	    if [ $? -ne 0 ]; then
 		# we have a real device
 		device=$(echo ${n} | cut -f1 -d:)
-		# TODO: return the device to the root ns. this is not working
-		ip link set ${device} netns 1
+		ip netns exec ${cname} ip link set ${device} netns 1
 	    fi
 	done
     fi
+
+    # if pids are being tracked in our net namespace, make sure
+    # we kill them before deleting it. Otherwise, the exit is not
+    # clean
+    if [ -f "${path}/.netns.pids" ]; then
+	for pid in $(cat "${path}/.netns.pids"); do
+	    kill -9 $pid
+	done
+    fi
+
+    ip netns delete ${cname}
 fi
