@@ -7,6 +7,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d690 \
                     file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
 
+PV="0.2"
 
 # we don't want this to be a container image even
 # configure with --enable-container=yes
@@ -32,6 +33,9 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   jq \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                  "
+
+# temp. rpm bug workaround
+IMAGE_INSTALL += " dhcp-libs"
 
 IMAGE_FEATURES += "package-management"
 

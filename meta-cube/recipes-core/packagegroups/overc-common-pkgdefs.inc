@@ -72,6 +72,7 @@ OVERC_EXTRA_EXTENDED = "\
 
 OVERC_COMMON_NETWORKING = "\
      dhcp-client \
+     dhcp-libs \
      ifupdown \
      inetutils \
      iproute2 \

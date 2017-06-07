@@ -29,6 +29,10 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-container \
                   ${CUBE_SERVER_EXTRA_INSTALL} \
                   "
+
+# temp. rpm bug workaround
+IMAGE_INSTALL += " dhcp-libs"
+
 TARGETNAME ?= "cube-server"
 
 inherit core-image
