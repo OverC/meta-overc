@@ -779,7 +779,7 @@ case "${cmd}" in
 		fi
 	
 		# TODO: allow the variation of the ref tag
-		oci-create-runtime-bundle --ref latest ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
+		oci-image-tool create --ref latest ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: error OCI runtime could not be created from ${container_source}"
 		    exit 1
