@@ -13,13 +13,13 @@ SYSTEMD_SERVICE_${PN} = "factory-reset.service"
 
 RDEPENDS_${PN} = "\
 	btrfs-tools \
-	python-argparse \
-	python-subprocess \
-	python-flask \
-	python-itsdangerous \
-	python-jinja2 \
-	python-markupsafe \
-	python-werkzeug \
+	python3-argparse \
+	python3-subprocess \
+	python3-flask \
+	python3-itsdangerous \
+	python3-jinja2 \
+	python3-markupsafe \
+	python3-werkzeug \
 	bash \
 	bc \
 	overc-installer \

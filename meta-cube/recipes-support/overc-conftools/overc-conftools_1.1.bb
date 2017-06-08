@@ -83,7 +83,7 @@ do_install() {
 }
 
 RDEPENDS_${PN} += " \
-    python-ansible \
+    python3-ansible \
     bash \
     "
 
