@@ -1287,7 +1287,7 @@ case "${cmd}" in
 	    echo "name type status attributes addresses" > ${output}
 	    echo "---- ---- ------ ---------- ---------" >> ${output}
 	    for l in ${open_container_running}; do
-		attributes=$(cube-cfg -n ${l} attribute)
+		attributes=$(get_container_attributes ${l})
 		if [ -z "${attributes}" ]; then
 		    attributes="--"
 		fi
