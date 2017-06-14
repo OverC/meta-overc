@@ -30,6 +30,8 @@ def system_upgrade():
     template = request.args.get('template')
     reboot=False
     force=False
+    skipscan=True
+    skip_del=False
     
     if template != 'dom0':
         usage += "\n The only supported template is 'dom0'"
@@ -40,7 +42,7 @@ def system_upgrade():
     if force_s == "True":
         print "force upgrade"
         force=True
-    overc._system_upgrade(template, reboot, force)
+    overc._system_upgrade(template, reboot, force, skipscan, skip_del)
     return json_msg(overc.message)
 
 @app.route('/host/rollback')
