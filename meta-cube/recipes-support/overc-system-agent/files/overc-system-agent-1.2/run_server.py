@@ -17,9 +17,16 @@ def json_msg(s):
 
 @app.route('/system/rollback')
 def system_rollback():
+    usage = 'Usage: ' + request.url_root + 'system/rollback?template=[dom0]'
     overc=Overc.Overc()
+    template = request.args.get('template')
+
+    if template != 'dom0':
+        usage += "\n The only supported template is 'dom0'"
+        return json_msg(usage)
+
     print "System will rollback and reboot!"
-    overc.system_rollback()
+    overc._system_rollback(template)
 
 @app.route('/system/upgrade')
 def system_upgrade():
