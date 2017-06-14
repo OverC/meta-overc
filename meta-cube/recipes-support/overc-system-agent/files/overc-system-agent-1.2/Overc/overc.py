@@ -90,16 +90,19 @@ class Overc(object):
             os.system('reboot')
 
     def system_rollback(self):
-        containers = self.container.get_container(self.args.template)
+       self._system_rollback(self.args.template)
+
+    def _system_rollback(self, template):
+        containers = self.container.get_container(template)
         #By now only support "Pulsar" and "overc" Linux rollback
         DIST = "Pulsar overc"
         need_reboot=False
         for cn in containers:
-            if self.container.is_active(cn, self.args.template):
+            if self.container.is_active(cn, template):
                 for dist in DIST.split():
-                    if dist in self.container.get_issue(cn, self.args.template).split():
+                    if dist in self.container.get_issue(cn, template).split():
                         print "Rollback container %s" % cn
-                        self._container_rollback(cn, None, self.args.template, True)
+                        self._container_rollback(cn, None, template, True)
                         if self.retval is not 0:
                             print "*** Failed to rollback container %s" % cn
                         else:
