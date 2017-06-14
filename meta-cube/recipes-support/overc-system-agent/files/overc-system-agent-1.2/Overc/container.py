@@ -78,7 +78,7 @@ class Container(object):
         dirlist=[]
         for line in fstab:
             member=line.split()
-            if member[0]=="overlay":
+            if member and member[0]=="overlay":
                 strpre="%s/%s/rootfs" % (CONTAINER_MOUNT,name)
                 strdir=member[1][member[1].find(strpre) + len(strpre):len(member[1])]
                 dirlist.append(strdir)
