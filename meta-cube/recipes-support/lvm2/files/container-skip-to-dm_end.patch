@@ -1,0 +1,21 @@
+In the case of using a container the dm rules should be skipped.
+
+These will be running in the root name space and re-processing from a
+privileged with a read/write /sys will end badly with duplication of
+processing of dmsetup and volumes getting unmounted.
+
+---
+ udev/10-dm.rules.in |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/udev/10-dm.rules.in
++++ b/udev/10-dm.rules.in
+@@ -18,6 +18,8 @@ KERNEL=="device-mapper", NAME="(DM_DIR)/
+ 
+ SUBSYSTEM!="block", GOTO="dm_end"
+ KERNEL!="dm-[0-9]*", GOTO="dm_end"
++IMPORT{file}="/proc/1/environ"
++ENV{container}=="?*", GOTO="dm_end"
+ (DM_EXEC_RULE)
+ 
+ # Device created, major and minor number assigned - "add" event generated.
