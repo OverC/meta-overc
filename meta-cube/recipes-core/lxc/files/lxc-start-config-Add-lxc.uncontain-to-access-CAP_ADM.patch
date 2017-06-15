@@ -1,3 +1,4 @@
+From fbf642f3bb84cd4ed00b85b5daae8565b432aa07 Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Thu, 11 Aug 2016 13:07:27 -0500
 Subject: [PATCH] lxc-start,config: Add lxc.uncontain to access CAP_ADMIN_NS
@@ -21,10 +22,10 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  5 files changed, 43 insertions(+)
 
 diff --git a/doc/lxc.container.conf.sgml.in b/doc/lxc.container.conf.sgml.in
-index 05baddd..62039db 100644
+index a4ef46d..4c183fa 100644
 --- a/doc/lxc.container.conf.sgml.in
 +++ b/doc/lxc.container.conf.sgml.in
-@@ -1180,6 +1180,21 @@ proc proc proc nodev,noexec,nosuid 0 0
+@@ -1185,6 +1185,21 @@ proc proc proc nodev,noexec,nosuid 0 0
              </para>
            </listitem>
          </varlistentry>
@@ -47,11 +48,11 @@ index 05baddd..62039db 100644
      </refsect2>
  
 diff --git a/src/lxc/conf.h b/src/lxc/conf.h
-index 2593ce5..43a7276 100644
+index c790bf7..11dd3b7 100644
 --- a/src/lxc/conf.h
 +++ b/src/lxc/conf.h
 @@ -332,6 +332,11 @@ struct lxc_conf {
- 	int kmsg;  // if 1, create /dev/kmsg symlink
+ 	unsigned int kmsg;  // if 1, create /dev/kmsg symlink
  	char *rcfile;	// Copy of the top level rcfile we read
  
 +	// This admin container gets CAP_ADMIN_NS for the purpose
@@ -63,7 +64,7 @@ index 2593ce5..43a7276 100644
  	// Those function as defaults.  The defaults can be overriden
  	// by command line.  However we don't want the command line
 diff --git a/src/lxc/confile.c b/src/lxc/confile.c
-index 7f34164..70b5b72 100644
+index 9b22c6d..7e7fdef 100644
 --- a/src/lxc/confile.c
 +++ b/src/lxc/confile.c
 @@ -95,6 +95,7 @@ static int config_network_ipv6(const char *, const char *, struct lxc_conf *);
@@ -82,7 +83,7 @@ index 7f34164..70b5b72 100644
  	{ "lxc.console.logfile",      config_console_logfile      },
  	{ "lxc.console",              config_console              },
  	{ "lxc.seccomp",              config_seccomp              },
-@@ -2269,6 +2271,21 @@ static int lxc_get_item_cap_keep(struct lxc_conf *c, char *retv, int inlen)
+@@ -2333,6 +2335,21 @@ static int lxc_get_item_cap_keep(struct lxc_conf *c, char *retv, int inlen)
  	return fulllen;
  }
  
@@ -105,7 +106,7 @@ index 7f34164..70b5b72 100644
  {
  	int len, fulllen = 0;
 diff --git a/src/lxc/namespace.h b/src/lxc/namespace.h
-index 027c765..f543c07 100644
+index 4916950..2655494 100644
 --- a/src/lxc/namespace.h
 +++ b/src/lxc/namespace.h
 @@ -31,6 +31,9 @@
@@ -119,19 +120,19 @@ index 027c765..f543c07 100644
  #  define CLONE_NEWNS             0x00020000
  #endif
 diff --git a/src/lxc/start.c b/src/lxc/start.c
-index 5be0077..481336a 100644
+index bca7f8e..9852a46 100644
 --- a/src/lxc/start.c
 +++ b/src/lxc/start.c
-@@ -995,6 +995,9 @@ void resolve_clone_flags(struct lxc_handler *handler)
+@@ -1025,6 +1025,9 @@ void resolve_clone_flags(struct lxc_handler *handler)
  {
  	handler->clone_flags = CLONE_NEWPID | CLONE_NEWNS;
  
 +	if (handler->conf->uncontain)
 +		handler->clone_flags |= CLONE_UNCONTAIN;
 +
- 	if (!lxc_list_empty(&handler->conf->id_map)) {
- 		INFO("Cloning a new user namespace");
+ 	if (!lxc_list_empty(&handler->conf->id_map))
  		handler->clone_flags |= CLONE_NEWUSER;
+ 
 -- 
-1.9.1
+2.7.4
 

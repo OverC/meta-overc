@@ -16,7 +16,6 @@ SRC_URI += " \
     file://overlayrestore \
     file://overlaycreate \
     file://silence_no_escape_lxc-console.patch \
-    file://read-write-file-handles-after-EPOLLHUP.patch \
     file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch \
     file://lxc-confile-support-the-network-link-string-pattern-matc.patch \
     "
