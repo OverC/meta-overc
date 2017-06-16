@@ -11,11 +11,11 @@ DEPENDS = "ncurses groff-native"
 RDEPENDS_${PN} = "ncurses ncurses-terminfo"
 
 # pkg makefile has -I. for CFLAGS to get local config.h header
-TARGET_CFLAGS =+ "-I${B}"
+TARGET_CFLAGS =+ "-I${B} -Wimplicit-fallthrough=0"
 
 # custom compile rule to avoid test target which may fail when x-compiling
 do_compile () {
-	make wiggle wiggle.man
+	make CFLAGS="${TARGET_CFLAGS}" wiggle wiggle.man
 }
 
 do_install () {
