@@ -17,6 +17,8 @@ inherit systemd
 
 FILESEXTRAPATHS_prepend := "${THISDIR}:"
 
+CONFFILES_${PN} += "${sysconfdir}/system-id
+
 SRC_URI = " \
     file://source/COPYING \
     file://source/overc-conftools.service \
