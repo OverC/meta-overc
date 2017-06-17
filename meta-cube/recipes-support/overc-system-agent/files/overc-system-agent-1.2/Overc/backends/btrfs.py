@@ -239,15 +239,15 @@ class Btrfs(Utils):
             os.system('mount --bind /run %s/%s/run' % (SYSROOT, self.next_rootfs))
 
             tempd = tempfile.mkdtemp(dir='%s/%s/tmp' % (SYSROOT, self.next_rootfs))
-            os.system('cp -r %s/%s/var/lib/rpm/* %s' % (SYSROOT, self.next_rootfs, tempd))
+            os.system('cp -rp %s/%s/var/lib/rpm/* %s' % (SYSROOT, self.next_rootfs, tempd))
             os.system('mount -t tmpfs tmpfs %s/%s/var/lib/rpm' % (SYSROOT, self.next_rootfs))
-            os.system('cp -r %s/* %s/%s/var/lib/rpm/' % (tempd, SYSROOT, self.next_rootfs))
+            os.system('cp -rp %s/* %s/%s/var/lib/rpm/' % (tempd, SYSROOT, self.next_rootfs))
 
             result = os.system('chroot %s/%s smart upgrade -y' % (SYSROOT, self.next_rootfs))
 
-            os.system('cp -r %s/%s/var/lib/rpm/* %s/' % (SYSROOT, self.next_rootfs, tempd))
+            os.system('cp -rp %s/%s/var/lib/rpm/* %s/' % (SYSROOT, self.next_rootfs, tempd))
             os.system('umount %s/%s/var/lib/rpm' % (SYSROOT, self.next_rootfs))
-            os.system('cp -r %s/* %s/%s/var/lib/rpm/' % (tempd, SYSROOT, self.next_rootfs))
+            os.system('cp -rp %s/* %s/%s/var/lib/rpm/' % (tempd, SYSROOT, self.next_rootfs))
             os.system('rm -rf %s' % tempd)
 
             os.system('umount %s/%s/run' % (SYSROOT, self.next_rootfs))
