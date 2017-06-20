@@ -1,20 +1,13 @@
 [Unit]
 Description=Dom0 Autoboot Code
 After=syslog.target network.target
+After=cube-cmd-server.service
 
 [Service]
-Type=forking
+Type=simple
 RemainAfterExit=yes
-# ExecStartPre=
-# ExecStartPre=
 ExecStart=/opt/dom0-contctl/dom0-containers start
 ExecStop=/opt/dom0-contctl/dom0-containers stop
-# Environment=BOOTUP=serial
-# Environment=CONSOLETYPE=serial
-Delegate=yes
-StandardInput=tty
-StandardOutput=tty
-# StandardError=syslog
 
 [Install]
 WantedBy=basic.target

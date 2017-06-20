@@ -3,7 +3,7 @@ Description=Cube command server
 After=local-fs.target
 
 [Service]
-Type=simple
+Type=notify
 ExecStart=/sbin/cube-cmd-server -l /var/log/cube-cmd-server.log
 ExecStop=/bin/true
 RemainAfterExit=yes

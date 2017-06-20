@@ -1,4 +1,5 @@
 #!/bin/bash
+cmd_server_pid=$$
 
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License version 2 as
@@ -119,6 +120,7 @@ else
 fi
 
 output_and_log_msg "[INFO]: setup completed, waiting on commands from ${input_stream}"
+systemd-notify --ready --pid=$cmd_server_pid
 
 [ -n "${verbose}" ] && debug="-v "
 
