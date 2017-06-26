@@ -14,7 +14,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 
 --- a/sys-utils/nsenter.c
 +++ b/sys-utils/nsenter.c
-@@ -82,6 +82,7 @@ static void usage(int status)
+@@ -84,6 +84,7 @@ static void usage(int status)
  	fputs(_(" -i, --ipc[=<file>]     enter System V IPC namespace\n"), out);
  	fputs(_(" -n, --net[=<file>]     enter network namespace\n"), out);
  	fputs(_(" -p, --pid[=<file>]     enter pid namespace\n"), out);
@@ -22,7 +22,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	fputs(_(" -C, --cgroup[=<file>]  enter cgroup namespace\n"), out);
  	fputs(_(" -U, --user[=<file>]    enter user namespace\n"), out);
  	fputs(_(" -S, --setuid <uid>     set uid in entered namespace\n"), out);
-@@ -105,6 +106,7 @@ static void usage(int status)
+@@ -107,6 +108,7 @@ static void usage(int status)
  static pid_t namespace_target_pid = 0;
  static int root_fd = -1;
  static int wd_fd = -1;
@@ -30,7 +30,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  
  static void open_target_fd(int *fd, const char *type, const char *path)
  {
-@@ -157,7 +159,16 @@ static void continue_as_child(void)
+@@ -185,7 +187,16 @@ static void continue_as_child(void)
  		return;
  
  	for (;;) {
@@ -48,7 +48,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		if ((ret == child) && (WIFSTOPPED(status))) {
  			/* The child suspended so suspend us as well */
  			kill(getpid(), SIGSTOP);
-@@ -189,6 +200,7 @@ int main(int argc, char *argv[])
+@@ -218,6 +229,7 @@ int main(int argc, char *argv[])
  		{ "ipc", optional_argument, NULL, 'i' },
  		{ "net", optional_argument, NULL, 'n' },
  		{ "pid", optional_argument, NULL, 'p' },
@@ -56,16 +56,16 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		{ "user", optional_argument, NULL, 'U' },
  		{ "cgroup", optional_argument, NULL, 'C' },
  		{ "setuid", required_argument, NULL, 'S' },
-@@ -219,7 +231,7 @@ int main(int argc, char *argv[])
+@@ -249,7 +261,7 @@ int main(int argc, char *argv[])
  	atexit(close_stdout);
  
  	while ((c =
--		getopt_long(argc, argv, "+hVt:m::u::i::n::p::C::U::S:G:r::w::FZ",
-+		getopt_long(argc, argv, "+hVt:m::u::i::n::Pp::C::U::S:G:r::w::FZ",
+-		getopt_long(argc, argv, "+ahVt:m::u::i::n::p::C::U::S:G:r::w::FZ",
++		getopt_long(argc, argv, "+ahVt:m::u::i::n::Pp::C::U::S:G:r::w::FZ",
  			    longopts, NULL)) != -1) {
  		switch (c) {
  		case 'h':
-@@ -267,6 +279,9 @@ int main(int argc, char *argv[])
+@@ -300,6 +312,9 @@ int main(int argc, char *argv[])
  			else
  				namespaces |= CLONE_NEWCGROUP;
  			break;
@@ -75,7 +75,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		case 'U':
  			if (optarg)
  				open_namespace_fd(CLONE_NEWUSER, optarg);
-@@ -368,7 +383,7 @@ int main(int argc, char *argv[])
+@@ -420,7 +435,7 @@ int main(int argc, char *argv[])
  				continue;
  			if (nsfile->nstype == CLONE_NEWPID && do_fork == -1)
  				do_fork = 1;
