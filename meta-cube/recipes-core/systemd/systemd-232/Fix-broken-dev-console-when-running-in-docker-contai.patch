@@ -1,0 +1,56 @@
+From abe41fe3c56599bb0d6432b02cb0f41ff109042d Mon Sep 17 00:00:00 2001
+From: DirkTheDaring <dietmar.kling@web.de>
+Date: Sat, 1 Oct 2016 17:49:48 +0200
+Subject: [PATCH] Fix broken /dev/console when running in  docker container
+
+I run some service in a container with systemd. I noticed an incredible slowdown on docker containers in Fedora 25. When I debbuged the problem, it turned out that journald, which was configured to log to /dev/console, desperatly tried to open /dev/console for each log message an failed, because /dev/console was reported as "//deleted" if you did a cat /proc/1/mountinfo.
+e.g.
+cat /proc/1/mountinfo |grep console
+2769 2749 0:20 /33//deleted /dev/console rw,nosuid,noexec,relatime - devpts devpts rw,gid=5,mode=620,ptmxmode=000
+
+The root cause for this behaviour is systemd - which when run not as process 1 in the container, did _not_ close the /dev/console.
+
+Additional info:
+I have traced the problem down in systemd/src/core/main.c which calls in the main function make_null_stdio(). If  you comment out this function, systemd starts working again in the docker container and /dev/console just  works as expected.
+I have analyzed the problem further, the following seems to happen: IN src/basic/terminal-util.c where make_null_stdio() resides, the functions opens "/dev/null" and passes the filedescriptor to make_stdio(fd) in the same file. make_stdio(int fd) contains
+
+ s = dup2(fd, STDOUT_FILENO);
+
+This actually closes STDOUT_FILEN which is connected to the filehandle where the docker host receives the console messages. After this point /dev/console in the docker container is broken and cannot be used anymore. Therefore e.g. a docker logs -f <container> does not get any message from journald (which is configured to log to console)
+
+The attached patch disables make_null_stdio() for systemd when run in a container, which makes it useable again in docker.
+Now journald  works with /dev/console output and  docker logs -f <containername> shows the output.
+---
+ src/core/main.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+--- a/src/core/main.c
++++ b/src/core/main.c
+@@ -1522,6 +1522,8 @@ int main(int argc, char *argv[]) {
+         }
+ 
+         if (arg_system) {
++                const char *c;
++
+                 if (fixup_environment() < 0) {
+                         error_message = "Failed to fix up PID1 environment";
+                         goto finish;
+@@ -1531,9 +1533,15 @@ int main(int argc, char *argv[]) {
+                  * need to do that for user instances since they never log
+                  * into the console. */
+                 log_show_color(colors_enabled());
+-                r = make_null_stdio();
+-                if (r < 0)
+-                        log_warning_errno(r, "Failed to redirect standard streams to /dev/null: %m");
++                /* make_null_stdio would cause /dev/console to be closed in a
++                 * (docker) container journald and other processes would not
++                 * work properly anymore if they try to log to console */
++                c = getenv("container");
++                if (isempty(c)) {
++                        r = make_null_stdio();
++                        if (r < 0)
++                                log_warning_errno(r, "Failed to redirect standard streams to /dev/null: %m");
++                }
+         }
+ 
+         r = initialize_join_controllers();
