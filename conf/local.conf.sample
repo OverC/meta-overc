@@ -152,7 +152,6 @@ NOISO = "1"
 IMAGE_FSTYPES += "ext3"
 IMAGE_FSTYPES_remove = "wic wic.bmap"
 
-IMAGE_FEATURES += "dev-pkgs"
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
 IMAGE_FEATURES += "ssh-server-openssh package-management"
 # do not install recommendations
