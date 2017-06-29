@@ -166,7 +166,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     python3-git \
     python \
     python-compiler \
-    python-git \
     python-misc \
     python-modules \
     python3-rpm \
