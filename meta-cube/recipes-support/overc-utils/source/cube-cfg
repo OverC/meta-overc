@@ -564,6 +564,10 @@ IFS='
                      ${capabilities} \
                      ${mount_args} \
                      > config.json.tmp
+    if [ ! -s config.json.tmp ] ; then
+	echo "ERROR: config.jason generation failed"
+	exit 1
+    fi
 
     # fixup: disable seccomp completely by making it a section that is ignored
     sed -i 's/\"seccomp\"/\"seccomp-ignore\"/g' config.json.tmp
