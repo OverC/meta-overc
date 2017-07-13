@@ -24,11 +24,11 @@
 
   - name: setup timezone if it is available
     copy: content="{{timezone}}\n" dest=/etc/timezone mode=0644
-    when: tzinfo is defined and tzinfo.stat.exists == True
+    when: tzinfo.stat is defined and tzinfo.stat.exists == True
 
   - name: create symlink for local time
     file: src=/usr/share/zoneinfo/{{timezone}} dest=/etc/localtime state=link
-    when: tzinfo is defined and tzinfo.stat.exists == True
+    when: tzinfo.stat is defined and tzinfo.stat.exists == True
 
   - name: create group is initial user is configured
     group: name={{initial_user}} state=present
