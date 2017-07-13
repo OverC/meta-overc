@@ -457,7 +457,7 @@ generate_base_config()
 
     if [ -e ".cube.mount.bind" ]; then
 	for d in $(cat .cube.mount.bind); do
-	    mount_args="${mount_args} --bind $d"
+	    mount_args="${mount_args} --mount-bind $d"
 	done
     fi
 
@@ -465,22 +465,22 @@ generate_base_config()
     #       directly. for now this is a bind mount.
     if [ -e ".cube.device.vt" ]; then
 	for d in $(cat .cube.device.vt); do
-	    mount_args="${mount_args} --bind ${d}"
+	    mount_args="${mount_args} --mount-bind ${d}"
 	done
     fi
 
     # TODO: these can also be cube-cfg values, but right now are
     #       restricted for compatibility reasons
-    capabilities="--cap-add KILL \
-		  --cap-add LINUX_IMMUTABLE \
-                  --cap-add SYS_RAWIO \
-                  --cap-add SYS_ADMIN \
-		  --cap-add SYS_MODULE \
-                  --cap-add SYS_RESOURCE \
-                  --cap-add NET_ADMIN \
-                  --cap-add NET_BROADCAST \
-                  --cap-add SYSLOG \
-                  --cap-add SYS_TTY_CONFIG"
+    capabilities="--process-cap-add CAP_KILL \
+		  --process-cap-add CAP_LINUX_IMMUTABLE \
+                  --process-cap-add CAP_SYS_RAWIO \
+                  --process-cap-add CAP_SYS_ADMIN \
+		  --process-cap-add CAP_SYS_MODULE \
+                  --process-cap-add CAP_SYS_RESOURCE \
+                  --process-cap-add CAP_NET_ADMIN \
+                  --process-cap-add CAP_NET_BROADCAST \
+                  --process-cap-add CAP_SYSLOG \
+                  --process-cap-add CAP_SYS_TTY_CONFIG"
 
     app="/sbin/init"
     if [ -e "cube.app" ]; then
@@ -499,9 +499,9 @@ IFS='
 		# to the main executable. So we replace our spaces with : to get
 		# everything into the config.json
 		args=$(echo ${hook} | sed 's/ /:/g')
-		hooks="${hooks} --prestart ${cmd}:${args}"
+		hooks="${hooks} --hooks-prestart ${cmd}:${args}"
 	    else
-		hooks="${hooks} --prestart ${cmd}"
+		hooks="${hooks} --hooks-prestart ${cmd}"
 	    fi
 	done
     fi
@@ -514,9 +514,9 @@ IFS='
 		# to the main executable. So we replace our spaces with : to get
 		# everything into the config.json
 		args=$(echo ${hook} | sed 's/ /:/g')
-		hooks="${hooks} --poststart ${cmd}:${args}"
+		hooks="${hooks} --hooks-poststart ${cmd}:${args}"
 	    else
-		hooks="${hooks} --poststart ${cmd}"
+		hooks="${hooks} --hooks-poststart ${cmd}"
 	    fi
 	done
     fi
@@ -529,9 +529,9 @@ IFS='
 		# to the main executable. So we replace our spaces with : to get
 		# everything into the config.json
 		args=$(echo ${hook} | sed 's/ /:/g')
-		hooks="${hooks} --poststop ${cmd}:${args}"
+		hooks="${hooks} --hooks-poststop ${cmd}:${args}"
 	    else
-		hooks="${hooks} --poststop ${cmd}"
+		hooks="${hooks} --hooks-poststop ${cmd}"
 	    fi
 	done
     fi
@@ -541,15 +541,15 @@ IFS='
 	# if no hooks have been passed, but the app is not /sbin/init
 	# we don't need the systemd hook, just go with the network one
 	if [ "${app}" = "/sbin/init" ]; then
-	    hooks="--prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
-	           --poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
+	    hooks="--hooks-prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
+	           --hooks-poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
 	fi
-	hooks="${hooks} --prestart /usr/libexec/oci/hooks.d/netns"
+	hooks="${hooks} --hooks-prestart /usr/libexec/oci/hooks.d/netns"
     fi
 
     console_mgr=$(cube-cfg cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
-	tty_flag="--tty"
+	tty_flag="--process-tty"
     fi
 
     ## TODO: if there's no oci-runtime-tool, then we should capture a
@@ -558,7 +558,7 @@ IFS='
 	             ${tty_flag} \
 	             ${hooks} \
 		     --args ${app} \
-                     --seccomp-remove-all \
+                     --linux-seccomp-remove-all \
                      --hostname=${container_name} \
 		     --env container=docker \
                      ${capabilities} \
