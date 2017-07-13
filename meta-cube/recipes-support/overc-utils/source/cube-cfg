@@ -12,6 +12,10 @@
 mydir=`dirname $0`
 PATH=$mydir:$PATH
 
+if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
+    set -x
+fi
+
 usage()
 {
 cat << EOF
