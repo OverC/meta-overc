@@ -31,7 +31,7 @@ if [ "${action}" = "up" ]; then
 fi
 
 if [ "${action}" = "down" ]; then
-    path=$(echo "$@" | jq .bundlePath | sed 's%"%%g')
+    path=$(echo "$@" | jq .bundle | sed 's%"%%g')
 
     # nothing at the moment
 fi

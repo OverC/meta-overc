@@ -132,7 +132,7 @@ if [ "${action}" = "up" ]; then
 fi
 
 if [ "${action}" = "down" ]; then
-    path=$(echo "$@" | jq .bundlePath | sed 's%"%%g')
+    path=$(echo "$@" | jq .bundle | sed 's%"%%g')
     veth_name_down=$(cat ${path}/.cube.veth)
     cname=$(basename ${path})
 
