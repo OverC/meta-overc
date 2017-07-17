@@ -885,7 +885,11 @@ case "${cmd}" in
 		# the devices visible to the container
 		${SBINDIR}/cube-cfg set cube.device.mgr:essential
 
+		# Setup console with the screen-getty service
 		${SBINDIR}/cube-cfg set cube.console.mgr:tty
+		# Optionally setup the pty-console for use inside the container
+		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}/pty-console:/dev/pty-console
+
 
 		# update the container manager
 		graft_binaries_to_essential runc
