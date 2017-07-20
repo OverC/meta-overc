@@ -1,7 +1,30 @@
 Introduction
 ==============================================================
 A REST API has been implemented to interface with overc. This
-has been implement using Python Flask.
+has been implement using Python Flask.  The server expects
+HTTP Basic Auth with a default user name/password of adm/adm.
+
+A different user name and password can be created using the following
+commands as an example.  In the example the user name is set to adm1
+and the password is set to adm2.
+
+pw=`python<<EOF
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"])
+print pwd_context.encrypt("adm2");
+EOF`
+
+echo "adm1:$pw" > /opt/overc-system-agent/pwfile
+
+You can perform a quick test against the RestAPI with:
+
+nohup ./run_server.py &
+wget --user=adm1  --password=adm2 --auth-no-challenge http://0.0.0.0:5555/container/list?template=dom0 -O -
+kill %
+
+You can also restrict the Rest API server to the local host with:
+./run_server.py -b 127.0.0.1
+
 
 Note, in the json responses, '\n' has been replaced to ';'.
 

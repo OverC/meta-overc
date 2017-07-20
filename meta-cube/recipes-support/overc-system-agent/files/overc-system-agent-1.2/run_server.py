@@ -6,7 +6,35 @@ import Overc
 from flask import Flask
 from flask import jsonify
 from flask import request
+from flask_httpauth import HTTPBasicAuth
+from passlib.context import CryptContext
 app = Flask(__name__)
+
+# Password hash generation with:
+#python<<EOF
+#from passlib.context import CryptContext
+#pwd_context = CryptContext(schemes=["pbkdf2_sha256"])
+#print pwd_context.encrypt("adm");
+#EOF
+# Default admin username and password hash which can be overriden
+# if /opt/overc-system-agent/pwfile exists with the format
+# UserName:PasswordHash
+app.config['ADMIN_USERNAME'] = 'adm'
+app.config['ADMIN_PW_HASH'] = '$pbkdf2-sha256$29000$i3EOIeT8P8dY6703BgBgbA$XyesHZZmu.O54HfiwIhSd00rMJpyCKhH0gsh1atxgqA'
+app.config['PW_FILE'] = "/opt/overc-system-agent/pwfile"
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"])
+
+# Flask Extention
+auth = HTTPBasicAuth()
+
+@auth.verify_password
+def verify_password(username, password):
+    if username != app.config['ADMIN_USERNAME']:
+        return False
+    if pwd_context.verify(password, app.config['ADMIN_PW_HASH']):
+        return True
+    return False
 
 def json_msg(s):
     message = {}
@@ -16,6 +44,7 @@ def json_msg(s):
     return resp
 
 @app.route('/system/rollback')
+@auth.login_required
 def system_rollback():
     usage = 'Usage: ' + request.url_root + 'system/rollback?template=[dom0]'
     overc=Overc.Overc()
@@ -29,6 +58,7 @@ def system_rollback():
     overc._system_rollback(template)
 
 @app.route('/system/upgrade')
+@auth.login_required
 def system_upgrade():
     usage = 'Usage: ' + request.url_root + 'system/upgrade?template=[dom0]&reboot=[True|False]&force=[True|False]'
     overc=Overc.Overc()
@@ -53,12 +83,14 @@ def system_upgrade():
     return json_msg(overc.message)
 
 @app.route('/host/rollback')
+@auth.login_required
 def host_rollback():
     overc=Overc.Overc()
     overc.host_rollback()
     return json_msg(overc.message)
 
 @app.route('/host/upgrade')
+@auth.login_required
 def host_upgrade():
     usage = 'Usage: ' + request.url_root + 'host/upgrade?reboot=[True|False]&force=[True|False]'
 
@@ -78,18 +110,21 @@ def host_upgrade():
     return json_msg(overc.message)
 
 @app.route('/host/update')
+@auth.login_required
 def host_update():
     overc=Overc.Overc()
     overc.host_update()
     return json_msg(overc.message)
 
 @app.route('/host/newer')
+@auth.login_required
 def host_newer():
     overc=Overc.Overc()
     overc.host_newer()
     return json_msg(overc.message)
 
 @app.route('/container/rollback')
+@auth.login_required
 def container_rollback():
     usage =  'Usage: ' + request.url_root + 'container/rollback?name=<container name>&snapshot=<snapshot name>&template=<template name> [snapshot optional]'
 
@@ -103,6 +138,7 @@ def container_rollback():
     return json_msg(overc.message)
 
 @app.route('/container/update')
+@auth.login_required
 def container_update():
     usage = 'Usage: ' + request.url_root + 'container/update?template=<template name>'
 
@@ -114,6 +150,7 @@ def container_update():
     return json_msg(overc.message)
 
 @app.route('/container/list')
+@auth.login_required
 def container_list():
     usage = 'Usage: ' + request.url_root + 'container/list?template=<template name>'
     overc=Overc.Overc()
@@ -124,6 +161,7 @@ def container_list():
     return json_msg(overc.message)
 
 @app.route('/container/snapshot')
+@auth.login_required
 def container_snapshot():
     usage = 'Usage: ' + request.url_root + 'container/snapshot?name=<container name>&template=<template name>'
     overc=Overc.Overc()
@@ -136,6 +174,7 @@ def container_snapshot():
     return json_msg(overc.message)
 
 @app.route('/container/list_snapshots')
+@auth.login_required
 def container_list_snapshots():
     usage = 'Usage: ' + request.url_root + 'container/list_snapshots?name=<container name>&template=<template name>'
 
@@ -148,6 +187,7 @@ def container_list_snapshots():
     return json_msg(overc.message)
 
 @app.route('/container/send_image')
+@auth.login_required
 def container_send_image():
     usage = 'Usage: ' + request.url_root + 'container/send_image?url=<image url>&template=<template name>'
 
@@ -178,6 +218,7 @@ def container_send_image():
     return json_msg(overc.message)
 
 @app.route('/container/activate')
+@auth.login_required
 def container_activate():
     usage = 'Usage: ' + request.url_root + 'container/activate?name=<container name>&template=<template name>'
 
@@ -191,6 +232,7 @@ def container_activate():
     return json_msg(overc.message)
 
 @app.route('/container/start')
+@auth.login_required
 def container_start():
     usage = 'Usage: ' + request.url_root + 'container/start?name=<container name>&template=<template name>'
 
@@ -203,6 +245,7 @@ def container_start():
     return json_msg(overc.message)
 
 @app.route('/container/stop')
+@auth.login_required
 def container_stop():
     usage = 'Usage: ' + request.url_root + 'container/stop?name=<container name>&template=<template name>'
 
@@ -215,6 +258,7 @@ def container_stop():
     return json_msg(overc.message)
 
 @app.route('/container/upgrade')
+@auth.login_required
 def container_upgrade():
     usage = 'Usage: ' + request.url_root + 'container/upgrade?name=<container name>&template=<template name>&rpm=yes|no&image=yes|no'
 
@@ -244,6 +288,7 @@ def container_upgrade():
     return json_msg(overc.message)
 
 @app.route('/container/delete')
+@auth.login_required
 def container_delete():
     usage = 'Usage: ' + request.url_root + 'container/delete?name=<container name>&template=<template name>'
 
@@ -257,6 +302,7 @@ def container_delete():
     return json_msg(overc.message)
 
 @app.route('/container/delete_snapshots')
+@auth.login_required
 def container_delete_snapshots():
     usage = 'Usage: ' + request.url_root + 'container/delete_snapshots?name=<container name>&template=<template name>'
 
@@ -270,14 +316,17 @@ def container_delete_snapshots():
 
 if __name__ == '__main__':
     default_port = 5555
+    bindaddr = '0.0.0.0'
+    help_txt = ' [-d] [-p <port>] [-b <bind address>]'
+
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"hdp::",["port="])
+        opts, args = getopt.getopt(sys.argv[1:],"b:hdp::",["port="])
     except getopt.GetoptError:
-        print sys.argv[0],' [-d] [-p <port>]'
+        print sys.argv[0], help_txt
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print sys.argv[0],' [-d] [-p <port>]'
+            print sys.argv[0], help_txt
             sys.exit()
         elif opt in ("-p", "--port"):
             try:
@@ -285,6 +334,13 @@ if __name__ == '__main__':
             except ValueError:
                 print sys.argv[0],' -p <port>'
                 sys.exit(2)
+        elif opt in ("-b", "--bind-addr"):
+            bindaddr = arg
         elif opt == '-d':
             app.debug = True
-    app.run(port=default_port, host='0.0.0.0')
+    if os.path.exists(app.config['PW_FILE']):
+        pwfile = open(app.config['PW_FILE'],'r')
+        user_pw = pwfile.read()
+        (app.config['ADMIN_USERNAME'], app.config['ADMIN_PW_HASH']) = user_pw.rstrip().split(':')
+
+    app.run(port=default_port, host=bindaddr)
