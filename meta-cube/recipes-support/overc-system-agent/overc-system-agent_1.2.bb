@@ -16,6 +16,8 @@ RDEPENDS_${PN} = "\
 	python-argparse \
 	python-subprocess \
 	python-flask \
+	python-flask-httpauth \
+	python-passlib \
 	python-itsdangerous \
 	python-jinja2 \
 	python-markupsafe \
