@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, getopt
+import sys, getopt, os, urllib2
 import Overc
 
 from flask import Flask
@@ -156,6 +156,24 @@ def container_send_image():
     template = request.args.get('template')
     if url is None or template is None:
         return json_msg(usage)
+    template_list = os.listdir("/etc/overc/container")
+    if template not in template_list:
+        usage += "\n The template name is not valid"
+        return json_msg(usage)
+
+    req = urllib2.Request(url)
+    req.get_method = lambda: 'HEAD'
+    try:
+        status = urllib2.urlopen(req)
+    except Exception,e:
+        usage += "\n The image url is not valid"
+        return json_msg(usage)
+   
+    re_code = status.getcode()
+    if ((re_code != None) and (re_code != 200)):
+        usage += "\n The image url is not valid, http status code is: %s" % re_code
+        return json_msg(usage)
+
     overc._container_send_image(template, url)
     return json_msg(overc.message)
 
