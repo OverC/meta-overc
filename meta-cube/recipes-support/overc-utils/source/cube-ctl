@@ -794,7 +794,12 @@ case "${cmd}" in
 
 		if [ -n "${entry_point}" ]; then
 		    cube-cfg -n ${container_name} set app:${entry_point}
-		    cube-cfg -n ${container_name} set cube.console.mgr:tty
+		    echo ${entry_point} | grep -q init
+		    if [ $? -eq 0 ]; then
+			cube-cfg -n ${container_name} set cube.console.mgr:screen-tty
+		    else
+			cube-cfg -n ${container_name} set cube.console.mgr:tty
+		    fi
 		    cube-cfg gen ${container_name}:oci
 		fi
 

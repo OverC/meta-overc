@@ -591,7 +591,7 @@ IFS='
 
     # Generate an oci.cmd that can be used to launch this container via runc
     echo "#!/bin/bash" > oci.cmd
-    if [ "${console_mgr}" = "tty" ]; then
+    if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
 	runc_console="--console-socket=/var/lib/cube/$container_name/runc-sock"
 	echo "rm -f /var/lib/cube/${container_name}/dtach-sock /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
 	echo "/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 -p /var/lib/cube/${container_name}/pty-console -c -C -E -q -Q /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
@@ -602,7 +602,7 @@ IFS='
     echo "mgr=\$(cat /opt/container/${container_name}/cube.container.mgr)" >> oci.cmd
     mv config.json.terminal config.json
     echo "\${mgr} create --bundle /opt/container/${container_name} ${runc_console} ${container_name}" >> oci.cmd
-    if [ "${console_mgr}" = "tty" ]; then
+    if [ "${console_mgr}" = "screen-tty" ]; then
 	echo "/usr/bin/screen -ls console > /dev/null && /usr/bin/screen -S console -x -X screen -t ${container_name} /var/lib/cube/${container_name}/pty-console" >> oci.cmd
     fi
     echo "\${mgr} start ${container_name}" >> oci.cmd
