@@ -24,7 +24,6 @@ OVERC_COMMON_EXTENDED = " \
      fbset \
      findutils \
      grep \
-     groff \
      gzip \
      iso-codes \
      kernel-modules \
@@ -68,6 +67,7 @@ OVERC_EXTRA_EXTENDED = "\
      polkit \
      sysstat \
      tzdata \
+     groff \
     "
 
 OVERC_COMMON_NETWORKING = "\
