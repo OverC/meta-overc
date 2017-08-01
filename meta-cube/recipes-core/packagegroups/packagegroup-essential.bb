@@ -44,6 +44,6 @@ RDEPENDS_packagegroup-essential-networking = "\
     "
 
 RDEPENDS_packagegroup-essential-only = "\
-     linux-firmware \
+     linux-firmware-cube-shared \
      watchdog \
     "

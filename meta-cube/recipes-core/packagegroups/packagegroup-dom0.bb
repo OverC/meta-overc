@@ -24,6 +24,7 @@ PACKAGES = "\
      packagegroup-dom0-perl \
      packagegroup-dom0-python \
      packagegroup-dom0-tools \
+     packagegroup-dom0-only \
     "
 
 RDEPENDS_packagegroup-dom0 = "\
@@ -34,6 +35,7 @@ RDEPENDS_packagegroup-dom0 = "\
      packagegroup-dom0-perl \
      packagegroup-dom0-python \
      packagegroup-dom0-tools \
+     packagegroup-dom0-only \
     "
 
 RDEPENDS_packagegroup-dom0-fs = " \
@@ -66,4 +68,8 @@ RDEPENDS_packagegroup-dom0-networking = "\
 RDEPENDS_packagegroup-dom0-tools = "\
      ${OVERC_COMMON_TOOLS} \
      container-shutdown-notifier \
+    "
+
+RDEPENDS_packagegroup-dom0-only = "\
+     linux-firmware \
     "
