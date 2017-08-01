@@ -1,0 +1,44 @@
+#!/bin/bash
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
+    set -x
+fi
+
+container_dir="/opt/container"
+
+# Copy /lib/firmware from dom0 to /var/lib/cube/essential
+# This allows for firmware to be upgraded by updating dom0
+refresh_cube_essential_firmware()
+{
+    local dom0_rootfs="${container_dir}/dom0/rootfs"
+
+    if [ ! -d "/var/lib/cube/essential/lib/firmware/" ]; then
+	mkdir -p "/var/lib/cube/essential/lib/firmware/"
+    fi
+
+    # Ensure copy matches dom0 /lib/firmware, avoiding unnecessary
+    # copying. This may or may not save time but will avoid
+    # possible wear on the media and avoids having rsync available.
+    while read -r delta; do
+	if [[ $delta = "Only in ${dom0_rootfs}/lib/firmware/:"* ]]; then
+	    filename=$(echo ${delta} | awk -F': ' '{print $NF}')
+	    cp ${dom0_rootfs}/lib/firmware/${filename} /var/lib/cube/essential/lib/firmware/
+	elif [[ $delta = "Only in /var/lib/cube/essential/lib/firmware/:"* ]]; then
+	    filename=$(echo ${delta} | awk -F': ' '{print $NF}')
+	    rm -f /var/lib/cube/essential/lib/firmware/${filename}
+	elif [[ $delta = Files*and*differ ]]; then
+	    cmd=$(echo ${delta} | sed 's/^Files/cp/' | sed 's/\ differ$//' | sed 's/\ and\ / /')
+	    $(exec $cmd)
+	fi
+    done <<< "$(/usr/bin/diff -qr ${dom0_rootfs}/lib/firmware/ /var/lib/cube/essential/lib/firmware/)"
+}
+
+refresh_cube_essential_firmware
