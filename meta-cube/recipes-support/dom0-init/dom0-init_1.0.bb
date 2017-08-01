@@ -7,8 +7,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425
 RDEPENDS_${PN} = "overc-utils util-linux bash"
 
 SRC_URI = "file://dom0-containers \
-           file://dom0-contctl.service \
-           file://dom0-contctl.conf \
+           file://dom0-ctl-core.service \
+           file://dom0-ctl-core.conf \
 "
 
 SRC_FILES_LIST="dom0-containers \
@@ -16,7 +16,7 @@ SRC_FILES_LIST="dom0-containers \
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "dom0-contctl.service"
+SYSTEMD_SERVICE_${PN} = "dom0-ctl-core.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 systemd_postinst() {
@@ -39,10 +39,10 @@ do_install() {
     done
 
     install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/dom0-contctl.service ${D}/lib/systemd/system/
+    install -m 0644 ${WORKDIR}/dom0-ctl-core.service ${D}/lib/systemd/system/
 
     install -d ${D}/${sysconfdir}
-    install -m 0744 ${WORKDIR}/dom0-contctl.conf ${D}/${sysconfdir}
+    install -m 0744 ${WORKDIR}/dom0-ctl-core.conf ${D}/${sysconfdir}
 }
 
 FILES_${PN} += "${sbin} \
