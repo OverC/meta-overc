@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OVERC_CCTL=/opt/overc-installer/overc-cctl
-DOM0_CTL=/opt/dom0-contctl/dom0_contctl
+C3=/usr/sbin/c3
 
 IMAGE_DIR=/root/images
 
@@ -59,14 +59,16 @@ Usage: $0 [OPTION] ...
 EOT
 }
 
-# Expected format:
+# Determine the status of a given container
 #
-# root@cube-17-08-15-dom0:/opt/dom0-contctl# ./dom0_contctl list
-# demoService (lxc) - STOPPED
-# dom0 (lxc) - Container that I'm in
-# dom1 (lxc) (/) - RUNNING
-# cube-desktop (lxc) (/) - RUNNING
-# s1 (lxc) - STOPPED
+# Expected format we need to parse:
+#
+# root@cube-dom0:~# /usr/sbin/c3 list
+# name          type  status   attributes  addresses
+# ----          ----  ------   ----------  ---------
+# cube-desktop  oci   running  --          192.168.42.200
+# dom0          cube  running  vrf         netprime        192.168.42.1,10.0.2.15
+# dom1          oci   running  --          192.168.42.201
 #
 #     return value:
 #        0: does not exist
@@ -78,16 +80,16 @@ container_status() {
 	local retval=0
 
 	while read l; do
-		c=$(echo $l|awk '{print $1;}')
-		s=$(echo $l|awk -F' - ' '{print $2;}')
-		if [ "$c" = "$container" ]; then
-			if [ "$s" = "Container that I'm in" -o "$s" = "RUNNING" ]; then
+		cntr=$(echo $l | awk '{print $1;}')
+		status=$(echo $l | awk '{print $3;}')
+		if [ "$cntr" = "$container" ]; then
+			if [ "$status" = "running" ]; then
 				retval=3
-			elif [ "$s" = "STOPPED" ]; then
+			elif [ "$status" = "stopped" ] || [ "$status" = "available" ]; then
 				retval=2
 			fi
 		fi
-	done < <($DOM0_CTL list)
+	done <<< "$($C3 list | tail +3)"
 	return $retval
 }
 
@@ -274,7 +276,7 @@ start_container() {
 		echo "Starting of dom0 not supported"
 		exit 1
 	fi
-	$DOM0_CTL launch -n $container
+	$C3 ctl start $container
 	if [ $? -ne 0 ]; then
 		return 1
 	fi
@@ -302,15 +304,15 @@ stop_container() {
 		echo "Stopping of dom0 not supported"
 		exit 1
 	fi
-	$DOM0_CTL stop -n $container
+	$C3 ctl stop $container
 }
 
 list_container() {
-	$DOM0_CTL list
+	$C3 list
 }
 
 runcmd_in_container() {
-	$DOM0_CTL exec-cmd -n $1 $2
+	$C3 ctl $1:$2
 }
 
 format_size() {
