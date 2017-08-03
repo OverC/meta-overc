@@ -12,8 +12,8 @@ OVERC_COMMON_DISK = " \
     "
 
 OVERC_COMMON_EXTENDED_ARCH ?= ""
-OVERC_COMMON_EXTENDED_ARCH_i586 += " grub"
-OVERC_COMMON_EXTENDED_ARCH_x86-64 += " grub"
+OVERC_COMMON_EXTENDED_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+OVERC_COMMON_EXTENDED_ARCH_x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 
 OVERC_COMMON_EXTENDED = " \
      bash-completion \
