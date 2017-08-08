@@ -15,9 +15,9 @@ mount.
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
  dtach.h  |    6 -
- main.c   |   27 +++++
- master.c |  331 +++++++++++++++++++++++++++++++++++++++++++++++++++++----------
- 3 files changed, 313 insertions(+), 51 deletions(-)
+ main.c   |   27 ++++
+ master.c |  343 +++++++++++++++++++++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 325 insertions(+), 51 deletions(-)
 
 --- a/dtach.h
 +++ b/dtach.h
@@ -436,7 +436,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  			if (p->attached)
  				new_has_attached_client = 1;
  		}
-@@ -561,26 +690,97 @@ master_process(int s, char **argv, int w
+@@ -561,26 +690,109 @@ master_process(int s, char **argv, int w
  		}
  
  		/* Wait for something to happen. */
@@ -462,11 +462,23 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +						epoll_ctl(efd, EPOLL_CTL_MOD, peer_pty, &edge_peer);
 +						is_edge_mode = 1;
 +					}
-+					printf("EPOLL HUP\n");
 +				}
 +				else
 +				{
-+					close(events[i].data.fd);
++					int found_client = 0;
++					/* If a client closes it needs to be cleaned up */
++					for (p = clients; p; p = next)
++					{
++						next = p->next;
++						if (events[i].data.fd == p->fd)
++						{
++							found_client = 1;
++							client_activity(p);
++							break;
++						}
++					}
++					if (!found_client)
++						close(events[i].data.fd);
 +					if (events[i].data.fd == the_pty.fd)
 +						exit(1);
 +					continue;
@@ -548,7 +560,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	}
  }
  
-@@ -589,12 +789,43 @@ master_main(char **argv, int waitattach,
+@@ -589,12 +801,43 @@ master_main(char **argv, int waitattach,
  {
  	int fd[2] = {-1, -1};
  	int s;
@@ -592,7 +604,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	/* Create the unix domain socket. */
  	s = create_socket(sockname);
  	if (s < 0 && errno == ENAMETOOLONG)
-@@ -653,7 +884,7 @@ master_main(char **argv, int waitattach,
+@@ -653,7 +896,7 @@ master_main(char **argv, int waitattach,
  
  	if (dontfork)
  	{
@@ -601,7 +613,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		return 0;
  	}
  
-@@ -670,7 +901,7 @@ master_main(char **argv, int waitattach,
+@@ -670,7 +913,7 @@ master_main(char **argv, int waitattach,
  		/* Child - this becomes the master */
  		if (fd[0] != -1)
  			close(fd[0]);
