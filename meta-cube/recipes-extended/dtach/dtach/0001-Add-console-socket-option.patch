@@ -15,9 +15,9 @@ mount.
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
  dtach.h  |    6 -
- main.c   |   27 +++++
- master.c |  331 +++++++++++++++++++++++++++++++++++++++++++++++++++++----------
- 3 files changed, 313 insertions(+), 51 deletions(-)
+ main.c   |   27 ++++
+ master.c |  375 +++++++++++++++++++++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 352 insertions(+), 56 deletions(-)
 
 --- a/dtach.h
 +++ b/dtach.h
@@ -118,7 +118,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  				++argv; --argc;
 --- a/master.c
 +++ b/master.c
-@@ -53,6 +53,11 @@ struct client
+@@ -53,17 +53,40 @@ struct client
  static struct client *clients;
  /* The pseudo-terminal created for the child process. */
  static struct pty the_pty;
@@ -130,7 +130,25 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  
  #ifndef HAVE_FORKPTY
  pid_t forkpty(int *amaster, char *name, struct termios *termp,
-@@ -64,6 +69,10 @@ static void
+ 	struct winsize *winp);
+ #endif
+ 
++/* Handle EINTR write */
++static void
++eintr_write(int fd, const void *buf, ssize_t len)
++{
++	ssize_t n;
++
++again:
++	n = write(fd, buf, len);
++
++
++	if (n < 0 && errno == EINTR)
++		goto again;
++}
++
+ /* Unlink the socket */
+ static void
  unlink_socket(void)
  {
  	unlink(sockname);
@@ -141,7 +159,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  }
  
  /* Signal */
-@@ -249,14 +258,41 @@ pty_activity(int s)
+@@ -249,14 +272,41 @@ pty_activity(int s)
  	struct client *p;
  	fd_set readfds, writefds;
  	int highest_fd, nclients;
@@ -183,7 +201,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  #ifdef BROKEN_MASTER
  	/* Get the current terminal settings. */
  	if (tcgetattr(the_pty.slave, &the_pty.term) < 0)
-@@ -293,8 +329,6 @@ top:
+@@ -293,8 +343,6 @@ top:
  	/* Send the data out to the clients. */
  	for (p = clients, nclients = 0; p; p = p->next)
  	{
@@ -192,7 +210,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		if (!FD_ISSET(p->fd, &writefds))
  			continue;
  
-@@ -323,9 +357,31 @@ top:
+@@ -323,9 +371,31 @@ top:
  		goto top;
  }
  
@@ -225,7 +243,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  {
  	int fd;
  	struct client *p;
-@@ -339,7 +395,11 @@ control_activity(int s)
+@@ -339,7 +409,11 @@ control_activity(int s)
  		close(fd);
  		return;
  	}
@@ -238,7 +256,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		alarm(0);
  		alarm_time = 0;
  	}
-@@ -353,6 +413,7 @@ control_activity(int s)
+@@ -353,6 +427,7 @@ control_activity(int s)
  	if (p->next)
  		p->next->pprev = &p->next;
  	*(p->pprev) = p;
@@ -246,7 +264,20 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  }
  
  /* Process activity from a client. */
-@@ -400,6 +461,9 @@ client_activity(struct client *p)
+@@ -388,10 +463,10 @@ client_activity(struct client *p)
+ 		if (pkt.len == 0)
+ 		{
+ 			pkt.u.buf[0] = 0x4;
+-			write(the_pty.fd, pkt.u.buf, 1);
++			eintr_write(the_pty.fd, pkt.u.buf, 1);
+ 		}
+ 		if (pkt.len <= sizeof(pkt.u.buf))
+-			write(the_pty.fd, pkt.u.buf, pkt.len);
++			eintr_write(the_pty.fd, pkt.u.buf, pkt.len);
+ 	}
+ 
+ 	/* Attach or detach from the program. */
+@@ -400,6 +475,9 @@ client_activity(struct client *p)
  	else if (pkt.type == MSG_DETACH)
  		p->attached = 0;
  
@@ -256,7 +287,16 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	/* Window size change request, without a forced redraw. */
  	else if (pkt.type == MSG_WINCH)
  	{
-@@ -443,8 +507,6 @@ client_activity(struct client *p)
+@@ -432,7 +510,7 @@ client_activity(struct client *p)
+                 	if (((the_pty.term.c_lflag & (ECHO|ICANON)) == 0) &&
+                         	(the_pty.term.c_cc[VMIN] == 1))
+ 			{
+-				write(the_pty.fd, &c, 1);
++				eintr_write(the_pty.fd, &c, 1);
+ 			}
+ 		}
+ 		/* Send a WINCH signal to the program. */
+@@ -443,8 +521,6 @@ client_activity(struct client *p)
  	}
  }
  
@@ -265,7 +305,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  /* Alarm handler for timeout waiting on client connect */
  static void
  	alarm_handler(int sig)
-@@ -454,15 +516,71 @@ static void
+@@ -454,15 +530,71 @@ static void
  	exit(sig);
  }
  
@@ -340,7 +380,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  
  	int has_attached_client = 0;
  
-@@ -475,6 +593,11 @@ master_process(int s, char **argv, int w
+@@ -475,6 +607,11 @@ master_process(int s, char **argv, int w
  
  	/* Create a pty in which the process is running. */
  	signal(SIGCHLD, die);
@@ -352,7 +392,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	if (init_pty(argv, statusfd) < 0)
  	{
  		if (statusfd != -1)
-@@ -485,6 +608,7 @@ master_process(int s, char **argv, int w
+@@ -485,6 +622,7 @@ master_process(int s, char **argv, int w
  			printf("%s: init_pty: %s\n", progname, strerror(errno));
  		exit(1);
  	}
@@ -360,7 +400,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  
  	/* Set up some signals. */
  	signal(SIGPIPE, SIG_IGN);
-@@ -508,6 +632,34 @@ master_process(int s, char **argv, int w
+@@ -508,6 +646,34 @@ master_process(int s, char **argv, int w
  		alarm(alarm_time);
  	}
  
@@ -395,7 +435,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	/* Make sure stdin/stdout/stderr point to /dev/null. We are now a
  	** daemon. */
  	nullfd = open("/dev/null", O_RDWR);
-@@ -517,38 +669,15 @@ master_process(int s, char **argv, int w
+@@ -517,38 +683,15 @@ master_process(int s, char **argv, int w
  	if (nullfd > 2)
  		close(nullfd);
  
@@ -436,7 +476,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  			if (p->attached)
  				new_has_attached_client = 1;
  		}
-@@ -561,26 +690,97 @@ master_process(int s, char **argv, int w
+@@ -561,26 +704,109 @@ master_process(int s, char **argv, int w
  		}
  
  		/* Wait for something to happen. */
@@ -462,11 +502,23 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +						epoll_ctl(efd, EPOLL_CTL_MOD, peer_pty, &edge_peer);
 +						is_edge_mode = 1;
 +					}
-+					printf("EPOLL HUP\n");
 +				}
 +				else
 +				{
-+					close(events[i].data.fd);
++					int found_client = 0;
++					/* If a client closes it needs to be cleaned up */
++					for (p = clients; p; p = next)
++					{
++						next = p->next;
++						if (events[i].data.fd == p->fd)
++						{
++							found_client = 1;
++							client_activity(p);
++							break;
++						}
++					}
++					if (!found_client)
++						close(events[i].data.fd);
 +					if (events[i].data.fd == the_pty.fd)
 +						exit(1);
 +					continue;
@@ -493,7 +545,20 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +			else if (events[i].data.fd == peer_pty)
 +			{
 +				int len;
-+
+ 
+-		/* New client? */
+-		if (FD_ISSET(s, &readfds))
+-			control_activity(s);
+-		/* Activity on a client? */
+-		for (p = clients; p; p = next)
+-		{
+-			next = p->next;
+-			if (FD_ISSET(p->fd, &readfds))
+-				client_activity(p);
+-		}
+-		/* pty activity? */
+-		if (FD_ISSET(the_pty.fd, &readfds))
+-			pty_activity(s);
 +				len = read(peer_pty, peer_buf, sizeof(peer_buf));
 +				if (the_pty.fd >= 0 && len > 0)
 +				{
@@ -502,7 +567,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +						epoll_ctl(efd, EPOLL_CTL_MOD, peer_pty, &data_peer);
 +						is_edge_mode = 0;
 +					}
-+					write(the_pty.fd, peer_buf, len);
++					eintr_write(the_pty.fd, peer_buf, len);
 +				}
 +			}
 +			else
@@ -519,20 +584,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +				}
 +			}
 +		}
- 
--		/* New client? */
--		if (FD_ISSET(s, &readfds))
--			control_activity(s);
--		/* Activity on a client? */
--		for (p = clients; p; p = next)
--		{
--			next = p->next;
--			if (FD_ISSET(p->fd, &readfds))
--				client_activity(p);
--		}
--		/* pty activity? */
--		if (FD_ISSET(the_pty.fd, &readfds))
--			pty_activity(s);
++
 +		/*
 +		** When waitattach is set, wait until the client attaches
 +		** before trying to read from the pty.
@@ -548,7 +600,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  	}
  }
  
-@@ -589,12 +789,43 @@ master_main(char **argv, int waitattach,
+@@ -589,12 +815,46 @@ master_main(char **argv, int waitattach,
  {
  	int fd[2] = {-1, -1};
  	int s;
@@ -585,14 +637,31 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 +		if (peer_pty_link_loc)
 +		{
 +			unlink(peer_pty_link_loc);
-+			symlink(pty_loc, peer_pty_link_loc);
++			if (!symlink(pty_loc, peer_pty_link_loc))
++			{
++				printf("%s: Could not open link: %s\n", progname, peer_pty_link_loc);
++			}
 +		}
 +	}
 +
  	/* Create the unix domain socket. */
  	s = create_socket(sockname);
  	if (s < 0 && errno == ENAMETOOLONG)
-@@ -653,7 +884,7 @@ master_main(char **argv, int waitattach,
+@@ -612,7 +872,12 @@ master_main(char **argv, int waitattach,
+ 				if (chdir(sockname) >= 0)
+ 				{
+ 					s = create_socket(slash + 1);
+-					fchdir(dirfd);
++					if (fchdir(dirfd) < 0)
++					{
++						printf("%s: %s: %s\n", progname,
++						       sockname, strerror(errno));
++						return 1;
++					}
+ 				}
+ 				*slash = '/';
+ 				close(dirfd);
+@@ -653,7 +918,7 @@ master_main(char **argv, int waitattach,
  
  	if (dontfork)
  	{
@@ -601,7 +670,7 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		return 0;
  	}
  
-@@ -670,7 +901,7 @@ master_main(char **argv, int waitattach,
+@@ -670,7 +935,7 @@ master_main(char **argv, int waitattach,
  		/* Child - this becomes the master */
  		if (fd[0] != -1)
  			close(fd[0]);
@@ -610,3 +679,12 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  		return 0;
  	}
  	/* Parent - just return. */
+@@ -686,7 +951,7 @@ master_main(char **argv, int waitattach,
+ 		len = read(fd[0], buf, sizeof(buf));
+ 		if (len > 0)
+ 		{
+-			write(2, buf, len);
++			eintr_write(2, buf, len);
+ 			kill(pid, SIGTERM);
+ 			return 1;
+ 		}
