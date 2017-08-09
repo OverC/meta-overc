@@ -594,7 +594,7 @@ IFS='
     if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
 	runc_console="--console-socket=/var/lib/cube/$container_name/runc-sock"
 	echo "rm -f /var/lib/cube/${container_name}/dtach-sock /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
-	echo "/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 -p /var/lib/cube/${container_name}/pty-console -c -C -E -q -Q /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
+	echo "/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 -p /var/lib/cube/${container_name}/pty-console -c -C -E -q /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
 	jq -r  '.process.terminal = true' config.json > config.json.terminal
     else
 	jq -r  '.process.terminal = false' config.json > config.json.terminal
