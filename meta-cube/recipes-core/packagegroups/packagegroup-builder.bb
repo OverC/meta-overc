@@ -108,8 +108,8 @@ RDEPENDS_packagegroup-builder-debug = " \
 
 
 RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
-RDEPENDS_packagegroup-builder-extended_ARCH_i586 += " grub"
-RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 += " grub"
+RDEPENDS_packagegroup-builder-extended_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 
 RDEPENDS_packagegroup-builder-extended = "\
     bash-completion \
