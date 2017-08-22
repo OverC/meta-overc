@@ -1,4 +1,4 @@
-#!/usr/bin/python -Es
+#!/usr/bin/python3 -Es
 
 import sys, os
 import subprocess
