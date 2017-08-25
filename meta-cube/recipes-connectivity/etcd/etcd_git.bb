@@ -65,6 +65,11 @@ do_compile() {
 	export LDFLAGS=""
 	export CGO_CFLAGS="${BUILDSDK_CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 	export CGO_LDFLAGS="${BUILDSDK_LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
+	if [ "${TARGET_ARCH}" = "x86_64" ]; then
+		export GOARCH="amd64"
+	elif [ "${TARGET_ARCH}" = "i586" ]; then
+		export GOARCH="386"
+	fi
 
 	./build
 }
