@@ -1,4 +1,4 @@
-From 8ae0f886b7abded65a0268a0496ff6e016a5e868 Mon Sep 17 00:00:00 2001
+From 863924c83be97fea7a721892e81f82f5331f72fa Mon Sep 17 00:00:00 2001
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 Date: Mon, 3 Apr 2017 22:58:39 -0400
 Subject: [PATCH] vim: Make text mode editing Great again.
@@ -28,23 +28,33 @@ I've added comments to clearly indicate this change does deviate from the
 vim default, so offended people can direct their complaints accordingly.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+[ywei: rebased to 8.0.0983]
+Signed-off-by: Yunguo Wei <yunguo.wei@windriver.com>
+---
+ runtime/defaults.vim | 44 ++++++++++++++++++--------------------------
+ runtime/evim.vim     | 16 ++++++++--------
+ 2 files changed, 26 insertions(+), 34 deletions(-)
 
 diff --git a/runtime/defaults.vim b/runtime/defaults.vim
-index 43ff1e0fbed4..ea116965c308 100644
+index 0dcb92245..43fbcec77 100644
 --- a/runtime/defaults.vim
 +++ b/runtime/defaults.vim
-@@ -3,6 +3,10 @@
+@@ -3,6 +3,14 @@
  " Maintainer:	Bram Moolenaar <Bram@vim.org>
- " Last change:	2016 Sep 02
+ " Last change:	2017 Jun 13
  "
-+" Modified:	Paul Gortmaker <paul.gortmaker@windriver.com>
-+" Reason:	better alignment with "typical" distro settings.
-+" Last change:	2017 Apr 03
++" Modified:    Paul Gortmaker <paul.gortmaker@windriver.com>
++" Reason:      better alignment with "typical" distro settings.
++" Last change: 2017 Apr 03
++"
++" Modified:     Yunguo Wei <yunguo.wei@windriver.com>
++" Reason:       Rebase Paul's patch to 8.0.0983
++" Last change:  2017 Aug 28
 +"
  " This is loaded if no vimrc file was found.
  " Except when Vim is run with "-u NONE" or "-C".
  " Individual settings can be reverted with ":set option&".
-@@ -39,12 +43,12 @@ set display=truncate
+@@ -48,12 +56,12 @@ set display=truncate
  
  " Show a few lines of context around the cursor.  Note that this makes the
  " text scroll if you mouse-click near the start or end of the window.
@@ -61,7 +71,7 @@ index 43ff1e0fbed4..ea116965c308 100644
  
  " Do not recognize octal numbers for Ctrl-A and Ctrl-X, most users find it
  " confusing.
-@@ -64,11 +68,12 @@ map Q gq
+@@ -73,11 +81,12 @@ map Q gq
  " Revert with ":iunmap <C-U>".
  inoremap <C-U> <C-G>u<C-U>
  
@@ -79,7 +89,7 @@ index 43ff1e0fbed4..ea116965c308 100644
  
  " Switch syntax highlighting on when the terminal has colors or when using the
  " GUI (which always has colors).
-@@ -90,22 +95,6 @@ if has("autocmd")
+@@ -99,23 +108,6 @@ if has("autocmd")
    " Also load indent files, to automatically do language-dependent indenting.
    " Revert with ":filetype off".
    filetype plugin indent on
@@ -90,12 +100,13 @@ index 43ff1e0fbed4..ea116965c308 100644
 -    au!
 -
 -    " When editing a file, always jump to the last known cursor position.
--    " Don't do it when the position is invalid or when inside an event handler
--    " (happens when dropping a file on gvim).
+-    " Don't do it when the position is invalid, when inside an event handler
+-    " (happens when dropping a file on gvim) and for a commit message (it's
+-    " likely a different one than last time).
 -    autocmd BufReadPost *
--      \ if line("'\"") >= 1 && line("'\"") <= line("$") |
--      \   exe "normal! g`\"" |
--      \ endif
+-      \ if line("'\"") >= 1 && line("'\"") <= line("$") && &ft !~# 'commit'
+-      \ |   exe "normal! g`\""
+-      \ | endif
 -
 -  augroup END
 -
@@ -103,7 +114,7 @@ index 43ff1e0fbed4..ea116965c308 100644
  
  " Convenient command to see the difference between the current buffer and the
 diff --git a/runtime/evim.vim b/runtime/evim.vim
-index f80b3c03b627..c9de16371457 100644
+index f80b3c03b..c9de16371 100644
 --- a/runtime/evim.vim
 +++ b/runtime/evim.vim
 @@ -2,6 +2,10 @@
@@ -139,5 +150,5 @@ index f80b3c03b627..c9de16371457 100644
  " Don't use Ex mode, use Q for formatting
  map Q gq
 -- 
-2.7.4
+2.11.0
 
