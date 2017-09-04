@@ -22,11 +22,13 @@ for container in ${container_names}; do
     # TODO: add non pflask launches ...
     if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
 	# pflask launch
+	# pflask.cmd is not signed by IMA key, so we use "/bin/bash pflask.cmd" rather than
+	# calling pflask.cmd directly to work around IMA checking
 	if [ -n "${single_launch}" ]; then
-	    ${container_dir}/${container}/pflask.cmd
+	    /bin/bash ${container_dir}/${container}/pflask.cmd
 	else
 	    rm -f /tmp/${container}-console
-	    dtach -n /tmp/${container}-console ${container_dir}/${container}/pflask.cmd
+	    dtach -n /tmp/${container}-console /bin/bash ${container_dir}/${container}/pflask.cmd
 	fi
     fi
 done
