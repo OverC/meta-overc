@@ -433,7 +433,8 @@ graft_binaries_to_essential()
 		echo "ERROR: binary ${b} not found"
 		continue
 	    fi
-	    cp ${bin} /var/lib/cube/essential/sbin/
+	    # Copy it in archive mode to include extend attributes used for IMA
+	    cp -af ${bin} /var/lib/cube/essential/sbin/
 	fi
     done
 }
@@ -753,7 +754,9 @@ case "${cmd}" in
 	    *.tar*)
 		echo "[INFO] Installing container ${container_name} to ${out_dir}/${container_name}"
 		echo "[INFO] Extracting rootfs....."
-		tar --numeric-owner -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
+		tar --numeric-owner --warning=no-timestamp \
+		    --xattrs --xattrs-include=security\\.ima \
+		    -xf ${container_source} -C ${out_dir}/${container_name}/rootfs
 		if [ $? != 0 ]; then
 		    echo "[ERROR]: rootfs file extraction failed"
 		    exit 1
@@ -1256,7 +1259,9 @@ case "${cmd}" in
 				tweak_container_fstab ${container_dir}/${container}/rootfs
 				tweak_container_devices ${container} ${container_dir}
 
-				nsenter -P -t 1 -p -n -u -m -C /opt/container/${container}/oci.cmd
+				# oci.cmd is created dynamically at install time without IMA signature.
+				# So we can't run it directly, use "/bin/bash oci.cmd" to work around IMA checking
+				nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd
 				# TODO: move this cube-cfg call into a pre-start hook, same with the
 				#       delete of the key
 				machine=$(cube-cfg id)
