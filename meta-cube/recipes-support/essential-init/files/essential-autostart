@@ -23,10 +23,10 @@ for container in ${container_names}; do
     if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
 	# pflask launch
 	if [ -n "${single_launch}" ]; then
-	    ${container_dir}/${container}/pflask.cmd
+	    /bin/sh ${container_dir}/${container}/pflask.cmd
 	else
 	    rm -f /tmp/${container}-console
-	    dtach -n /tmp/${container}-console ${container_dir}/${container}/pflask.cmd
+	    dtach -n /tmp/${container}-console /bin/sh ${container_dir}/${container}/pflask.cmd
 	fi
     fi
 done
