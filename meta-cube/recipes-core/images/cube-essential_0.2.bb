@@ -32,6 +32,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  netns \
                   jq \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
+		  kernel-image \
                  "
 
 # temp. rpm bug workaround
