@@ -980,7 +980,7 @@ case "${cmd}" in
 	    cmd_2="iptables -A OUTPUT -t nat -p tcp --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
 	else
 	    cmd_1="iptables -A PREROUTING -t nat -i \${device} -p tcp ${source_args} --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
-	    cmd_2="iptables -A FORWARD -p tcp -d \${${container_b}_ip}  ${source_args} --dport ${container_b_port} -j ACCEPT"
+	    cmd_2="iptables -A FORWARD -p tcp -d \${${container_b}_ip}  ${source_args} --dport ${container_b_port} -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT"
 	fi
 
 	if [ "${op}" == "+" ]; then

@@ -1160,7 +1160,8 @@ case "${cmd}" in
 		    fi
 		    if [ $? -ne 0 ]; then
 			if [ -n "${verbose}" ]; then
-			    echo "INFO: nsenter -t ${spid} -n --preserve-credentials \"$cmd\""
+			    echo -n "INFO:"
+			    eval echo cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
 			fi
 			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
 		    fi
