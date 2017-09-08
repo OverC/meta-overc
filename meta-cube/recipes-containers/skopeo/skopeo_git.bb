@@ -36,6 +36,7 @@ DEPENDS = "\
            gpgme \
            multipath-tools \
            btrfs-tools \
+           glib-2.0 \
           "
 
 inherit go
@@ -47,12 +48,13 @@ RDEPENDS_${PN} = "gpgme \
                  "
 
 SRC_URI = "git://github.com/projectatomic/skopeo"
-SRCREV = "f89bd82dcd05a8e09b770bac00d5731c33db5cb1"
-PV = "v0.1.19-dev+git${SRCPV}"
+SRCREV = "2ada6b20a2952765bf6f387b3646adb38c57c3db"
+PV = "v0.1.23-dev+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
 inherit goarch
+inherit pkgconfig
 
 # This disables seccomp and apparmor, which are on by default in the
 # go package. 
