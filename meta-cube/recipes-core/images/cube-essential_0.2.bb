@@ -73,6 +73,7 @@ read_only_essential () {
         mv ${IMAGE_ROOTFS}/etc/dnsmasq.conf ${IMAGE_ROOTFS}/etc/dnsmasq.conf0
         ln -s ../run/systemd/resolve/dnsmasq.conf ${IMAGE_ROOTFS}/etc/dnsmasq.conf
     fi
+    rm -f ${IMAGE_ROOTFS}/etc/resolv.conf
     ln -s ../run/systemd/resolve/resolv.conf ${IMAGE_ROOTFS}/etc/resolv.conf
     if [ -e ${IMAGE_ROOTFS}/etc/system-id ]; then
         rm ${IMAGE_ROOTFS}/etc/system-id -f
