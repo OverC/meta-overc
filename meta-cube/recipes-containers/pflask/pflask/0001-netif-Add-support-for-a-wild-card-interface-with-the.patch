@@ -1,0 +1,56 @@
+From fc9ee6f6a65f6b3970268a068304798b50ce90ee Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Fri, 8 Sep 2017 14:34:23 -0700
+Subject: [PATCH] netif: Add support for a wild card interface with the +
+ character
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/netif.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/src/netif.c b/src/netif.c
+index ed74644..c8c6fd2 100644
+--- a/src/netif.c
++++ b/src/netif.c
+@@ -32,6 +32,7 @@
+ #include <string.h>
+ 
+ #include <net/if.h>
++#include <ifaddrs.h>
+ 
+ #include <linux/rtnetlink.h>
+ #include <linux/veth.h>
+@@ -81,7 +82,28 @@ void netif_add_from_spec(struct netif **ifs, const char *spec) {
+ 	size_t c = split_str(tmp, &opts, ":");
+ 	fail_if(!c, "Invalid netif spec '%s': not enough args", spec);
+ 
+-	if (if_nametoindex(opts[0])) {
++	if (opts[0][strlen(opts[0]) - 1] == '+') {
++		struct ifaddrs *ifaddr, *ifa;
++		int n;
++
++		fail_if(c < 2, "Invalid netif spec '%s': not enough args",spec);
++
++		if (getifaddrs(&ifaddr) == -1) {
++			fail_printf("Get network interfaces failed");
++		}
++
++		for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
++			if (!ifa->ifa_addr)
++				continue;
++			if (ifa->ifa_addr->sa_family != AF_PACKET)
++				continue;
++			if (!strncmp(opts[0], ifa->ifa_name, strlen(opts[0])-1)) {
++				netif_add(ifs, MOVE, ifa->ifa_name, ifa->ifa_name);
++			}
++		}
++		freeifaddrs(ifaddr); /* free the dynamic memory */
++		ifaddr = NULL;      /* prevent use after free */
++    } else if (if_nametoindex(opts[0])) {
+ 		fail_if(c < 2, "Invalid netif spec '%s': not enough args",spec);
+ 
+ 		netif_add(ifs, MOVE, opts[0], opts[1]);
+-- 
+2.11.0
+

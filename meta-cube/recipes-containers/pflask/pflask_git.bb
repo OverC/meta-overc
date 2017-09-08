@@ -15,7 +15,8 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
            file://0003-Allow-changing-of-the-machine-name-on-create.patch \
            file://0004-Add-ability-to-launch-a-CONSOLE_CMD-after-the-server.patch \
            file://0005-Allow-detached-mode-to-start-from-systemd.patch \
-           file://0006-Fix-segementation-fault-if-TERM-variable-is-not-set.patch"
+           file://0006-Fix-segementation-fault-if-TERM-variable-is-not-set.patch \
+           file://0001-netif-Add-support-for-a-wild-card-interface-with-the.patch"
 
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
 

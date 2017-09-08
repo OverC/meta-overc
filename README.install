@@ -176,7 +176,10 @@ NOTES:
     variables:
 
        NETWORK_DEVICE="enp0s3"
-       NETWORK_DEVICE_CLASSES="en*"
+
+          or use wild cards
+
+       NETWORK_DEVICE="en+ wl+ eth+"
 
    And substitute the device that applies to your platform
      

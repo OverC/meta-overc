@@ -94,7 +94,6 @@ HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:console:v
                       ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:vty=4"
 
 NETWORK_DEVICE="enp0s3"
-NETWORK_DEVICE_CLASSES="en*"
 
  # create the live image
  % cd tmp/deploy/images/genericx86-64
