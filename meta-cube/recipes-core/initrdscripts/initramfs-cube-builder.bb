@@ -7,6 +7,9 @@ PR = "r9"
 
 RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
 
+do_configure() {
+}
+
 do_install() {
         install -m 0755 ${WORKDIR}/init-server.sh ${D}/init
 
