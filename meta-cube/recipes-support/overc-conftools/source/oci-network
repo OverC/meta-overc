@@ -101,7 +101,21 @@ if [ "${action}" = "up" ]; then
     if [ -f ".cube.device.network" ]; then
 	# any non virtual ethernet devices ?
 	netdevs=$(cat .cube.device.network)
+	# Expand any network+ args
+	netdevsexp=""
 	for n in ${netdevs}; do
+		if [ "${n}" = "${n/+/}" ] ; then
+			netdevsexp="$n "
+		else
+			device=$(echo ${n} | cut -f1 -d+)
+			for nd in `ip -o link  |awk -F: '{print $2}'`; do
+				if [ "$nd" != "${nd#$device}" ] ; then
+					netdevsexp="$nd:$nd "
+				fi
+			done
+		fi
+	done
+	for n in ${netdevsexp}; do
 	    echo ${n} | grep -q veth
 	    if [ $? -ne 0 ]; then
 		# we have a real device
