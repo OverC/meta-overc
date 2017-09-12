@@ -3,7 +3,10 @@ DESCRIPTION = "Wiggle is a program for applying patches that patch cannot apply 
 SECTION = "console/utils"
 PR = "r1"
 
-SRC_URI = "http://neil.brown.name/wiggle/wiggle-${PV}.tar.gz"
+SRC_URI = "git://github.com/neilbrown/wiggle.git"
+SRCREV = "eac35c077388a3dcbbe4ca033c6a43ec6a4fe059"
+
+S = "${WORKDIR}/git"
 
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
