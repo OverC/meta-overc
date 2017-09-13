@@ -1,0 +1,99 @@
+From fd6324f800d93fe703325f6fe90d11b07d3c9074 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Miloslav=20Trma=C4=8D?= <mitr@redhat.com>
+Date: Wed, 13 Sep 2017 17:51:48 +0200
+Subject: [PATCH] Vendor after merging mtrmac/image:manifest-list-hotfix
+
+---
+ .../containers/image/manifest/manifest.go          |  2 +-
+ .../containers/image/ostree/ostree_dest.go         |  2 +-
+ .../containers/image/ostree/ostree_transport.go    | 23 +++++++---------------
+ vendor/github.com/containers/image/types/types.go  |  2 ++
+ 4 files changed, 11 insertions(+), 18 deletions(-)
+
+diff --git a/vendor/github.com/containers/image/manifest/manifest.go b/vendor/github.com/containers/image/manifest/manifest.go
+index 605bab1db786..e329ee576c2e 100644
+--- a/vendor/github.com/containers/image/manifest/manifest.go
++++ b/vendor/github.com/containers/image/manifest/manifest.go
+@@ -35,7 +35,7 @@ var DefaultRequestedManifestMIMETypes = []string{
+ 	DockerV2Schema2MediaType,
+ 	DockerV2Schema1SignedMediaType,
+ 	DockerV2Schema1MediaType,
+-	DockerV2ListMediaType,
++	// DockerV2ListMediaType, // FIXME: Restore this ASAP
+ }
+ 
+ // GuessMIMEType guesses MIME type of a manifest and returns it _if it is recognized_, or "" if unknown or unrecognized.
+diff --git a/vendor/github.com/containers/image/ostree/ostree_dest.go b/vendor/github.com/containers/image/ostree/ostree_dest.go
+index f03ef65a5a90..885297bdf36a 100644
+--- a/vendor/github.com/containers/image/ostree/ostree_dest.go
++++ b/vendor/github.com/containers/image/ostree/ostree_dest.go
+@@ -153,7 +153,7 @@ func fixFiles(dir string, usermode bool) error {
+ 			if err != nil {
+ 				return err
+ 			}
+-		} else if usermode && (info.Mode().IsRegular() || (info.Mode()&os.ModeSymlink) != 0) {
++		} else if usermode && (info.Mode().IsRegular()) {
+ 			if err := os.Chmod(fullpath, info.Mode()|0600); err != nil {
+ 				return err
+ 			}
+diff --git a/vendor/github.com/containers/image/ostree/ostree_transport.go b/vendor/github.com/containers/image/ostree/ostree_transport.go
+index 4bc4bd13e4d6..0de74a71d9a3 100644
+--- a/vendor/github.com/containers/image/ostree/ostree_transport.go
++++ b/vendor/github.com/containers/image/ostree/ostree_transport.go
+@@ -84,24 +84,15 @@ func NewReference(image string, repo string) (types.ImageReference, error) {
+ 	// image is not _really_ in a containers/image/docker/reference format;
+ 	// as far as the libOSTree ociimage/* namespace is concerned, it is more or
+ 	// less an arbitrary string with an implied tag.
+-	// We use the reference.* parsers basically for the default tag name in
+-	// reference.TagNameOnly, and incidentally for some character set and length
+-	// restrictions.
+-	var ostreeImage reference.Named
+-	s := strings.SplitN(image, ":", 2)
+-
+-	named, err := reference.WithName(s[0])
++	// Parse the image using reference.ParseNormalizedNamed so that we can
++	// check whether the images has a tag specified and we can add ":latest" if needed
++	ostreeImage, err := reference.ParseNormalizedNamed(image)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+ 
+-	if len(s) == 1 {
+-		ostreeImage = reference.TagNameOnly(named)
+-	} else {
+-		ostreeImage, err = reference.WithTag(named, s[1])
+-		if err != nil {
+-			return nil, err
+-		}
++	if reference.IsNameOnly(ostreeImage) {
++		image = image + ":latest"
+ 	}
+ 
+ 	resolved, err := explicitfilepath.ResolvePathToFullyExplicit(repo)
+@@ -123,8 +114,8 @@ func NewReference(image string, repo string) (types.ImageReference, error) {
+ 	}
+ 
+ 	return ostreeReference{
+-		image:      ostreeImage.String(),
+-		branchName: encodeOStreeRef(ostreeImage.String()),
++		image:      image,
++		branchName: encodeOStreeRef(image),
+ 		repo:       resolved,
+ 	}, nil
+ }
+diff --git a/vendor/github.com/containers/image/types/types.go b/vendor/github.com/containers/image/types/types.go
+index a7cf49c008b9..a042410667b8 100644
+--- a/vendor/github.com/containers/image/types/types.go
++++ b/vendor/github.com/containers/image/types/types.go
+@@ -302,6 +302,8 @@ type SystemContext struct {
+ 	SignaturePolicyPath string
+ 	// If not "", overrides the system's default path for registries.d (Docker signature storage configuration)
+ 	RegistriesDirPath string
++	// Path to the system-wide registries configuration file
++	SystemRegistriesConfPath string
+ 
+ 	// === docker.Transport overrides ===
+ 	// If not "", a directory containing a CA certificate (ending with ".crt"),
+-- 
+2.4.0.53.g8440f74
+

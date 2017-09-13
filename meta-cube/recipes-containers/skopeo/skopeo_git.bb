@@ -37,6 +37,7 @@ DEPENDS = "\
            multipath-tools \
            btrfs-tools \
            glib-2.0 \
+           ostree \
           "
 
 inherit go
@@ -48,8 +49,11 @@ RDEPENDS_${PN} = "gpgme \
                  "
 
 SRC_URI = "git://github.com/projectatomic/skopeo"
-SRCREV = "2ada6b20a2952765bf6f387b3646adb38c57c3db"
-PV = "v0.1.23-dev+git${SRCPV}"
+# Drop this, when merged to skopeo
+SRC_URI += "file://0001-Vendor-after-merging-mtrmac-image-manifest-list-hotf.patch"
+
+SRCREV = "b548b5f96f8c0a3911f26f94c85115268ec9e417"
+PV = "v0.1.24-dev+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
