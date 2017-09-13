@@ -773,9 +773,11 @@ case "${cmd}" in
 		# TODO: make the tls setting an option
 		flags="--dest-tls-verify=false --src-tls-verify=false"
 		if [ -n "${verbose}" ]; then
-		    echo "skopeo copy ${flags} ${container_source} oci:${out_dir}/${container_name}/docker"
+		    # TODO: vary the tag
+		    echo "skopeo copy ${flags} ${container_source}:latest oci:${out_dir}/${container_name}/docker:latest"
 		fi
-		skopeo copy ${flags} ${container_source} oci:${out_dir}/${container_name}/docker 2> /dev/null
+		# TODO: vary the tag
+		skopeo copy ${flags} ${container_source}:latest oci:${out_dir}/${container_name}/docker:latest 2> /dev/null
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: docker container ${container_source} not found, check input and try again"
 		    exit 1
