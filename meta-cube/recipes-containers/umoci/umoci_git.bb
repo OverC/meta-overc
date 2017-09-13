@@ -12,6 +12,7 @@ SRC_URI = "git://github.com/openSUSE/umoci;branch=master;name=umoci;destsuffix=g
 
 PV = "v0.1.0-dev+git${SRCPV}"
 S = "${WORKDIR}/git/src/github.com/openSUSE/umoci"
+GO_IMPORT = "github.com/openSUSE/umoci"
 
 inherit goarch
 inherit go
@@ -31,6 +32,7 @@ do_compile() {
 	export LDFLAGS=""
 	export CGO_CFLAGS="${BUILDSDK_CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 	export CGO_LDFLAGS="${BUILDSDK_LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
+	cd ${S}
 
 	oe_runmake umoci
 }

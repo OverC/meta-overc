@@ -1,7 +1,7 @@
 HOMEPAGE = "https://github.com/projectatomic/skopeo"
 SUMMARY = "Work with remote images registries - retrieving information, images, signing content"
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=7e611105d3e369954840a6668c438584"
+LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=7e611105d3e369954840a6668c438584"
 
 DEPENDS = "\
            go-urfave \
@@ -49,6 +49,7 @@ RDEPENDS_${PN} = "gpgme \
 SRC_URI = "git://github.com/projectatomic/skopeo"
 SRCREV = "f89bd82dcd05a8e09b770bac00d5731c33db5cb1"
 PV = "v0.1.19-dev+git${SRCPV}"
+GO_IMPORT = "import"
 
 S = "${WORKDIR}/git"
 
@@ -68,11 +69,11 @@ do_compile() {
 	#
 	# We also need to link in the ipallocator directory as that is not under
 	# a src directory.
-	ln -sfn . "${S}/vendor/src"
-	mkdir -p "${S}/vendor/src/github.com/projectatomic/skopeo"
-	ln -sfn "${S}/skopeo" "${S}/vendor/src/github.com/projectatomic/skopeo"
-	ln -sfn "${S}/version" "${S}/vendor/src/github.com/projectatomic/skopeo/version"
-	export GOPATH="${S}/vendor"
+	ln -sfn . "${S}/src/import/vendor/src"
+	mkdir -p "${S}/src/import/vendor/src/github.com/projectatomic/skopeo"
+	ln -sfn "${S}/src/import/skopeo" "${S}/src/import/vendor/src/github.com/projectatomic/skopeo"
+	ln -sfn "${S}/src/import/version" "${S}/src/import/vendor/src/github.com/projectatomic/skopeo/version"
+	export GOPATH="${S}/src/import/vendor"
 
 	# Pass the needed cflags/ldflags so that cgo
 	# can find the needed headers files and libraries
@@ -81,6 +82,7 @@ do_compile() {
 	export LDFLAGS=""
 	export CGO_CFLAGS="${BUILDSDK_CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 	export CGO_LDFLAGS="${BUILDSDK_LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
+	cd ${S}/src/import
 
 	oe_runmake binary-local
 }
@@ -89,8 +91,8 @@ do_install() {
 	install -d ${D}/${sbindir}
 	install -d ${D}/${sysconfdir}/containers
 
-	install ${S}/skopeo ${D}/${sbindir}/
-	install ${S}/default-policy.json ${D}/${sysconfdir}/containers/policy.json
+	install ${S}/src/import/skopeo ${D}/${sbindir}/
+	install ${S}/src/import/default-policy.json ${D}/${sysconfdir}/containers/policy.json
 }
 
 INSANE_SKIP_${PN} += "ldflags"
