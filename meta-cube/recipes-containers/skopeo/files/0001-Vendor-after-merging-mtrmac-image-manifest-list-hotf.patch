@@ -7,13 +7,13 @@ Subject: [PATCH] Vendor after merging mtrmac/image:manifest-list-hotfix
  .../containers/image/manifest/manifest.go          |  2 +-
  .../containers/image/ostree/ostree_dest.go         |  2 +-
  .../containers/image/ostree/ostree_transport.go    | 23 +++++++---------------
- vendor/github.com/containers/image/types/types.go  |  2 ++
+ src/import/vendor/github.com/containers/image/types/types.go  |  2 ++
  4 files changed, 11 insertions(+), 18 deletions(-)
 
-diff --git a/vendor/github.com/containers/image/manifest/manifest.go b/vendor/github.com/containers/image/manifest/manifest.go
+diff --git a/src/import/vendor/github.com/containers/image/manifest/manifest.go b/src/import/vendor/github.com/containers/image/manifest/manifest.go
 index 605bab1db786..e329ee576c2e 100644
---- a/vendor/github.com/containers/image/manifest/manifest.go
-+++ b/vendor/github.com/containers/image/manifest/manifest.go
+--- a/src/import/vendor/github.com/containers/image/manifest/manifest.go
++++ b/src/import/vendor/github.com/containers/image/manifest/manifest.go
 @@ -35,7 +35,7 @@ var DefaultRequestedManifestMIMETypes = []string{
  	DockerV2Schema2MediaType,
  	DockerV2Schema1SignedMediaType,
@@ -23,10 +23,10 @@ index 605bab1db786..e329ee576c2e 100644
  }
  
  // GuessMIMEType guesses MIME type of a manifest and returns it _if it is recognized_, or "" if unknown or unrecognized.
-diff --git a/vendor/github.com/containers/image/ostree/ostree_dest.go b/vendor/github.com/containers/image/ostree/ostree_dest.go
+diff --git a/src/import/vendor/github.com/containers/image/ostree/ostree_dest.go b/src/import/vendor/github.com/containers/image/ostree/ostree_dest.go
 index f03ef65a5a90..885297bdf36a 100644
---- a/vendor/github.com/containers/image/ostree/ostree_dest.go
-+++ b/vendor/github.com/containers/image/ostree/ostree_dest.go
+--- a/src/import/vendor/github.com/containers/image/ostree/ostree_dest.go
++++ b/src/import/vendor/github.com/containers/image/ostree/ostree_dest.go
 @@ -153,7 +153,7 @@ func fixFiles(dir string, usermode bool) error {
  			if err != nil {
  				return err
@@ -36,10 +36,10 @@ index f03ef65a5a90..885297bdf36a 100644
  			if err := os.Chmod(fullpath, info.Mode()|0600); err != nil {
  				return err
  			}
-diff --git a/vendor/github.com/containers/image/ostree/ostree_transport.go b/vendor/github.com/containers/image/ostree/ostree_transport.go
+diff --git a/src/import/vendor/github.com/containers/image/ostree/ostree_transport.go b/src/import/vendor/github.com/containers/image/ostree/ostree_transport.go
 index 4bc4bd13e4d6..0de74a71d9a3 100644
---- a/vendor/github.com/containers/image/ostree/ostree_transport.go
-+++ b/vendor/github.com/containers/image/ostree/ostree_transport.go
+--- a/src/import/vendor/github.com/containers/image/ostree/ostree_transport.go
++++ b/src/import/vendor/github.com/containers/image/ostree/ostree_transport.go
 @@ -84,24 +84,15 @@ func NewReference(image string, repo string) (types.ImageReference, error) {
  	// image is not _really_ in a containers/image/docker/reference format;
  	// as far as the libOSTree ociimage/* namespace is concerned, it is more or
@@ -81,10 +81,10 @@ index 4bc4bd13e4d6..0de74a71d9a3 100644
  		repo:       resolved,
  	}, nil
  }
-diff --git a/vendor/github.com/containers/image/types/types.go b/vendor/github.com/containers/image/types/types.go
+diff --git a/src/import/vendor/github.com/containers/image/types/types.go b/src/import/vendor/github.com/containers/image/types/types.go
 index a7cf49c008b9..a042410667b8 100644
---- a/vendor/github.com/containers/image/types/types.go
-+++ b/vendor/github.com/containers/image/types/types.go
+--- a/src/import/vendor/github.com/containers/image/types/types.go
++++ b/src/import/vendor/github.com/containers/image/types/types.go
 @@ -302,6 +302,8 @@ type SystemContext struct {
  	SignaturePolicyPath string
  	// If not "", overrides the system's default path for registries.d (Docker signature storage configuration)

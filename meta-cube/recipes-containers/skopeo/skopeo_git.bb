@@ -101,3 +101,5 @@ do_install() {
 }
 
 INSANE_SKIP_${PN} += "ldflags"
+
+deltask compile_ptest_base
