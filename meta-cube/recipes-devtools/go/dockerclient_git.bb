@@ -29,3 +29,5 @@ dockerclient_sysroot_preprocess () {
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
 RDEPENDS_${PN} = "bash"
+
+deltask compile_ptest_base
