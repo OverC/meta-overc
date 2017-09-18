@@ -121,7 +121,18 @@ if [ "${action}" = "up" ]; then
 		# we have a real device
 		device=$(echo ${n} | cut -f1 -d:)
 		# push the device into the namespace
-		ip link set ${device} netns ${pid}
+		# If we are asked to move a wireless interface, 
+		# then we must actually move its phyN device using
+		# iw command.
+		phyname=""
+		if [ -f "/sys/class/net/$device/phy80211/name" ]; then
+			phyname=`cat /sys/class/net/$device/phy80211/name`
+		fi
+		if [ -n "$phyname" ]; then
+			iw phy $phyname set netns ${pid}
+		else
+			ip link set ${device} netns ${pid}
+		fi
 		nsenter -t ${pid} -n --preserve-credentials ip link set dev ${device} up
 
 		# setup nat and forwarding. this is what systemd-networkd does as well
