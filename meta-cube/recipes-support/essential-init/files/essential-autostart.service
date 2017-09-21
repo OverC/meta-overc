@@ -1,7 +1,7 @@
 [Unit]
 Description=Essential Autoboot Code
 After=syslog.target network.target
-After=dbus.service
+After=dbus.service overc-conftools.service
 
 [Service]
 Type=forking
