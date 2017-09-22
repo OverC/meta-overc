@@ -103,7 +103,7 @@ systemd_openvswitch_network () {
         install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/network
         cat << EOF > ${IMAGE_ROOTFS}${sysconfdir}/systemd/network/20-wired.network
 [Match]
-Name=eth*
+Name=en*
 
 [Network]
 DHCP=ipv4
