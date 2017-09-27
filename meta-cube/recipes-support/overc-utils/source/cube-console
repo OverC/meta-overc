@@ -102,6 +102,10 @@ function do_console()
 	    if [ $? -eq 0 ]; then
 		cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
 	    fi
+	    echo ${mgr} | grep -q pflask
+	    if [ $? -eq 0 ]; then
+		cmd="machinectl login ${target}"
+	    fi
 	fi
 	local nsargs=""
 	if [ -e /proc/1/ns/cgroup ] ; then
