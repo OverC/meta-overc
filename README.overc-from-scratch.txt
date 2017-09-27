@@ -105,7 +105,7 @@ run it!: qemu
  % sudo qemu-system-x86_64 -enable-kvm -m 2048 \
         -curses -vnc :3 -serial mon:stdio \
         -boot a -drive file=/tmp/overc-test.img,media=disk,if=virtio,index=0 \
-        -device virtio-net-pci,id=net0 \
+        -device virtio-net-pci,id=net0,netdev=hostnet0 \
         -netdev user,id=hostnet0
 
  # you should see the cube-dom0 login prompt.
