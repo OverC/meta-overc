@@ -1,0 +1,10 @@
+#!/bin/bash
+
+container_dir="/opt/container"
+
+echo "[INFO] auto stopping containers ..."
+for pid_file in $(ls $container_dir/*/.cube.pid 2>/dev/null); do
+	container_pid=$(cat $pid_file)
+	# The kill command can fail if the containers already exit.
+	kill -9 $container_pid 2>/dev/null || true
+done
