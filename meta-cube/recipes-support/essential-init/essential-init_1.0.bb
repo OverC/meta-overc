@@ -7,10 +7,12 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425
 RDEPENDS_${PN} = "util-linux bash pflask"
 
 SRC_URI = "file://essential-autostart \
+           file://essential-autostop \
            file://essential-autostart.service \
 "
 
 SRC_FILES_LIST="essential-autostart \
+                essential-autostop \
 "
 
 inherit systemd

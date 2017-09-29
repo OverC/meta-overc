@@ -11,4 +11,12 @@ else
 	fi
 fi
 
+# Stop the running containers before shutting down
+CUBE_CTL_CMD=$(which cube-ctl 2>/dev/null)
+if [ -n "$CUBE_CTL_CMD" ]; then
+	for container in $($CUBE_CTL_CMD status | awk '{ if($3 == "running") {print $1} }' | sort); do
+		$CUBE_CTL_CMD stop $container
+	done
+fi
+
 timeout 5s bash -c "cube-cmd ${command}"
