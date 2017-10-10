@@ -24,11 +24,10 @@ OPTIONS=
 #	If you want to kill containers fast, use -k
 STOPOPTS="-a -A -s"
 
-if [ -d "$localstatedir"/lock/subsys ]
-then
-	lockdir="$localstatedir"/lock/subsys
+if [ -d "$localstatedir"/lock/subsys ]; then
+    lockdir="$localstatedir"/lock/subsys
 else
-	lockdir="$localstatedir"/lock
+    lockdir="$localstatedir"/lock
 fi
 
 # Source any configurable options
@@ -40,9 +39,9 @@ case "$1" in
         [ "x$DOM0_AUTO" = "xtrue" ] || { exit 0; }
 
         if [ -f "$lockdir"/dom0 ]; then
-	    echo "ERROR: dom0 start is locked, exiting"
-	    exit 0;
-	fi
+            echo "ERROR: dom0 start is locked, exiting"
+            exit 0
+        fi
 
         # cgmanager -m name=systemd --daemon
 
@@ -59,8 +58,15 @@ case "$1" in
         # delaying the system shutdown / reboot as much as we can since it's not
         # parallelized...  Even 5 second timout may be too long.
 
-	## TODO: implement stop for a group
-        #"$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
+        ## TODO: implement stop for a group
+        # "$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
+        # As a temporary implementation, stop all running containers except
+        # dom0 itself
+        for cube in $(/usr/sbin/cube-ctl list \
+            awk '{ if(($3 == "running") && ($1 != "dom0")) print $1 }'); do
+            /usr/sbin/cube-ctl stop $cube
+        done
+
         rm -f "$lockdir"/dom0
     ;;
 
