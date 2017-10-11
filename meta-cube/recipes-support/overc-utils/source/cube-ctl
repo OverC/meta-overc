@@ -1541,6 +1541,7 @@ IFS=$OLDIFS
 	    cube-cmd machinectl stop ${container_name}
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
+	    build_container_lists
 	    echo ${open_container_running} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
 		echo "[INFO] stopping container ${container_name}"
