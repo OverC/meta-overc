@@ -18,6 +18,7 @@ cat << EOF
             [--ctrl-ipc  <path to control ipc channel>]
             [--local-ipc <path to client ipc response dir>]
             [--loop]
+            [--notrap]
             [--buffered] [--unbuffered]
 	    [--auth <id> <hash>]
             [--cap <capability manipulation>]
@@ -29,6 +30,10 @@ cat << EOF
     ${0##*/} --clean
 
 	kill any hung/executing command channels and exit.
+
+    ${0##*/} --trap
+
+	Trap SIGINT/SIGTERM to trigger the exit of all nanocat/control connections
 
     ${0##*/} --server [/path/to/control.ipc]
 
@@ -155,6 +160,14 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--clean)
 	    clean=t
+	    ;;
+	--notrap)
+	    notrap=t
+	    trap=
+	    ;;
+	--trap)
+	    trap=t
+	    notrap=
 	    ;;
 	--timeout)
 	    timeout=$2
@@ -917,7 +930,9 @@ server_check_auth() {
 # This starts the control channel, waits for requests on it and
 # then spawns handler ipc channels.
 if [ -n "${server}" ]; then
-    trap "clean" SIGINT SIGTERM
+    if [ -n "${trap}" ]; then
+	trap "clean" SIGINT SIGTERM
+    fi
 
     # Set initial time of the conf file read
     ACL_LTIME=$(stat -c %Z ${CONF_FILE})
