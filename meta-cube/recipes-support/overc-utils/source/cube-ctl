@@ -884,12 +884,14 @@ case "${cmd}" in
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/all:/var/lib/cube/common
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
 
+		${SBINDIR}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-register-machine
 		${SBINDIR}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-device up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
 		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-register-machine
 
 		# this will trigger the disabling of systemd udev services, and allow us to control
 		# the devices visible to the container
