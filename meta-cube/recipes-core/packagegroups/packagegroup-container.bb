@@ -32,6 +32,7 @@ RDEPENDS_packagegroup-docker = " \
 RDEPENDS_packagegroup-oci = " \
     virtual/runc \
     oci-systemd-hook \
+    oci-register-machine \
     oci-runtime-tools \
     oci-image-tools \
     netns \
