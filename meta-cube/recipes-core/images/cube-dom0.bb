@@ -19,12 +19,12 @@ NO_RECOMMENDATIONS = "1"
 
 PV = "0.5"
 
+FEATURE_PACKAGES_package-management_append = " cube-update"
+
 DOM0_MAIN_PKGS = " packagegroup-core-boot \
                    packagegroup-dom0 \
                    packagegroup-util-linux \
                    packagegroup-core-ssh-openssh \
-                   overc-system-agent \
-                   cube-update \
                    dom0-init \
                  "
 
