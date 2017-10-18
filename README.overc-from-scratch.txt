@@ -44,7 +44,6 @@ layers:
  % bitbake-layers add-layer ../meta-openembedded/meta-xfce
  % bitbake-layers add-layer ../meta-openembedded/meta-multimedia/
  % bitbake-layers add-layer ../meta-openembedded/meta-perl
- % bitbake-layers add-layer ../meta-openembedded/meta-ruby/
  % bitbake-layers add-layer ../meta-overc/
  % bitbake-layers add-layer ../meta-overc/meta-cube/
  % bitbake-layers add-layer ../meta-virtualization/
@@ -63,6 +62,9 @@ local.conf:
  IMAGE_FSTYPES_append = " tar.bz2"
  OVERC_ESSENTIAL_MODE = "read-write"
  PREFERRED_PROVIDER_virtual/kernel = "linux-yocto"
+
+ # if you are building and booting on an non-efi machine (i.e. like qemu)
+ MACHINE_FEATURES_remove = "efi"
 
 build
 -----
