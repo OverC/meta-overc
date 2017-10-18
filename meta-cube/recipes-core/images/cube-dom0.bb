@@ -36,8 +36,6 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   overc-device-utils \
                   ${CUBE_DOM0_EXTRA_INSTALL} \
                  "
-# temp. rpm bug workaround
-IMAGE_INSTALL += " dhcp-libs"
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 

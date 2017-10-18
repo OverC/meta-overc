@@ -34,9 +34,6 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  kernel-image \
                  "
 
-# temp. rpm bug workaround
-IMAGE_INSTALL += " dhcp-libs"
-
 IMAGE_FEATURES += "package-management"
 
 IMAGE_FSTYPES ?= "tar.bz2"

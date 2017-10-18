@@ -35,9 +35,6 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         ${CUBE_DESKTOP_EXTRA_INSTALL} \
                        "
 
-# temp. rpm bug workaround
-IMAGE_INSTALL += " dhcp-libs"
-
 XSERVER_append = "xserver-xorg \
                   xserver-xorg-extension-dri \
                   xserver-xorg-extension-dri2 \
