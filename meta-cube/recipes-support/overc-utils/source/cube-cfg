@@ -803,8 +803,10 @@ case "${cmd}" in
 	clean_config_artifacts
 	;;
     show)
+	container_name=${cmd_options_non_dashed[1]}
 	if [ -z "${container_name}" ]; then
 	    echo "[ERROR]: a container name must be provided"
+	    exit 1
 	fi
 	show_config_artifacts ${container_name}
 	;;
