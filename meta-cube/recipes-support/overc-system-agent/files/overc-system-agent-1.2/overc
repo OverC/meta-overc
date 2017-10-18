@@ -52,58 +52,54 @@ if __name__ == '__main__':
     parser = HelpByDefaultArgumentParser(description=overc.help())
     subparser = parser.add_subparsers(help=_("commands"))
 
-    if os.path.exists("/usr/bin/smart"):
-	systemp = subparser.add_parser("system",help=_("execute OverC system commands"))
-	system_subparse = systemp.add_subparsers(help=_("system commands"))
-	s_upgradep = system_subparse.add_parser("upgrade", help=_("upgrade to the latest whole system, including host and containers"))
-	s_upgradep.set_defaults(func=overc.system_upgrade)
-	s_upgradep.add_argument('template', help="template of container")
-	s_upgradep.add_argument("-r", "--reboot", dest="reboot",
-				action="store_true",
-				help=_("if an upgrade is available, reboot after deployment is complete"))
-	s_upgradep.add_argument("-f", "--force", dest="force",
-	                        action="store_true",
-			        help=_("do system backup and upgrade even the system is up to date"))
-	s_upgradep.add_argument("-s", "--skipscan", dest="skipscan",
-				action="store_true",
-				help=_("if an upgrade involve container use overlayfs, skip duplicate file scan after deployment"))
-	s_upgradep.add_argument("-S", "--skipdel", dest="skip_del",
-				action="store_true",
-				help=_("don't delete all of the container's history snapshots before upgrading it"))
+    systemp = subparser.add_parser("system", help=_("execute OverC system commands"))
+    system_subparse = systemp.add_subparsers(help=_("system commands"))
+    s_upgradep = system_subparse.add_parser("upgrade", help=_("upgrade to the latest whole system, including host and containers"))
+    s_upgradep.set_defaults(func=overc.system_upgrade)
+    s_upgradep.add_argument('template', help="template of container")
+    s_upgradep.add_argument("-r", "--reboot", dest="reboot",
+                            action="store_true",
+                            help=_("if an upgrade is available, reboot after deployment is complete"))
+    s_upgradep.add_argument("-f", "--force", dest="force",
+                            action="store_true",
+                            help=_("do system backup and upgrade even the system is up to date"))
+    s_upgradep.add_argument("-s", "--skipscan", dest="skipscan",
+                            action="store_true",
+                            help=_("if an upgrade involve container use overlayfs, skip duplicate file scan after deployment"))
+    s_upgradep.add_argument("-S", "--skipdel", dest="skip_del",
+                            action="store_true",
+                            help=_("don't delete all of the container's history snapshots before upgrading it"))
 
-        s_roolback = system_subparse.add_parser("rollback", help=_("switch to the top of the history rollback list, including host and containers"))
-        s_roolback.set_defaults(func=overc.system_rollback)
-        s_roolback.add_argument('template', help="template of container")
+    s_roolback = system_subparse.add_parser("rollback", help=_("switch to the top of the history rollback list, including host and containers"))
+    s_roolback.set_defaults(func=overc.system_rollback)
+    s_roolback.add_argument('template', help="template of container")
 
-        s_factoryreset = system_subparse.add_parser("factory-reset", help=_("Reset your system to factory settings, including host and containers"))
-        s_factoryreset.set_defaults(func=overc.factory_reset)
+    s_factoryreset = system_subparse.add_parser("factory-reset", help=_("Reset your system to factory settings, including host and containers"))
+    s_factoryreset.set_defaults(func=overc.factory_reset)
 
-        hostp = subparser.add_parser("host",help=_("execute OverC host commands"))
-        host_subparser = hostp.add_subparsers(help=_("host commands"))
-        rollbackp = host_subparser.add_parser("rollback", help=_("switch to alternate core system at boot"))
-        rollbackp.set_defaults(func=overc.host_rollback)
-        rollbackp.add_argument("-r", "--reboot", dest="reboot",
-                               action="store_true",
-                               help=_("initiate a reboot after rollback is prepared"))
+    hostp = subparser.add_parser("host",help=_("execute OverC host commands"))
+    host_subparser = hostp.add_subparsers(help=_("host commands"))
+    rollbackp = host_subparser.add_parser("rollback", help=_("switch to alternate core system at boot"))
+    rollbackp.set_defaults(func=overc.host_rollback)
+    rollbackp.add_argument("-r", "--reboot", dest="reboot",
+                           action="store_true",
+                           help=_("initiate a reboot after rollback is prepared"))
 
-        upgradep = host_subparser.add_parser("upgrade", help=_("upgrade to the latest core system if it is available"))
-        upgradep.set_defaults(func=overc.host_upgrade)
-        upgradep.add_argument("-r", "--reboot", dest="reboot",
-                               action="store_true",
-                               help=_("if an upgrade is available, reboot after deployment is complete"))
+    upgradep = host_subparser.add_parser("upgrade", help=_("upgrade to the latest core system if it is available"))
+    upgradep.set_defaults(func=overc.host_upgrade)
+    upgradep.add_argument("-r", "--reboot", dest="reboot",
+                          action="store_true",
+                          help=_("if an upgrade is available, reboot after deployment is complete"))
 
-        upgradep.add_argument("-f", "--force", dest="force",
-                               action="store_true",
-                               help=_("do system backup and upgrade even the system is up to date"))
+    upgradep.add_argument("-f", "--force", dest="force",
+                          action="store_true",
+                          help=_("do system backup and upgrade even the system is up to date"))
 
-        updatep = host_subparser.add_parser("update", help=_("update the OverC packages database"))
-        updatep.set_defaults(func=overc.host_update)
+    updatep = host_subparser.add_parser("update", help=_("update the OverC packages database"))
+    updatep.set_defaults(func=overc.host_update)
 
-        newerp = host_subparser.add_parser("newer", help=_("shows packages that have available upgrades."))
-        newerp.set_defaults(func=overc.host_newer)
-
-
-
+    newerp = host_subparser.add_parser("newer", help=_("shows packages that have available upgrades."))
+    newerp.set_defaults(func=overc.host_newer)
 
     container = subparser.add_parser("container",help=_("execute OverC container commands"))
     container_subparser = container.add_subparsers(help=_("container commands"))
@@ -197,4 +193,3 @@ if __name__ == '__main__':
     except subprocess.CalledProcessError as e:
         sys.stderr.write("\n")
         sys.exit(e.returncode)
- 
