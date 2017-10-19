@@ -1,0 +1,51 @@
+From 1eaa44f3e4fc3917486ef4d0f3a8f1e96ca4e068 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Thu, 19 Oct 2017 14:37:22 -0400
+Subject: [PATCH] nanocat: improve raw / unbuffered mode
+
+To properly pass ctrl-c and other signals to the other end of
+a nanocat pair, we need to trap/tweak more settings in nanocat
+and put the terminal into a full raw mode while we run.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ tools/nanocat.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/tools/nanocat.c b/tools/nanocat.c
+index 490da5049b8a..747e06a50ea5 100644
+--- a/tools/nanocat.c
++++ b/tools/nanocat.c
+@@ -42,6 +42,7 @@
+ #if !defined NN_HAVE_WINDOWS
+ #include <unistd.h>
+ #endif
++#include <signal.h>
+ 
+ #include <limits.h>
+ 
+@@ -653,6 +654,12 @@ void terminal_nonbuffered()
+       that means it will return if it sees a "\n" or an EOF or an EOL */
+    newt.c_lflag &= ~(ICANON);
+ 
++   newt.c_iflag |= IGNBRK;
++   newt.c_iflag &= ~(INLCR | ICRNL | IXON | IXOFF);
++   newt.c_lflag &= ~(ICANON | ECHO | ECHOK | ECHOE | ECHONL | ISIG | IEXTEN);
++   newt.c_cc[VMIN] = 1;
++   newt.c_cc[VTIME] = 0;
++
+    /* Those new settings will be set to STDIN
+       TCSANOW tells tcsetattr to change attributes immediately. */
+    tcsetattr( STDIN_FILENO, TCSANOW, &newt);
+@@ -755,6 +762,8 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+     int exit_pending = 0;
+     int inactivity_timeout;
+ 
++    signal( SIGINT, SIG_IGN );
++
+     if ( options->stdin == NN_STDIN_UNBUFFERED ) {
+        terminal_nonbuffered();
+     }
+-- 
+2.4.0.53.g8440f74
+
