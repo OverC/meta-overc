@@ -26,7 +26,7 @@ else:
 class Overc(object):
     def __init__(self):
         if Host_update is None:
-            print "Error: Not using a supported filesystem!"
+            print("Error: Not using a supported filesystem!")
             sys.exit(1)
         self.agency = Host_update()
         self.package = Package()
@@ -35,7 +35,7 @@ class Overc(object):
         self.message = ""
         
         if not self.agency:
-            print "Error: cannot get the right backends!"
+            print("Error: cannot get the right backends!")
             sys.exit(2)
 
         self.bakup_mode = self.agency.bakup_mode
@@ -56,20 +56,20 @@ class Overc(object):
         self._system_upgrade(self.args.template, self.args.reboot, self.args.force, self.args.skipscan, self.args.skip_del)
 
     def _system_upgrade(self, template, reboot, force, skipscan, skip_del):
-	print "skipscan %d" % skipscan
+        print("skipscan %d" % skipscan)
         containers = self.container.get_container(template)
         overlay_flag = 0
-	#By now only support "Pulsar" and "overc" Linux upgrading
+        #By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
         for cn in containers:
             if self.container.is_active(cn, template):
-	        for dist in DIST.split():
-	            if dist in self.container.get_issue(cn, template).split():
-                        print "Updating container %s" % cn
+                for dist in DIST.split():
+                    if dist in self.container.get_issue(cn, template).split():
+                        print("Updating container %s" % cn)
                         self._container_upgrade(cn, template, True, False, skip_del) #by now only rpm upgrade support
                         if self.retval is not 0:
-                            print "*** Failed to upgrade container %s" % cn
-                            print "*** Abort the system upgrade action"
+                            print("*** Failed to upgrade container %s" % cn)
+                            print("*** Abort the system upgrade action")
                             sys.exit(self.retval)
                         else:
                             if self.container.is_overlay(cn) > 0:
@@ -86,7 +86,7 @@ class Overc(object):
 
         if ((rc == 1) and (reboot != 0)):
             self.message += "\nrebooting..."
-            print self.message
+            print(self.message)
             os.system('reboot')
 
     def system_rollback(self):
@@ -98,10 +98,10 @@ class Overc(object):
             if self.container.is_active(cn, self.args.template):
                 for dist in DIST.split():
                     if dist in self.container.get_issue(cn, self.args.template).split():
-                        print "Rollback container %s" % cn
+                        print("Rollback container %s" % cn)
                         self._container_rollback(cn, None, self.args.template, True)
                         if self.retval is not 0:
-                            print "*** Failed to rollback container %s" % cn
+                            print("*** Failed to rollback container %s" % cn)
                         else:
                             need_reboot=True
                         break
@@ -110,7 +110,7 @@ class Overc(object):
         self.host_rollback()
         if need_reboot:
             self.message += "\nrebooting..."
-            print self.message
+            print(self.message)
             os.system('reboot')
 
 
@@ -120,10 +120,10 @@ class Overc(object):
            self.agency.clean_essential()
            self.agency.clean_container()
            self.message += self.agency.message
-           print self.message
+           print(self.message)
         else:
             self.message += "\nrebooting..."
-            print self.message
+            print(self.message)
             os.system('reboot')
                         
     def _need_upgrade(self):
@@ -134,7 +134,7 @@ class Overc(object):
             return False
 
     def host_status(self):
-        print "host status"
+        print("host status")
 
     def host_newer(self):
         rc = self.utils._nsenter(HOSTPID,'smart newer')
@@ -148,32 +148,31 @@ class Overc(object):
 
     def host_upgrade(self):
         self._host_upgrade(self.args.reboot, self.args.force)
-        print self.message
-
+        print(self.message)
     def _host_upgrade(self, reboot, force):
         if self._need_upgrade() or force:
             self.agency.do_upgrade()
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
-	    return 0
+            return 0
 
-	if reboot:
-	    self.message += "\nrebooting..."
-	    print self.message
-	    os.system('reboot')
-	return 1
-	         
+        if reboot:
+            self.message += "\nrebooting..."
+            print(self.message)
+            os.system('reboot')
+        return 1
+
     def host_rollback(self):
         if self.bakup_mode:
             self.message = "Error: You are running in the backup mode, cannot do rollback!"
-            print self.message
+            print(self.message)
             return
 
-        print "host rollback"
+        print("host rollback")
         r = self.agency.do_rollback()
         self.message = self.agency.message
-        print self.message
+        print(self.message)
         if r:
             os.system('reboot')
         
@@ -251,9 +250,9 @@ class Overc(object):
         # Perform overlay check fist
         overlaylist = self.container.get_overlay(self.args.name)
         if len(overlaylist)>0:
-            print "Container %s has overlayed dir, including" % self.args.name
+            print("Container %s has overlayed dir, including" % self.args.name)
             print(overlaylist)
-            print "This container can only be upgraded via a system upgrade"
+            print("This container can only be upgraded via a system upgrade")
             self.retval = 0
         else:
             self._container_upgrade(self.args.name, self.args.template, self.args.rpm, self.args.image, self.args.skip_del)
@@ -271,15 +270,15 @@ class Overc(object):
     def container_overlay(self):
         # Parser commnand, create or restore
         if self.args.ollist:
-	    self._container_overlay_list(self.args.name)
+            self._container_overlay_list(self.args.name)
         elif self.args.olstop:
             self._container_overlay_stop(self.args.name, self.args.oldir)
         else :
             self._container_overlay_create(self.args.name, self.args.oldir, self.args.olsource)
     def _container_overlay_list(self, container):
-	# List overlay dir in container
-        print "overlayed directories in %s including:" % container
-        print ",".join(self.container.get_overlay(container))
+        # List overlay dir in container
+        print("overlayed directories in %s including:" % container)
+        print(",".join(self.container.get_overlay(container)))
 
     def _container_overlay_create(self, container, dirs, source):
         # Create overlay dir in container

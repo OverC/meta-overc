@@ -30,7 +30,7 @@ class Btrfs(Utils):
         self.kernel_md5 = self._compute_checksum(self.kernel)
 
         if not self.rootdev or not self.rootfs:
-            print "Error: cannot get the rootfs device!"
+            print("Error: cannot get the rootfs device!")
             sys.exit(2)
 
         self.next_rootfs = self.rootfs_dic[self.rootfs]
@@ -194,9 +194,9 @@ class Btrfs(Utils):
             ret = self._btrfs('subvolume snapshot %s/.tmp/%s %s' % (CONTAINER_MOUNT, factory_subvol, snapshot_dir))
             if ret != 0:
                 self.message += 'Cannot snapshot subvolume of %s.tmp/%s' % (CONTAINER_MOUNT, factory_subvol)
-    	        self.message += '\nto %s' % snapshot_dir
-    	        self.message += 'Factory reset aborted!'
-    	        return False 
+                    self.message += '\nto %s' % snapshot_dir
+                    self.message += 'Factory reset aborted!'
+                    return False
             
             c=subp.stdout.readline()
         

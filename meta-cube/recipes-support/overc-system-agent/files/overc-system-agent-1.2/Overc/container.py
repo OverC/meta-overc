@@ -164,7 +164,7 @@ class Container(object):
             loop = loop - 1
         
         if stdout == '':
-            print "Cannot get container %s issue string" % name
+            print("Cannot get container %s issue string" % name)
         return stdout
 
     def get_container(self, template):
@@ -190,25 +190,25 @@ class Container(object):
         retval = process.run(cmd)
         self.message = process.message
         if retval is 0:
-            print "%s ok" % fname
+            print("%s ok" % fname)
         elif not failok:
-                print "Error! %s failed" % fname
+                print("Error! %s failed" % fname)
         return retval
 
     def _overlay(self, cn, dirs, restore, sources=None):
         # Pararmeter check
         retval = 0
         if (dirs == None):
-            print "No dirs in parameter"
+            print("No dirs in parameter")
             return -1
         if (restore == False):
             if (sources == None):
-                print "No sources in parameter"
+                print("No sources in parameter")
                 return -1
             else: # Check source container name
                 for cn0 in sources.split(','):
                     if (cn0 == cn):
-                        print "Can not set same container in source list"
+                        print("Can not set same container in source list")
                         return -1
 
         # check if overlay dir exists, ex /var/lib/lxc/dom0/rootfs/usr_temp
@@ -217,12 +217,12 @@ class Container(object):
             fullpath="%s/%s/rootfs%s" % (CONTAINER_MOUNT,cn,oldir)
             if (restore == True): # Stop an overlay,
                 if (os.path.isdir(temppath) == False): #no such dir
-		    print "%s:not an overlay-ed dir in container" % (oldir)
+                    print("%s:not an overlay-ed dir in container" % (oldir))
                     return -1
             else: # Create an overlay
-	        if (os.path.isdir(temppath) == True): # already overlay dir
-		    print "%s:already an overlay-ed dir in container" % (oldir)
-	            return -1
+                if (os.path.isdir(temppath) == True): # already overlay dir
+                    print("%s:already an overlay-ed dir in container" % (oldir))
+                    return -1
         # Insert request into lxc.service
         lxcfile = '%s/overlayrestore' % (CONTAINER_MOUNT)
         lxc = open(lxcfile, 'a+')
@@ -242,18 +242,18 @@ class Container(object):
                 lxc.write(cmdline)
                 retval = 1
             else:
-                print "%s already in overlay rebuild list, ignored" % basepara
+                print("%s already in overlay rebuild list, ignored" % basepara)
         lxc.close()
         return retval
 
     def overlay_create(self, cn, dirs, source):
-	val = self._overlay(cn, dirs, False, source)
+        val = self._overlay(cn, dirs, False, source)
         if (val == -1):
             return -1
         if (val == 0):
             return 0
         if (val == 1):
-            print "Reboot required to rebuild overlay directories"
+            print("Reboot required to rebuild overlay directories")
             return 0
 
     def overlay_stop(self, cn, dirs):
@@ -264,5 +264,5 @@ class Container(object):
         if (val == 0):
             return 0
         if (val == 1):
-            print "Reboot required to rebuild overlay directories"
+            print("Reboot required to rebuild overlay directories")
             return 0

@@ -54,7 +54,7 @@ class Process(object):
         self.retval = 0
 
     def run(self, cmd):
-        print "Running: %s" % cmd
+        print("Running: %s" % cmd)
 
         child = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
