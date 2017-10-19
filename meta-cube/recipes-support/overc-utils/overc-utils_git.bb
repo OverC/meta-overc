@@ -44,6 +44,7 @@ do_install() {
 	ln -sf cube-cfg c3-cfg
 	ln -sf cube-cmd c3-cmd
 	ln -sf cube-ctl c3-ctl
+	ln -sf cube-console c3-console
     )
 
     # device manamage support

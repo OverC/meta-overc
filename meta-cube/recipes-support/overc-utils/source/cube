@@ -45,19 +45,23 @@ case ${command} in
     ctl)
 	# yank the "ctl" off
 	shift
-	cube-ctl $@
+	c3-ctl $@
 	;;
     console)
 	# yank the "console" off
 	shift
-	cube-console $@
+	c3-console $@
 	;;
     cmd)
 	shift
-	cube-cmd $@
+	c3-cmd $@
+	;;
+    cfg)
+	shift
+	c3-cfg $@
 	;;
     *)
 	# front cube-ctl by default
-	cube-ctl $@
+	c3-ctl $@
 	;;
 esac
