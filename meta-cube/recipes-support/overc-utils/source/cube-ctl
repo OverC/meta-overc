@@ -1545,10 +1545,7 @@ IFS=$OLDIFS
 	    echo ${open_container_running} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
 		echo "[INFO] stopping container ${container_name}"
-		cube-cmd ${runc_essential} kill ${container_name} KILL
-		if [ "${cmd}" == "stop" ]; then
-		    cube-cmd ${runc_essential} delete ${container_name}
-		fi
+		cube-cmd ${runc_essential} delete -f ${container_name}
 		machine=$(cube-cfg id)
 		cube-cfg set overc/$machine/oci/${container_name}/status:inactive
 	    else
