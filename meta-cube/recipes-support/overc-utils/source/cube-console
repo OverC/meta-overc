@@ -13,7 +13,7 @@ usage()
 {
 cat << EOF
 
-  cube-console [--ns] [--notraps] [-v] <console name>
+  ${0##*/} [--ns] [--notraps] [-v] <console name>
 
   console name: a valid console name.
 
@@ -44,6 +44,8 @@ if [ -z "$1" ]; then
     exit
 fi
 
+# default timeout is 1 minute
+console_timeout="60000"
 while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
@@ -53,7 +55,11 @@ while [ $# -gt 0 ]; do
 	--notraps) notraps=t
             ;;
 	--ns) namespace=t
-            ;;
+              ;;
+	--timeout)
+	    console_timeout=$2
+	    shift
+	    ;;
 	-h|--help|?)
 	    usage
 	    exit
@@ -125,7 +131,7 @@ function do_console()
     else
 	# TODO: can we just detect the streams closing now and forget about
 	#       the timeout ?
-	cube-cmd --unbuffered --timeout 9000 -- agetty -J -
+	cube-cmd --unbuffered --timeout ${console_timeout} -- agetty -J -
     fi
 }
 
