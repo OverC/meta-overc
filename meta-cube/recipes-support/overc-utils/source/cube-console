@@ -29,12 +29,12 @@ cat << EOF
   
   example:
 
-      $ cube-console list    
-      $ cube-console cube-essential
-      $ cube-console dom0
-      $ cube-console -v dom0
-      $ cube-console --notraps dom0
-      $ cube-console --ns dom0
+      $ ${0##*/} list
+      $ ${0##*/} cube-essential
+      $ ${0##*/} dom0
+      $ ${0##*/} -v dom0
+      $ ${0##*/} --notraps dom0
+      $ ${0##*/} --ns dom0
  
 EOF
 }
