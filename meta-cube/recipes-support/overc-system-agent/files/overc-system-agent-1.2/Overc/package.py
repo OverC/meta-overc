@@ -17,7 +17,7 @@ class Package(object):
         retval = process.run(cmd_s)
         self.message = process.message
         if retval is not 0:
-            print "Error!: %s" % cmd_s
+            print("Error!: %s" % cmd_s)
         return retval
 
     def _get_kernel(self, path):
