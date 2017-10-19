@@ -18,7 +18,7 @@ def json_msg(s):
 @app.route('/system/rollback')
 def system_rollback():
     overc=Overc.Overc()
-    print "System will rollback and reboot!"
+    print("System will rollback and reboot!")
     overc.system_rollback()
 
 @app.route('/system/upgrade')
@@ -36,9 +36,9 @@ def system_upgrade():
         return json_msg(usage)
 
     if reboot_s == "True":
-        print "do reboot"
+        print("do reboot")
     if force_s == "True":
-        print "force upgrade"
+        print("force upgrade")
         force=True
     overc._system_upgrade(template, reboot, force)
     return json_msg(overc.message)
@@ -59,11 +59,11 @@ def host_upgrade():
     reboot=False
     force=False
     if reboot_s == "True":
-        print "do reboot"
+        print("do reboot")
         reboot = True
     if force_s == "True":
-        print "do force to upgrade"
-	force=True
+        print("do force to upgrade")
+        force=True
 
     overc._host_upgrade(reboot, force)
     return json_msg(overc.message)
@@ -246,17 +246,17 @@ if __name__ == '__main__':
     try:
         opts, args = getopt.getopt(sys.argv[1:],"hdp::",["port="])
     except getopt.GetoptError:
-        print sys.argv[0],' [-d] [-p <port>]'
+        print(sys.argv[0], ' [-d] [-p <port>]')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print sys.argv[0],' [-d] [-p <port>]'
+            print(sys.argv[0], ' [-d] [-p <port>]')
             sys.exit()
         elif opt in ("-p", "--port"):
             try:
                 default_port = int(arg)
             except ValueError:
-                print sys.argv[0],' -p <port>'
+                print(sys.argv[0], ' -p <port>')
                 sys.exit(2)
         elif opt == '-d':
             app.debug = True
