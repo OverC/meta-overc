@@ -1,0 +1,16 @@
+---
+ rules/50-udev-default.rules.in |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/rules/50-udev-default.rules.in
++++ b/rules/50-udev-default.rules.in
+@@ -53,7 +53,8 @@ KERNEL=="lp[0-9]*", GROUP="lp"
+ KERNEL=="irlpt[0-9]*", GROUP="lp"
+ SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:0701??:*", GROUP="lp"
+ 
+-SUBSYSTEM=="block", GROUP="disk"
++# if /dev is not devtmpfs, work around it by creating the device that is required for hotplug
++SUBSYSTEM=="block", GROUP="disk", IMPORT{program}="/bin/sh -c 'if [ ! -e %N ] ; then /bin/mknod %N b %M %m; fi'"
+ SUBSYSTEM=="block", KERNEL=="sr[0-9]*", GROUP="cdrom"
+ SUBSYSTEM=="scsi_generic", SUBSYSTEMS=="scsi", ATTRS{type}=="4|5", GROUP="cdrom"
+ KERNEL=="sch[0-9]*", GROUP="cdrom"
