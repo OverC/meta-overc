@@ -75,7 +75,7 @@ while [ $# -gt 0 ]; do
 	    exit
 	    ;;
 	--raw)
-	    rawmode=t
+	    raw_mode=t
 	    ;;
 	--)
 	    dashdash=t
