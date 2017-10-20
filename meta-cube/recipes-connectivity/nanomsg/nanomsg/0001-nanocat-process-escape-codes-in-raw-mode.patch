@@ -1,0 +1,72 @@
+From 84824d1a83cd600b63cef42f63f79225500992ae Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Thu, 19 Oct 2017 21:59:51 -0400
+Subject: [PATCH] nanocat: process escape codes in raw mode
+
+Escape codes (like arrow keys) were not being picked up by the
+rawmode configured console as pending data. As such, we only sent
+the first part of the code (i.e. ^), but not the second and
+third parts (i.e. '[A') until more 'normal' data was input.
+
+When that data triggered the read, the two remaining characters
+were read and the full escape sequence processed by the other end
+.. but with a lagg/offset that makes it unusable.
+
+We can detect the escape code starting sequence ^ (aka 27) and then
+prime our stdin check with two more characters. This lets us send
+the entire code and we have full ansi escape sequences working
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ tools/nanocat.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/tools/nanocat.c b/tools/nanocat.c
+index 747e06a50ea5..2891db05c7c7 100644
+--- a/tools/nanocat.c
++++ b/tools/nanocat.c
+@@ -732,12 +732,18 @@ void nn_resp_loop (nn_options_t *options, int sock)
+     }
+ }
+ 
++static int stdin_primed_data = 0;
+ int stdin_data_avail()
+ {
+    struct timeval tv = { 0L, 0L };
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
++
++   if ( stdin_primed_data > 0 ) {
++      stdin_primed_data--;
++      return 1;
++   }
+    return select(1, &fds, NULL, NULL, &tv);
+ }
+ 
+@@ -864,12 +870,21 @@ void nn_stdin_loop (nn_options_t *options, int sock)
+ 		    while ( count < PIPE_BUF && rcount < PIPE_BUF ) {
+ 		       if (stdin_data_avail()) {
+ 			  c = getchar();
+-
+ 			  if ( c == EOF || c == '\n' ) {
+ 			     /* kept around for cooked / unbuffered mode emulation */
+ 			     //printf( "The length of the line is %u\n", count );
+ 			     //count = 0;
+ 			  }
++			  if ( c == 27 ) {
++			     /* we are getting an escape code. The stdin check for data doesn't
++				return true for pending data .. but it is there. So we do two
++				more reads to get the rest. i.e., for arrow keys:
++				  '\033'
++				  '['
++				  'A', 'B', 'C' or 'D'
++			     */
++			     stdin_primed_data = 2;
++			  }
+ 			  if ( c == -1 ) {
+ 			     if ( rcount == 0 ) {
+ 				if ( exit_pending == 0 ) {
+-- 
+2.4.0.53.g8440f74
+

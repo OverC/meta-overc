@@ -16,6 +16,7 @@ SRC_URI = " \
            file://0001-nanocat-add-stdin-processing.patch \
            file://0001-nanocat-add-EOF-transmission-for-faster-exit.patch \
            file://0001-nanocat-improve-raw-unbuffered-mode.patch \
+           file://0001-nanocat-process-escape-codes-in-raw-mode.patch \
 	  "
 
 SRCREV = "7e12a20e038234060d41d03c20721d08117f8607"
