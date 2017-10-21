@@ -83,10 +83,10 @@ function start_cube-update_service() {
             grep -v '^CUBEUPDATE: ' /etc/motd > /tmp/$$.upgrade.motd ;                      \
             echo 'CUBEUPDATE: System upgrade on `date`' >> /tmp/$$.upgrade.motd ;           \
             mv /tmp/$$.upgrade.motd /etc/motd ;                                             \
-            grep -v '^CUBEUPDATE: ' /var/lib/lxc/${SystemContainer}/rootfs/etc/motd >       \
+            grep -v '^CUBEUPDATE: ' /opt/container/${SystemContainer}/rootfs/etc/motd >     \
                                     /tmp/$$.upgrade.motd ;                                  \
             echo 'CUBEUPDATE: System upgrade on `date`' >> /tmp/$$.upgrade.motd ;           \
-            mv /tmp/$$.upgrade.motd /var/lib/lxc/${SystemContainer}/rootfs/etc/motd ;       \
+            mv /tmp/$$.upgrade.motd /opt/container/${SystemContainer}/rootfs/etc/motd ;     \
             eval ${SERVER_UPDATE_COMMAND} ;                                                 \
         else                                                                                \
             ${SMARTPM_DIR}/cubepkgcheck '${SysCNs}' ;                                       \
