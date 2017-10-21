@@ -41,9 +41,9 @@ function updatepkg_info()
     mv /tmp/$$.motd /etc/motd
 
     if [ -n "$SYSContainerName" ]; then
-        grep -v '^CUBEUPDATE: ' /var/lib/lxc/$SYSContainerName/rootfs/etc/motd > /tmp/$SYSContainerName.motd
+        grep -v '^CUBEUPDATE: ' /opt/container/$SYSContainerName/rootfs/etc/motd > /tmp/$SYSContainerName.motd
         grep '^CUBEUPDATE: ' /etc/motd >> /tmp/$SYSContainerName.motd
-        mv /tmp/$SYSContainerName.motd /var/lib/lxc/$SYSContainerName/rootfs/etc/motd
+        mv /tmp/$SYSContainerName.motd /opt/container/$SYSContainerName/rootfs/etc/motd
     fi
 }
 
