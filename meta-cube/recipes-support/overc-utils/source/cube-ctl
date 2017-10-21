@@ -218,7 +218,6 @@ while [ $# -gt 0 ]; do
 done
 
 container_dir="/opt/container"
-overc_cctl="/opt/overc-installer/overc-cctl"
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
@@ -730,7 +729,7 @@ case "${cmd}" in
 	fi
 
 	# unprivileged. create default subuid/subgids for root and pass the
-	# parameter to overc_cctl for container settings
+	# command to cube-cmd for container settings
 	if [ -n "${subuid}" ]; then
 	    if [ -n "${we_are_a_container}" ]; then
 		privilege_param="-u ${subuid}"
