@@ -154,8 +154,6 @@ IMAGE_FSTYPES_remove = "wic wic.bmap"
 
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
 IMAGE_FEATURES += "ssh-server-openssh package-management"
-# do not install recommendations
-NO_RECOMMENDATIONS = "1"
 
 #
 # Extra image configuration defaults
