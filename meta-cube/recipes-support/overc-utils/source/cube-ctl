@@ -1478,7 +1478,7 @@ IFS=$OLDIFS
 	network_prime=${container_name}
 
 	# step 1: stop the old network prime (if it exists)
-	if [ -n "${network_prime_old}" ]; then
+	if [ -n "${network_prime_old}" ] && [ "{network_prime_old}" != "dom0" ]; then
 	    (
 		if [ -n "${verbose}" ]; then
 		    echo "[INFO]: stopping current netprime (${network_prime_old})"
