@@ -55,6 +55,14 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
     nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up
 
+    if [ -f "cube.network.mac" ]; then
+	mac_address=$(cat cube.network.mac)
+    else
+        # Use a hashed MAC address based on the container name
+        mac_address=$(hashmac $(cat /etc/machine-id) ${cname})
+    fi
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up address ${mac_address}
+
     if [ "${network}" == "dynamic" ]; then
 	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid veth-br-int >> /dev/null 2>&1"
 	eval nsenter -t ${pid} -n -- ${command}
@@ -82,15 +90,6 @@ if [ "${action}" = "up" ]; then
 	    let count=${count}+1
 	done
     fi
-
-    if [ -f "cube.network.mac" ]; then
-	mac_address=$(cat cube.network.mac)
-    else
-	# OCI's use the internal mac range: xA-xx-xx-xx-xx-xx
-	last_ip_range=$(echo $primary_ip | cut -f4 -d.)
-	mac_address=$(printf "0A:00:00:00:00:%02x" ${last_ip_range})
-    fi
-    nsenter -t ${pid} -n --preserve-credentials ip link set dev veth-br-int up address ${mac_address}
 
     gateway="192.168.42.1"
     if [ -f "cube.network.gateway" ]; then
