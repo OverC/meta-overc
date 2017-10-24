@@ -127,9 +127,6 @@ if [ x$reason = xPREINIT ]; then
   fi
   ${ip} link set dev ${interface} up
 
-  # We need to give the kernel some time to get the interface up.
-  sleep 1
-
   exit_with_hooks 0
 fi
 
