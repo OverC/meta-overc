@@ -1548,10 +1548,10 @@ IFS=$OLDIFS
 
 		# remove the old hook and etcd port forward
 		${SBINDIR}/cube-cfg hook-script -poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
-		${SBINDIR}/cube-cfg link -${network_prime}:2379 dom0:2379
+		${SBINDIR}/cube-cfg link -${network_prime_old}:2379 dom0:2379
 
-		type=$(get_container_type ${network_prime})
-		${SBINDIR}/cube-cfg gen ${network_prime}:type
+		type=$(get_container_type ${network_prime_old})
+		${SBINDIR}/cube-cfg gen ${network_prime_old}:$type
 	    )
 	fi
 	;;
