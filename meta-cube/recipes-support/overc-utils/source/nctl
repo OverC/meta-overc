@@ -1157,7 +1157,7 @@ client_get_ipcchan() {
 
     echo ${ipc_chan} | grep -q "ipc"
     if [ $? -ne 0 ]; then
-	>&2 echo "[ERROR]: could not obtain an IPC channel"
+	>&2 echo "[ERROR]: could not obtain an IPC channel (${ipc_chan})"
 	exit 1
     fi
 
