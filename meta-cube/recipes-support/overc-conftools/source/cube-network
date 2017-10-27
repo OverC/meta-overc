@@ -162,6 +162,7 @@ if [ "${action}" = "up" ]; then
     if [ -f "cube.network.nameserver" ]; then
 	nameserver=$(cat cube.network.nameserver)
     fi
+    nsenter -t ${pid} -m sh -c "rm -f /etc/resolv.conf"
     nsenter -t ${pid} -m sh -c "echo nameserver ${nameserver} > /etc/resolv.conf"
 fi
 

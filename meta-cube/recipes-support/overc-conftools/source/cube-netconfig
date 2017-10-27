@@ -54,19 +54,35 @@ if [ "${action}" = "netprime" ]; then
 
 	    # Up the interface via dhclient, since not all netprime
 	    # containers are capable of doing this themselves
+
+	    ## TODO: This might be possible as an optional step. Perhaps just checking to see
+	    ##       if the device/hw is self managed ? or an attribute on the container ?
+	    ##       Can we just tag any type of h/w as managed ? versus it all ?
+	    ##       or is this network specific and we just set this at "none" or "self" and
+	    ##       leave it be .. it is very likely better as a network type.
+	    ##
+	    ##       The problem is. if we leave this self managed, we cannot set the DNS information
+	    ##       on the VRF and that's an issue.
 	    command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
 	    eval nsenter -t ${pid} -n -- ${command}
 	    if [ -e "/etc/resolv.conf.${cubename}" ]; then
-
-	        # mv /etc/resolv.conf.${cubename} /opt/container/${cubename}/rootfs/etc/resolv.conf
-
 		# the VRF (currently dom0) routes our DNS traffic, so we need to get
 		# this captured config into it's dnsmasq.conf
+		vrf="dom0"
+		if [ -e ".cube.vrf.name" ]; then
+		    vrf=$(cat .cube.vrf.name)
+		fi
 
-		echo "no-resolv" >> /opt/container/dom0/rootfs/etc/dnsmasq.conf
+		# clean up, before we add our options
+		sed '/no-resolv/d' -i /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
+		sed '/server=.*/d' -i /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
+
 		sed '/search.*/d' -i /etc/resolv.conf.${cubename}
 		sed 's/nameserver /server=/g' -i /etc/resolv.conf.${cubename}
-		cat /etc/resolv.conf.${cubename} >> /opt/container/dom0/rootfs/etc/dnsmasq.conf
+
+		echo "# servers in this file are managed by the cube-netconfig hook. Any changes will be overwritten" >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
+		echo "no-resolv" >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
+		cat /etc/resolv.conf.${cubename} >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
 
 		# These may need to be refined, but they nat and forward and DNS
 		# traffic from the netprime (.1) to the VRF (currently dom0 @ .3)
@@ -74,19 +90,25 @@ if [ "${action}" = "netprime" ]; then
 
 		# check to make sure we aren't both .3 and .1 .. since we don't need any
 		# port forwards in that case
-		forward_dns_to_dom0=t
+		forward_dns_to_vrf=t
 		if [ -f "cube.network.ip" ]; then
 		    for ip in $(cat cube.network.ip); do
 			ip_no_mask=${ip%/*}
 			if [ "${ip_no_mask}" == "192.168.42.3" ]; then
-			    forward_dns_to_dom0=
+			    forward_dns_to_vrf=
 			fi
 		    done
 		fi
 
-		if [ -n "${forward_dns_to_dom0}" ]; then
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d 192.168.42.1 -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.3:53
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d 192.168.42.1 -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.3:53
+		if [ -n "${forward_dns_to_vrf}" ]; then
+		    for ip in 192.168.42.1; do
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.3:53
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.3:53
+		    done
+		    # we need localhost, or the netprime won't have working DNS itself
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.3:53
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.3:53
+
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -I POSTROUTING -d 192.168.42.0/24 -j MASQUERADE
 		fi
 
@@ -123,4 +145,8 @@ if [ "${action}" = "vrf" ]; then
 	    exit 0
 	fi
     fi
+
+    ## TODO: in a self managed netprime configuration the VRF needs to go get the
+    ##       dns information. If the netprime is doing it above (which it always
+    ##       does now, we are covered.
 fi

@@ -509,6 +509,37 @@ EOF
     fi
 }
 
+# arg1: services name, could be globs
+# arg2: container name (optional)
+service_disable()
+{
+    local services="$1"
+    local cname="$2"
+    local container_storage="$3"
+    local slinks
+
+    services="${services%.service}.service"
+    local debug_msg="[INFO]: Can not find the service ${services} to disable"
+
+    if [ -z "${cname}" ]; then
+        # For essential
+        slinks=$(find ${container_storage}/etc/systemd/ -name ${services} 2>/dev/null)
+        debug_msg="${debug_msg} for essential."
+    else
+        # For containers
+        slinks=$(find ${container_storage}/${cname}/rootfs/etc/systemd/ -name ${services} 2>/dev/null)
+        debug_msg="${debug_msg} for ${cname}."
+    fi
+
+    if [ -z "${slinks}" ]; then
+        debugmsg ${DEBUG_INFO} ${debug_msg}
+        return 1
+    fi
+
+    rm -f ${slinks}
+    return 0
+}
+
 # arg1: the container name
 # arg2: the path to the container storage
 tweak_container_devices()
@@ -857,6 +888,10 @@ case "${cmd}" in
 		mkdir -p ${var_dir}/var/lib/cube/local
 
 		cd ${out_dir}/${container_name}
+
+		app="/sbin/init"
+		${SBINDIR}/cube-cfg set app:${app}
+
 		${SBINDIR}/cube-cfg mount bind:/opt/container:/opt/container
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube:/var/lib/cube
 		# cubes are priviledged. By default pflask will mount
@@ -884,12 +919,18 @@ case "${cmd}" in
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/all:/var/lib/cube/common
 		${SBINDIR}/cube-cfg mount bind:/var/lib/cube/${container_name}:/var/lib/cube/local
 
-		${SBINDIR}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+		# assume /sbin/init (for now). this can be changed later by more calls to cube-cfg
+		# and a regen of the config
+		#   TODO: inspect the container for /sbin/init and then trigger this. Otherwise,
+		#         not. That will keep the systemd hooks optional.. actually better, we should
+		#         just look for a config from the manifest and use it as the entry point
+		app="/sbin/init"
+		${SBINDIR}/cube-cfg set app:${app}
+
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-device up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
-		${SBINDIR}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
 
 		# this will trigger the disabling of systemd udev services, and allow us to control
 		# the devices visible to the container
@@ -1471,10 +1512,11 @@ IFS=$OLDIFS
 	    type=$(get_container_type ${network_prime})
 	    if [ "${type}" == "oci" ]; then
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
-		#${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig vrf \$\(cat\)
+		service_disable systemd-resolved.service ${network_prime} ${out_dir}
+		# Q: do we make a DNS manager ? and then execute on it during the container start via the hooks ?
 	    else
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime /opt/container/${network_prime}
-		#${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig vrf /opt/container/${network_prime}	
+		service_disable systemd-resolved.service ${network_prime} ${out_dir}
 	    fi
 
 	    ${SBINDIR}/cube-cfg gen ${network_prime}:$type
