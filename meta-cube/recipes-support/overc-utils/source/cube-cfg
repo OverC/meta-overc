@@ -115,7 +115,7 @@ cat << EOF
 EOF
 
 for K in "${!CONFIG_MAP[@]}"; do
-    help_text=$(echo "${CONFIG_MAP[$K]}" | cut -f2 -d\;)
+    help_text=$(echo "${CONFIG_MAP[$K]}" | cut -f3 -d\;)
     printf "      %-25s %s\n" "$K" "${help_text}"
 done
 echo ""
@@ -128,16 +128,17 @@ declare -A CONFIG_MAP
 #
 #  <var> <db var>; <help text>
 #
-CONFIG_MAP[app]="cube.app;The application to start in the container"
-CONFIG_MAP[cube.container.mgr]="cube.container.mgr;The manager for the container: the path to the container runtime"
-CONFIG_MAP[cube.console.mgr]="cube.console.mgr;The console manager (if access is not direct): 'tty' or 'screen-tty'"
-CONFIG_MAP[cube.device.mgr]="cube.device.mgr;The device manager for the container: essential (static) or detected/standalone"
-CONFIG_MAP[autostart]="autostart;The autostart runlevel for the container"
-CONFIG_MAP[cube.network.type]="cube.network.type;The type of container networking: static or dynamic"
-CONFIG_MAP[cube.network.ip]="cube.network.ip;<ip>/<netmask>. The ip to assign to the container (must be supplied for static network type)"
-CONFIG_MAP[cube.network.mac]="cube.network.mac;The mac address to assign to the container interface"
-CONFIG_MAP[cube.network.gateway]="cube.network.gateway;The gateway to use for the container"
-CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;The nameserver to use for the container"
+
+CONFIG_MAP[app]="cube.app;app_hook;The application to start in the container"
+CONFIG_MAP[cube.container.mgr]="cube.container.mgr;noop;The manager for the container: the path to the container runtime"
+CONFIG_MAP[cube.console.mgr]="cube.console.mgr;noop;The console manager (if access is not direct): 'tty' or 'screen-tty'"
+CONFIG_MAP[cube.device.mgr]="cube.device.mgr;noop;The device manager for the container: essential (static) or detected/standalone"
+CONFIG_MAP[autostart]="autostart;noop;The autostart runlevel for the container"
+CONFIG_MAP[cube.network.type]="cube.network.type;noop;The type of container networking: static or dynamic"
+CONFIG_MAP[cube.network.ip]="cube.network.ip;noop;<ip>/<netmask>. The ip to assign to the container (must be supplied for static network type)"
+CONFIG_MAP[cube.network.mac]="cube.network.mac;noop;The mac address to assign to the container interface"
+CONFIG_MAP[cube.network.gateway]="cube.network.gateway;noop;The gateway to use for the container"
+CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;The nameserver to use for the container"
 
 if [ -z "$1" ]; then
     usage
@@ -482,10 +483,11 @@ generate_base_config()
                   --process-cap-add CAP_SYSLOG \
                   --process-cap-add CAP_SYS_TTY_CONFIG"
 
-    app="/sbin/init"
-    if [ -e "cube.app" ]; then
-	app=$(cat cube.app)
-    fi
+    app=$(cat cube.app)
+    app_args=""
+    for a in ${app}; do
+	app_args="--args $a $app_args"
+    done
 
     OLDIFS=$IFS
 IFS='
@@ -537,16 +539,6 @@ IFS='
     fi
     IFS=$OLDIFS
 
-    if [ -z "${hooks}" ]; then
-	# if no hooks have been passed, but the app is not /sbin/init
-	# we don't need the systemd hook, just go with the network one
-	if [ "${app}" = "/sbin/init" ]; then
-	    hooks="--hooks-prestart /usr/libexec/oci/hooks.d/oci-systemd-hook \
-	           --hooks-poststop /usrlibexec/oci/hooks.d/oci-systemd-hook"
-	fi
-	hooks="${hooks} --hooks-prestart /usr/libexec/oci/hooks.d/netns"
-    fi
-
     console_mgr=$(cube-cfg cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
 	tty_flag="--process-tty"
@@ -557,7 +549,7 @@ IFS='
     oci-runtime-tool generate \
 	             ${tty_flag} \
 	             ${hooks} \
-		     --args ${app} \
+		     ${app_args} \
                      --linux-seccomp-remove-all \
                      --hostname=${container_name} \
 		     --env container=docker \
@@ -765,6 +757,28 @@ check_isset() {
     fi
 
     return 0
+}
+
+app_hook() {
+    old_val=$1
+    new_val=$2
+    db_var=$3
+
+    if [ "${old_val}" != "${new_val}" ]; then
+	# we have a delta
+	echo $old_val | grep -q sbin/init
+	if [ $? -eq 0 ]; then
+	    # we are switching from a system container to something else, drop the systemd hooks
+	    ${mydir}/cube-cfg hook -prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg hook -poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	fi
+	echo $new_val | grep -q sbin/init
+	if [ $? -eq 0 ]; then
+	    # we are switching to a system container to something else, addd the systemd hooks
+	    ${mydir}/cube-cfg hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	fi
+    fi
 }
 
 etcd_inject()
@@ -1334,6 +1348,14 @@ case "${cmd}" in
 		else
 		    echo ""
 		fi
+	    fi
+
+	    if [ -z "${previous}" ]; then
+		previous="none"
+	    fi
+	    set_hook=$(echo "${CONFIG_MAP[$var]}" | cut -d';' -f2)
+	    if [ -n "${set_hook}" ] && [ "${set_hook}" != "noop" ]; then
+		eval ${set_hook} ${previous} ${value} ${out_dir}/${db_var}
 	    fi
 	fi
 	;;
