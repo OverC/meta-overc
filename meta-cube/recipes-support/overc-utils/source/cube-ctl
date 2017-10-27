@@ -1501,7 +1501,11 @@ IFS=$OLDIFS
 
 	    devs=$(${SBINDIR}/cube-cfg -o ${out_dir}/${network_prime_old} device network)
 	    for d in ${devs}; do
-		${SBINDIR}/cube-cfg device network:$d
+		echo "${d}" | grep -q veth
+		# add any h/w devices that will be passed through, leave the veth
+		if [ $? -ne 0 ]; then
+		    ${SBINDIR}/cube-cfg device network:$d
+		fi
 	    done
 
 	    ${SBINDIR}/cube-cfg attribute +netprime
