@@ -1340,7 +1340,9 @@ case "${cmd}" in
 			echo "${value}" > ${out_dir}/${db_var}
 		    fi
 		else
-		    sed "s%${value} *%%g" -i ${out_dir}/${db_var}
+		    if [ -f ${out_dir}/${db_var} ]; then
+			sed "s%${value} *%%g" -i ${out_dir}/${db_var}
+		    fi
 		fi
 	    else
 		if [ -e "${out_dir}/${db_var}" ]; then
