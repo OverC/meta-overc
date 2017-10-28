@@ -178,7 +178,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
         --o|-o)
-	    out_dir=${2}
+	    out_dir=$(realpath ${2})
 	    shift
 	    ;;
 	-h|--help)
@@ -679,6 +679,14 @@ get_container_attributes() {
     echo ${attributes}
 }
 
+get_mount_fstype() {
+    local dir=$1
+    local mount_point=$(stat --format '%m' ${dir})
+    local mount_fstype=$(stat --file-system --format '%T' ${mount_point})
+
+    echo ${mount_fstype}
+}
+
 #
 # Command processing
 #
@@ -776,8 +784,22 @@ case "${cmd}" in
 
 	# regardless of the container type, we unpack the container source
 	if [ -z "${out_dir}" ]; then
-	    out_dir="${container_dir}/"
+	    out_dir=$(realpath ${container_dir})
 	fi
+
+        # create container subdirectories according to the fstype of out_dir's
+        # mount point:
+        # a) create a subvolume if the fstype is btrfs
+        # b) create a subdirectory for other fstypes
+        fstype=$(get_mount_fstype "${out_dir}")
+        subvol_dir=${out_dir}/overc-containers/${container_name}/$(date +%s.%N)
+        mkdir -p ${subvol_dir%/*}
+        if [ "${fstype}" = "btrfs" ]; then
+            btrfs subvolume create ${subvol_dir}
+        else
+            mkdir -m 755 ${subvol_dir}
+        fi
+        ln -srfT ${subvol_dir} ${out_dir}/${container_name}
 
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
@@ -1227,7 +1249,7 @@ case "${cmd}" in
 	container_name=${cmd_options_non_dashed[1]}
 
 	if [ -z "${out_dir}" ]; then
-	    out_dir="${container_dir}/"
+	    out_dir=$(realpath ${container_dir})
 	fi
 
 	if ! check_is_known_container ${container_name}; then
@@ -1241,22 +1263,27 @@ case "${cmd}" in
 	    # nothing to do at the moment
 	    true
 	fi
-	if [ -n "${container_is_a_oci}" ]; then
-	    echo ${open_container_running} | grep -q ${container_name}
-	    if [ $? -ne 0 ]; then
-		echo "[INFO] deleting container ${container_name}"
-		cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
-		if [ -d "${out_dir}/${container_name}" ]; then
-		    echo "[INFO] removing container source .."
-		    rm -rf "${out_dir}/${container_name}"
-		fi
-		machine=$(cube-cfg id)
-		cube-cfg set overc/$machine/oci/${container_name}/:
-	    else
-		echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
-	    fi
-	fi
-	;;
+        if [ -n "${container_is_a_oci}" ]; then
+            echo ${open_container_running} | grep -q ${container_name}
+            if [ $? -ne 0 ]; then
+                echo "[INFO] deleting container ${container_name}"
+                cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
+                subvol_dir=$(realpath ${out_dir}/${container_name})
+                if [ -n "$(btrfs subvolume show ${subvol_dir} 2> /dev/null)" ]; then
+                    btrfs subvolume delete -C ${subvol_dir}
+                else
+                    rm -rf ${subvol_dir}
+                fi
+                echo "[INFO] removing container source"
+                rm -rf ${out_dir}/${container_name}
+                rm -rf ${subvol_dir%/*}
+                machine=$(cube-cfg id)
+                cube-cfg set overc/$machine/oci/${container_name}/:
+            else
+                echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
+            fi
+        fi
+        ;;
     start)
 	# the second non dashed argument will be the container name
 	container_names=${cmd_options_non_dashed[1]}
@@ -1462,7 +1489,7 @@ IFS=$OLDIFS
 	fi
 
 	if [ -z "${out_dir}" ]; then
-	    out_dir="${container_dir}"
+	    out_dir=$(realpath ${container_dir})
 	fi
 
 	# TODO: this could be an etcd lookup, not this ...
