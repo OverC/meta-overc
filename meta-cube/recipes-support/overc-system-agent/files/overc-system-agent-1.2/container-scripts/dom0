@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OVERC_CCTL=/opt/overc-installer/overc-cctl
+OVERC_CTL=/opt/overc-installer/overc-ctl
 C3=/usr/sbin/c3
 
 IMAGE_DIR=/root/images
@@ -59,6 +59,31 @@ Usage: $0 [OPTION] ...
 EOT
 }
 
+# Text colors
+BLD_NOTE="\\033[1;29m"    # Bright base color
+BLD_WARNING="\\033[1;33m" # Bright yellow
+BLD_ERROR="\\033[1;31m"   # Bright red
+STD_NOTE="\\033[29m"      # Base color
+STD_WARNING="\\033[33m"   # Yellow
+STD_ERROR="\\033[31m"     # Red
+RST="\\033[0m"            # Reset colors
+
+#
+# Helper functions
+#
+log_info() {
+    echo -e $BLD_NOTE"[INFO]""$RST: $STD_NOTE$@$RST"
+}
+
+log_warn() {
+    echo -e $BLD_WARNING"[WARNING]""$RST: $STD_WARNING$@$RST" >&2
+}
+
+log_error() {
+    echo -e $BLD_ERROR"[ERROR]""$RST: $STD_ERROR$@$RST" >&2
+    return 1
+}
+
 # Determine the status of a given container
 #
 # Expected format we need to parse:
@@ -93,7 +118,7 @@ container_status() {
 	return $retval
 }
 
-# Uses overc-cctl
+# Uses overc-ctl
 #
 # Adds a new container which doesn't already exist or upgrade
 #
@@ -113,7 +138,6 @@ container_status() {
 activate() {
 	local container=$1
 	local rootfs
-	local opts
 
 	case "${container}" in
 		dom0)
@@ -131,20 +155,13 @@ activate() {
 	esac
 
 	if [ ! -e $rootfs ]; then
-		echo "Error! Rootfs $rootfs is missing"
+		log_error "Rootfs $rootfs is missing"
 		exit 1
-	fi
-
-	# from cubeit-installer
-	if [ "$container" = "dom0" ]; then
-		opts="-d -a -g onboot -t 0"
-	else
-		opts="-d -p -g peer -t 0"
 	fi
 
 	if [ "$container" = "dom0" ]; then
 		# snapshots happens with upgrade
-		$OVERC_CCTL upgrade -n $container -f $rootfs $opts -F
+		$OVERC_CTL upgrade $container $rootfs -f
 		exit $?
 	fi
 
@@ -158,18 +175,16 @@ activate() {
 		if [ $force -eq 1 ]; then
 			stop_container $container
 		else
-			echo "Error! Container is active"
+			log_error "Container is active"
 			exit 1
 		fi
 	fi
 
+	$OVERC_CTL upgrade $container $rootfs -f
 	if [ $status -eq 0 ]; then
 		upgrade=0
-		$OVERC_CCTL add -n $container -f $rootfs $opts -F
 	else
 		upgrade=1
-		# snapshots happens with upgrade
-		$OVERC_CCTL upgrade -n $container -f $rootfs $opts -F
 	fi
 
 	# from here we need to try starting the new container
@@ -177,7 +192,7 @@ activate() {
 	start_container $container
 	if [ $? -ne 0 ]; then
 		if [ $upgrade -eq 1 ]; then
-			echo "Rollback needed"
+			log_info "Rollback needed"
 			rollback_container $container
 		else
 			exit 1
@@ -186,7 +201,7 @@ activate() {
 	exit 0
 }
 
-# overc-cctl
+# overc-ctl
 #
 # rollback -n <container name> [-r]
 #
@@ -197,35 +212,24 @@ activate() {
 #
 rollback_container() {
 	local container=$1
-	
-	if [ $force -eq 0 ]; then
-	    if [ $container != "dom0" ]; then
-	        # 0: does not exist
-	        # 2: exists, not active
-	        # 3: exists, active
-		container_status $container
-		status=$?
-		if [ $status -eq 0 ]; then
-			echo "Error! Container $container does not exist"
-			exit 1
-		elif [ $status -eq 3 ]; then
-			echo "Error! Container $container is active"
-			exit 1
-		fi
-	    fi
+
+	if [ "$force" -eq 1 ]; then
+		$OVERC_CTL rollback $container -f
+	else
+		$OVERC_CTL rollback $container
 	fi
-	$OVERC_CCTL rollback -n $container -F -r
 }
 
 list_snapshots() {
 	local container=$1
 
-	$OVERC_CCTL histlist -n $container
+	$OVERC_CTL snapshot-list $container
 }
 
 snapshot() {
 	local container=$1
-	$OVERC_CCTL snapshot -n $container
+
+	$OVERC_CTL snapshot-create $container
 }
 
 pull_single_image() {
@@ -243,7 +247,7 @@ pull_single_image() {
 			fi
 		done
 		if [ $items -ne 1 ]; then
-			echo "Error! Upstream $url downloaded an unexpected number of files [$items]"
+			log_error "Upstream $url downloaded an unexpected number of files [$items]"
 			exit 1
 		fi
 		if [ ! -d $IMAGE_DIR ]; then
@@ -273,7 +277,7 @@ start_container() {
 	local container=$1
 
 	if [ "$container" = "dom0" ]; then
-		echo "Starting of dom0 not supported"
+		log_error "Starting of dom0 not supported"
 		exit 1
 	fi
 	$C3 ctl start $container
@@ -286,14 +290,14 @@ start_container() {
 	while [ $max_wait -ge 0 ]; do
 		container_status $container
 		if [ $? -eq 3 ]; then
-			echo "Container $container started ok"
+			log_info "Container $container started ok"
 			return 0
 		fi
 		sleep 1
 		max_wait=$(expr $max_wait - 1)
 	done
 	# failed to start
-	echo "Error! $container failed to start"
+	log_error "$container failed to start"
 	return 1
 }
 
@@ -301,7 +305,7 @@ stop_container() {
 	local container=$1
 
 	if [ "$container" = "dom0" ]; then
-		echo "Stopping of dom0 not supported"
+		log_info "Stopping of dom0 not supported"
 		exit 1
 	fi
 	$C3 ctl stop $container
@@ -309,10 +313,6 @@ stop_container() {
 
 list_container() {
 	$C3 list
-}
-
-runcmd_in_container() {
-	$C3 ctl $1:$2
 }
 
 format_size() {
@@ -334,7 +334,7 @@ format_size() {
 			echo $((${num//.*/+1}))
 			;;
 		"*")
-			echo "Error! cannot recognize size"
+			log_error "cannot recognize size"
 			exit 1
 			;;
 	esac
@@ -343,95 +343,28 @@ format_size() {
 rpm_upgrade() {
 	local container=$1
 
-	runcmd_in_container $container "smart update"
-	if [ ! $? -eq 0 ]; then
-		echo "Error! smart update failed in container $container"
-		exit 1
-	fi
-	runcmd_in_container $container "smart newer"
-	if [ ! $? -eq 0 ]; then
-		return 0
-	fi
-
 	if [ ! $force -eq 1 ]; then
 		delete_snapshots $container
 	fi
 
-	c_raw_size=`du -hs /var/lib/lxc/${container}/rootfs | awk '{print $1}'`
-	c_size=`format_size $c_raw_size`
-	a_raw_size=`df -ha /var/lib/lxc/overc-containers | sed -n '2p' | awk '{print $4}'`
-	a_size=`format_size $a_raw_size`
-
-	if [ $a_size -ge $c_size ]; then
-		echo "snapshots on container: $container"
-		snapshot $container
-	else
-		echo "*******************************************************************"
-		echo "  Warning: There isn't enough space left to snapshot conainer"
-		echo "*******************************************************************"
-	fi
-
-	tempdir="/tmp/tmpd.$RANDOM"
-	runcmd_in_container $container "mkdir -p $tempdir"
-	runcmd_in_container $container "cp -r /var/lib/rpm $tempdir"
-	runcmd_in_container $container "mount -t tmpfs tmpfs /var/lib/rpm"
-	runcmd_in_container $container "cp -r $tempdir/rpm /var/lib/"
-	runcmd_in_container $container "smart upgrade -y"
-	runcmd_in_container $container "cp -r /var/lib/rpm $tempdir"
-	runcmd_in_container $container "umount /var/lib/rpm"
-	runcmd_in_container $container "cp -r $tempdir/rpm /var/lib/"
-	runcmd_in_container $container "rm -rf $tempdir"
-	runcmd_in_container $container "sed -i /^CUBEUPDATE:/d /etc/motd"
+	$OVERC_CTL upgrade $container
 }
 
 delete_container() {
 	local container=$1
 
-        # 0: does not exist
-        # 2: exists, not active
-        # 3: exists, active
-	container_status $container
-	status=$?
-
-	if [ $status -eq 3 ]; then
-		if [ $force -eq 1 ]; then
-			stop_container $container
-		else
-			echo "Error! Container is active"
-			exit 1
-		fi
-	elif [ $status -eq 0 ]; then
-		echo "Error! Container does not exist"
-		exit 1
-	fi
-
-	$OVERC_CCTL delete -n $container -F
+	$C3 ctl del -F $container
 }
 
 delete_snapshots() {
 	local container=$1
 
-        # 0: does not exist
-        # 2: exists, not active
-        # 3: exists, active
-	container_status $container
-	status=$?
-
-	if [ $status -eq 0 ]; then
-		echo "Error! Container does not exist"
-		exit 1
-	fi
-
-	$OVERC_CCTL histlist -n $container|while read l; do
-		i=`echo $l|awk  '{print $1;}'`
-		echo $i
-		$OVERC_CCTL histdel -n $container -i $i -r
-	done
+	$OVERC_CTL snapshot-delall $container
 }
 
 set_command() {
 	if [ -n "$command" ]; then
-		echo "Error! Multiple actions not supported"
+		log_error "Multiple actions not supported"
 		exit 1
 	fi
 	command=${1}
@@ -452,28 +385,28 @@ do
 	case $opt in
 	n)
 		if [ -n "$container" ]; then
-			echo "Error! Container specified more than once"
+			log_error "Container specified more than once"
 			exit 1
 		fi
 		container=$OPTARG
 		;;
 	f)
 		if [ $force -ne 0 ]; then
-			echo "Error! Force specified more than once"
+			log_error "Force specified more than once"
 			exit 1
 		fi
 		force=1
 		;;
 	u)
 		if [ -n "$container_url" ]; then
-			echo "Error! Container url specified more than once"
+			log_error "Container url specified more than once"
 			exit 1
 		fi
 		container_url=$OPTARG
 		;;
 	b)
 		if [ -n "$snapshot" ]; then
-			echo "Error! Snapshot specified more than once"
+			log_error "Snapshot specified more than once"
 			exit 1
 		fi
 		snapshot=$OPTARG
@@ -533,70 +466,70 @@ case "${command}" in
 		;;
 	activate)
 		verify_arg_set container
-		echo "Activate container: $container"
+		log_info "Activate container: $container"
 		activate $container
 		;;
 	sync)
 		verify_arg_set container_url
-		echo "Update container image with $container_url"
+		log_info "Update container image with $container_url"
 		pull_single_image $container_url
 		;;
 	update)
-		echo "Pull on container image"
+		log_info "Pull on container image"
 		pull_image
 		;;
 	start)
 		verify_arg_set container
-		echo "Start container $container"
+		log_info "Start container $container"
 		start_container $container
 		retval=$?
 		;;
 	stop)
 		verify_arg_set container
-		echo "Stop container $container"
+		log_info "Stop container $container"
 		stop_container $container
 		;;
 	list)
-		echo "List containers"
+		log_info "List containers"
 		list_container
 		;;
 	list_snapshots)
 		verify_arg_set container
-		echo "List snapshots on container: $container"
+		log_info "List snapshots on container: $container"
 		list_snapshots $container
 		;;
 	snapshot)
 		verify_arg_set container
-		echo "Create snapshot on container: $container"
+		log_info "Create snapshot on container: $container"
 		snapshot $container
 		;;
 	rollback)
 		verify_arg_set container
 		if [ -n "$snapshot" ]; then
-			echo "Warning! Rolling back to a specified snapshot image is not supported, ignoring option [$snapshot]"
+			log_warn "Rolling back to a specified snapshot image is not supported, ignoring option [$snapshot]"
 		fi
 		rollback_container $container
 		retval=$?
 		;;
 	delete)
 		verify_arg_set container
-		echo "Delete container: $container"
+		log_info "Delete container: $container"
 		delete_container $container
 		retval=$?
 		;;
 	rpm_upgrade)
 		verify_arg_set container
-		echo "RPM upgrade container: $container"
+		log_info "RPM upgrade container: $container"
 		rpm_upgrade $container
 		;;
 	delete_snapshots)
 		verify_arg_set container
-		echo "Delete snapshots container: $container"
+		log_info "Delete snapshots container: $container"
 		delete_snapshots $container
 		retval=$?
 		;;
 	*)
-		echo "Error! Command not specified"
+		log_error "Command not specified"
 		retval=1
 		;;
 esac
