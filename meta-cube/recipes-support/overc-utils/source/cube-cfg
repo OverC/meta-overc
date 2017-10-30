@@ -932,7 +932,9 @@ case "${cmd}" in
 	    if [ -n "${verbose}" ]; then
 		echo "[INFO]: removing mount ${source} -> ${dest}"
 	    fi
-	    sed "\|^${source}:${dest}$|d" -i ${outfile}
+	    if [ -f "${outfile}" ]; then
+		sed "\|^${source}:${dest}$|d" -i ${outfile}
+	    fi
 	fi
 	;;
     id)
@@ -1012,8 +1014,10 @@ case "${cmd}" in
 	    if [ -n "${verbose}" ]; then
 		echo "[INFO]: removing link from $container_a $container_a_port to $container_b $container_b_port"
 	    fi
-	    sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
-	    sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
+	    if [ -f "cube.network.stack" ]; then
+		sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
+		sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
+	    fi
 	fi
 	;;
     link-raw)
@@ -1154,7 +1158,9 @@ case "${cmd}" in
 		    echo "${hookname}" >> ${outfile}
 		fi
 	    else
-		sed "\|^${hookname}$|d" -i ${outfile}
+		if [ -f "${outfile}" ]; then
+		    sed "\|^${hookname}$|d" -i ${outfile}
+		fi
 	    fi
 	else
 	    echo "ERROR: Invalid hook specified ${name_temp}"
