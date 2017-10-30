@@ -939,6 +939,7 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
+	${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
@@ -1589,12 +1590,8 @@ EOF
 	    if [ $? -ne 0 ]; then
 		echo "[INFO] deleting container ${container_name}"
 		cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
-		if [ -d "${out_dir}/${container_name}" ]; then
-		    echo "[INFO] removing container source .."
-		    rm -rf "${out_dir}/${container_name}"
-		fi
-		machine=$(cube-cfg id)
-		cube-cfg set overc/$machine/oci/${container_name}/:
+		${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
+		cube-cfg set overc/$(cube-cfg id)/oci/${container_name}/:
 	    else
 		echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
 	    fi
