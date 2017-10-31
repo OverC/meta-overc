@@ -1,0 +1,420 @@
+From 116d97bc403460abdff422107b4f25872ba07375 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Tue, 31 Oct 2017 10:15:23 -0400
+Subject: [PATCH] pflask: add hook support
+
+pflask has no native hook support, so it was approximated by calling
+a series of scripts after pflask has started a container.
+    
+This unfortunately leads to race conditions as the entry point to
+the container has started running, while setup and other hook activities
+are also executing.
+    
+Things like network interfaces, etc, may or may not be setup in time
+for the hooks .. and hence inconsistent results.
+    
+With this change, we add a --hook parameters to pflask, which will
+executed any number of hooks before starting the main container
+entry point.
+    
+Each hooks is called with:
+    
+      <hook> <container directory> <container entry point pid>
+    
+If a hook is specified as:
+    
+     <hook> <hook arguments> %s
+    
+The system arguments of <container directory> <container entry point pid>
+will replace %s before calling the hook, otherwise, they will be added
+to the end of the hook + arguments.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ src/cmdline.c |  30 +++++++++++++++
+ src/cmdline.h |   6 +++
+ src/hook.c    | 117 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/hook.h    |  31 ++++++++++++++++
+ src/pflask.c  |  25 ++++++++++++-
+ 5 files changed, 207 insertions(+), 2 deletions(-)
+ create mode 100644 src/hook.c
+ create mode 100644 src/hook.h
+
+Index: git/src/cmdline.c
+===================================================================
+--- git.orig/src/cmdline.c
++++ git/src/cmdline.c
+@@ -60,6 +60,7 @@ const char *gengetopt_args_info_help[] =
+   "  -C, --uncontain        Grant the ability to see the parent namespace",
+   "  -E, --escape-char=INT  Set a different escape character (default=0)",
+   "  -p, --p-name=STRING    Pflask name for machinectl (default=pflask-%d)",
++  "  -K, --hook=STRING      Add pre-start hook",
+     0
+ };
+ 
+@@ -95,6 +96,7 @@ void clear_given (struct gengetopt_args_
+   args_info->hostname_given = 0 ;
+   args_info->mount_given = 0 ;
+   args_info->netif_given = 0 ;
++  args_info->hook_given = 0 ;
+   args_info->user_given = 0 ;
+   args_info->user_map_given = 0 ;
+   args_info->ephemeral_given = 0 ;
+@@ -131,6 +133,8 @@ void clear_args (struct gengetopt_args_i
+   args_info->mount_orig = NULL;
+   args_info->netif_arg = NULL;
+   args_info->netif_orig = NULL;
++  args_info->hook_arg = NULL;
++  args_info->hook_orig = NULL;
+   args_info->user_arg = gengetopt_strdup ("root");
+   args_info->user_orig = NULL;
+   args_info->user_map_arg = NULL;
+@@ -205,6 +209,9 @@ void init_args_info(struct gengetopt_arg
+   args_info->uncontain_help = gengetopt_args_info_help[23] ;
+   args_info->escape_char_help = gengetopt_args_info_help[24] ;
+   args_info->p_name_help = gengetopt_args_info_help[25] ;
++  args_info->hook_help = gengetopt_args_info_help[26] ;
++  args_info->hook_min = 0;
++  args_info->hook_max = 0;
+   
+ }
+ 
+@@ -345,6 +352,7 @@ cmdline_parser_release (struct gengetopt
+   free_string_field (&(args_info->p_name_orig));
+   free_multiple_string_field (args_info->mount_given, &(args_info->mount_arg), &(args_info->mount_orig));
+   free_multiple_string_field (args_info->netif_given, &(args_info->netif_arg), &(args_info->netif_orig));
++  free_multiple_string_field (args_info->hook_given, &(args_info->hook_arg), &(args_info->hook_orig));
+   free_string_field (&(args_info->user_arg));
+   free_string_field (&(args_info->user_orig));
+   free_multiple_string_field (args_info->user_map_given, &(args_info->user_map_arg), &(args_info->user_map_orig));
+@@ -404,6 +412,7 @@ cmdline_parser_dump(FILE *outfile, struc
+     write_into_file(outfile, "hostname", args_info->hostname_orig, 0);
+   write_multiple_into_file(outfile, args_info->mount_given, "mount", args_info->mount_orig, 0);
+   write_multiple_into_file(outfile, args_info->netif_given, "netif", args_info->netif_orig, 0);
++  write_multiple_into_file(outfile, args_info->hook_given, "hook", args_info->hook_orig, 0);
+   if (args_info->user_given)
+     write_into_file(outfile, "user", args_info->user_orig, 0);
+   write_multiple_into_file(outfile, args_info->user_map_given, "user-map", args_info->user_map_orig, 0);
+@@ -692,6 +701,9 @@ cmdline_parser_required2 (struct gengeto
+   
+   if (check_multiple_option_occurrences(prog_name, args_info->netif_given, args_info->netif_min, args_info->netif_max, "'--netif' ('-n')"))
+      error_occurred = 1;
++
++  if (check_multiple_option_occurrences(prog_name, args_info->hook_given, args_info->hook_min, args_info->hook_max, "'--hook' ('-K')"))
++     error_occurred = 1;
+   
+   if (check_multiple_option_occurrences(prog_name, args_info->user_map_given, args_info->user_map_min, args_info->user_map_max, "'--user-map' ('-e')"))
+      error_occurred = 1;
+@@ -980,6 +992,7 @@ cmdline_parser_internal (
+ 
+   struct generic_list * mount_list = NULL;
+   struct generic_list * netif_list = NULL;
++  struct generic_list * hook_list = NULL;
+   struct generic_list * user_map_list = NULL;
+   struct generic_list * cgroup_list = NULL;
+   struct generic_list * caps_list = NULL;
+@@ -1041,6 +1054,7 @@ cmdline_parser_internal (
+         { "uncontain",	0, NULL, 'C' },
+         { "escape-char",	1, NULL, 'E' },
+         { "p-name",	1, NULL, 'p' },
++	{ "hook",	2, NULL, 'K' },
+         { 0,  0, 0, 0 }
+       };
+ 
+@@ -1126,6 +1140,15 @@ cmdline_parser_internal (
+             goto failure;
+         
+           break;
++        case 'K':	/* Add a pre-start hook  */
++
++          if (update_multiple_arg_temp(&hook_list,
++              &(local_args_info.hook_given), optarg, 0, 0, ARG_STRING,
++              "hook", 'K',
++              additional_error))
++            goto failure;
++
++          break;
+         case 'u':	/* Run the command under the specified user.  */
+         
+         
+@@ -1328,6 +1351,10 @@ cmdline_parser_internal (
+     &(args_info->netif_orig), args_info->netif_given,
+     local_args_info.netif_given, 0,
+     ARG_STRING, netif_list);
++  update_multiple_arg((void *)&(args_info->hook_arg),
++    &(args_info->hook_orig), args_info->hook_given,
++    local_args_info.hook_given, 0,
++    ARG_STRING, hook_list);
+   update_multiple_arg((void *)&(args_info->user_map_arg),
+     &(args_info->user_map_orig), args_info->user_map_given,
+     local_args_info.user_map_given, 0,
+@@ -1350,6 +1377,8 @@ cmdline_parser_internal (
+   local_args_info.mount_given = 0;
+   args_info->netif_given += local_args_info.netif_given;
+   local_args_info.netif_given = 0;
++  args_info->hook_given += local_args_info.hook_given;
++  local_args_info.hook_given = 0;
+   args_info->user_map_given += local_args_info.user_map_given;
+   local_args_info.user_map_given = 0;
+   args_info->cgroup_given += local_args_info.cgroup_given;
+@@ -1374,6 +1403,7 @@ cmdline_parser_internal (
+ failure:
+   free_list (mount_list, 1 );
+   free_list (netif_list, 1 );
++  free_list (hook_list, 1 );
+   free_list (user_map_list, 1 );
+   free_list (cgroup_list, 1 );
+   free_list (caps_list, 1 );
+Index: git/src/cmdline.h
+===================================================================
+--- git.orig/src/cmdline.h
++++ git/src/cmdline.h
+@@ -61,6 +61,11 @@ struct gengetopt_args_info
+   unsigned int netif_min; /**< @brief Disconnect the container networking from the host's minimum occurreces */
+   unsigned int netif_max; /**< @brief Disconnect the container networking from the host's maximum occurreces */
+   const char *netif_help; /**< @brief Disconnect the container networking from the host help description.  */
++  char ** hook_arg;	/**< @brief Prestart hook to call  */
++  char ** hook_orig;	/**< @brief Call the command line provided hook before starting the containers entry point.  */
++  unsigned int hook_min; /**< @brief Hook minimum occurreces */
++  unsigned int hook_max; /**< @brief Hook maximum occurreces */
++  const char *hook_help; /**< @brief Hook help description.  */
+   char * user_arg;	/**< @brief Run the command under the specified user (default='root').  */
+   char * user_orig;	/**< @brief Run the command under the specified user original value given at command line.  */
+   const char *user_help; /**< @brief Run the command under the specified user help description.  */
+@@ -122,6 +127,7 @@ struct gengetopt_args_info
+   unsigned int hostname_given ;	/**< @brief Whether hostname was given.  */
+   unsigned int mount_given ;	/**< @brief Whether mount was given.  */
+   unsigned int netif_given ;	/**< @brief Whether netif was given.  */
++  unsigned int hook_given ;	/**< @brief Whether hook was given.  */
+   unsigned int user_given ;	/**< @brief Whether user was given.  */
+   unsigned int user_map_given ;	/**< @brief Whether user-map was given.  */
+   unsigned int ephemeral_given ;	/**< @brief Whether ephemeral was given.  */
+Index: git/src/hook.c
+===================================================================
+--- /dev/null
++++ git/src/hook.c
+@@ -0,0 +1,114 @@
++/*
++ * The process in the flask.
++ *
++ * Copyright (c) 2013, Alessandro Ghedini
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
++ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
++ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
++ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
++ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
++ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#include <fcntl.h>
++#include <unistd.h>
++#include <stdio.h>
++#include <errno.h>
++#include <stdbool.h>
++#include <string.h>
++#include <syslog.h>
++
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <linux/limits.h>
++
++#include "printf.h"
++#include "util.h"
++
++#define BUFSIZE 128
++void run_hooks(	int pid, char *cdir, char **hooks, int hook_count ) {
++   if ( hook_count > 0 ) {
++      for (int i = 0; i < hook_count; i++) {
++	 if ( hooks != NULL) {
++
++	    char cmd[PATH_MAX];
++	    char buf[BUFSIZE];
++	    char sysargs[BUFSIZE];
++	    char expanded_cmd[BUFSIZE];
++	    FILE *fp;
++
++	    int filedes;
++	    char tmp_name[32];
++	    int count;
++	    int show_output = 0;
++
++	    /* printf("hook: %s, pid: %d, cdir: %s\n", hooks[i], pid, cdir ); */
++
++	    memset(tmp_name,0,sizeof(tmp_name));
++	    strncpy(tmp_name,"/tmp/pflask-hook-tmp-XXXXXX",28);
++	    filedes = mkstemp(tmp_name);
++
++	    snprintf( sysargs, BUFSIZE, "%s %d", cdir, pid );
++
++	    /* test for %s in the cmd, if it is found, we put our system arguments there,
++	       otherwise, they go on the end */
++	    if ( strstr( hooks[i], "%s" ) != NULL ) {
++	       snprintf( expanded_cmd, BUFSIZE, hooks[i], sysargs );
++	       snprintf( cmd, PATH_MAX, "%s 2>&1", expanded_cmd );
++	    } else {
++	       snprintf( cmd, PATH_MAX, "%s %s 2>&1", hooks[i], sysargs );
++	    }
++
++ 	    if ((fp = popen(cmd, "r")) == NULL) {
++	       printf("[ERROR]: hook cannot open pipe\n");
++	    } else {
++	       while (fgets(buf, BUFSIZE, fp) != NULL) {
++		  write( filedes,buf,BUFSIZE );
++	       }
++	       if( pclose(fp) )  {
++		  printf(" [ERROR]: Hook not found or exited with error status\n" );
++		  show_output = 1;
++	       }
++
++	       if ( show_output ) {
++		  errno = 0;
++		  /* rewind the stream pointer to the start of temporary file */
++		  if( -1 == lseek(filedes,0,SEEK_SET) ) {
++		     printf( "[ERROR]: cannot open output file (lseek failed with error [%s])\n",
++			     strerror(errno) );
++		  } else {
++		     errno = 0;
++		     /* read the data from temporary file */
++		     while( ( count = read(filedes,buf,BUFSIZE) ) > 0 ) {
++			printf( "%s", buf );
++		     }
++		     if ( count < 0 ) {
++			printf( "[ERROR]: read %d failed with error [%s]\n", count,
++				strerror(errno) );
++		     }
++		  }
++	       }
++	    }
++	    unlink(tmp_name);
++	 }
++      }
++   }
++}
+Index: git/src/hook.h
+===================================================================
+--- /dev/null
++++ git/src/hook.h
+@@ -0,0 +1,31 @@
++/*
++ * The process in the flask.
++ *
++ * Copyright (c) 2013, Alessandro Ghedini
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
++ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
++ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
++ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
++ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
++ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++void run_hooks(	int pid, char *cdir, char **hooks, int hook_count );
+Index: git/src/pflask.c
+===================================================================
+--- git.orig/src/pflask.c
++++ git/src/pflask.c
+@@ -37,6 +37,8 @@
+ #include <sys/syscall.h>
+ 
+ #include <linux/sched.h>
++#include <linux/limits.h>
++#include <libgen.h>
+ 
+ #include <getopt.h>
+ 
+@@ -57,6 +59,7 @@
+ #include "sync.h"
+ #include "printf.h"
+ #include "util.h"
++#include "hook.h"
+ 
+ #ifndef CLONE_UNCONTAIN
+ #  define CLONE_UNCONTAIN         0x00001000
+@@ -235,9 +238,10 @@ int main(int argc, char *argv[]) {
+ 		rc = setsid();
+ 		sys_fail_if(rc < 0, "setsid()");
+ 
++		/* sync barrier #1, the original sync! */
++		/* we wait until the parent calls sync_child_wake() */
+ 		sync_barrier_parent(sync, SYNC_START);
+-
+-		sync_close(sync);
++		/* sync_close(sync); */
+ 
+ 		open_slave_pty(master);
+ 
+@@ -312,6 +316,10 @@ int main(int argc, char *argv[]) {
+ 
+ 		setenv("container", "pflask", 1);
+ 
++		/* sync barrier #2 .. right before we start, everything is set */
++		sync_barrier_parent(sync, SYNC_START);
++		sync_close(sync);
++
+ 		if (argc > optind)
+ 			rc = execvpe(argv[optind], argv + optind, environ);
+ 		else
+@@ -320,6 +328,7 @@ int main(int argc, char *argv[]) {
+ 		sys_fail_if(rc < 0, "Error executing command");
+ 	}
+ 
++	/* waits until the child calls the sync_barrier_parent */
+ 	sync_wait_child(sync, SYNC_START);
+ 
+ 	if ((args.chroot_given && (clone_flags & CLONE_NEWUSER)) ||
+@@ -340,8 +349,20 @@ int main(int argc, char *argv[]) {
+ 	if (clone_flags & CLONE_NEWUSER)
+ 		setup_user_map(users, pid);
+ 
++	/* sync resume #1. initial prep is done */
+ 	sync_wake_child(sync, SYNC_DONE);
+ 
++	/* run hooks, before the actual exec of the child's entry point */
++	char *cdir;
++	if (args.chroot_given || args.root_given) {
++	   cdir = dirname( args.root_arg );
++	} else {
++	   cdir = "/";
++	}
++	run_hooks( pid, cdir, args.hook_arg, args.hook_given );
++
++	/* sync resume #2. and destroy */
++	sync_wake_child(sync, SYNC_DONE);
+ 	sync_close(sync);
+ 
+ 	if (args.detach_flag)

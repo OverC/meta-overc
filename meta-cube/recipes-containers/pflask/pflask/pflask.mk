@@ -48,6 +48,7 @@ SOURCES= \
 	src/pty.c \
 	src/sync.c \
 	src/user.c \
+	src/hook.c \
 	src/util.c
 
 ifneq ($(findstring HAVE_DBUS,$(DEFINES)),)

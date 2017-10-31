@@ -648,7 +648,45 @@ convert_base_config_to_cube()
     rootfs=$(jq -r  '.root.path'  config.json)
     rootfs="/opt/container/${container_name}/${rootfs}"
 
-    pflask_args="${pflask_args}	-p ${container_name} --uncontain -d --escape-char=255 --root ${rootfs}"
+    # TODO. These could chnage to prestart hooks, post start hooks could
+    #       be scripts called after launch, but for now this is consistent
+    #       with our OCI hook calls.
+    if [ -n "${poststart_hooks}" ]; then
+	OLDIFS=$IFS
+	hooks=""
+IFS='
+'
+	for h in ${poststart_hooks}; do
+	    # drop any "null" strings, since that means "no args"
+	    h=$(echo "${h}" | sed 's/null//g')
+
+	    # args are in an array i.e. ["sh","-c","/usr/libexec/oci/hooks.d/oci-network down $(cat)"]
+	    # so we test for the brackets and replace the hook with the output
+	    echo "${h}" | grep -q "\["
+	    if [ $? -eq 0 ]; then
+		zztop=$(echo ${h} | sed -e 's/.*\[\(.*\)\]/\1/')
+		if [ -n "${zztop}" ]; then
+		    # drop quotes and commas
+		    zztop=$(echo ${zztop} | tr -d '"')
+		    zztop=$(echo ${zztop} | sed 's/,/ /g')
+		    h=${zztop}
+		fi
+	    fi
+
+	    # was it a script call ? if it was, we need to put quotes back
+	    # arond the -c "<command>"
+	    echo ${h} | grep -q "sh -c"
+	    if [ $? -eq 0 ]; then
+		h=$(echo ${h} | sed "s/-c /-c '/")
+		h=$(echo ${h} | sed "s/$/ %s'/")
+	    fi
+
+	    hooks="${hooks} --hook=\"${h}\""
+	done
+	IFS=$OLDIFS
+    fi
+
+    pflask_args="${pflask_args}	-p ${container_name} --uncontain -d --escape-char=255 --root ${rootfs} ${hooks}"
 
     echo "#!/bin/bash" > pflask.cmd
     echo "date > /tmp/pflask-hook.log" >> pflask.cmd
@@ -664,6 +702,11 @@ convert_base_config_to_cube()
     fi
     echo "pflask ${pflask_args} -- ${app}" >> pflask.cmd
 
+    # Note: This is intentially zero'd, so that the if check will not match
+    #       We are currently using poststart internally to pflask, but they
+    #       may shift to prestart, and this code would then be re-activated as
+    #       poststart
+    poststart_hooks=""
     if [ -n "${poststart_hooks}" ]; then
 	OLDIFS=$IFS
 IFS='

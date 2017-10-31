@@ -10,17 +10,7 @@ cd $cubedir
 cubename=$(basename $cubedir)
 
 count=0
-while [ $count -lt 10 ]; do
-    pid=$(machinectl show ${cubename} | grep Leader | cut -f2 -d=)
-    if [ -z "${pid}" ]; then
-	echo "failed to get pid $count" >> /tmp/cube-hook.log
-	let count=$count+1
-	sleep 0.5
-    else
-	echo "got pid $pid on try $count" >> /tmp/cube-hook.log
-	count=10
-    fi
-done
+pid=$2
 
 veth_name=$(eval echo veth-${cubename})
 
