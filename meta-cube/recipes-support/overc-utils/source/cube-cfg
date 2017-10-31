@@ -58,7 +58,7 @@ cat << EOF
        <type>       type of hook: prestart, poststart or poststop
        <name>       full path to the hook
 
- ${0##*/} link      <container one>:<port> <container two>:<name> [from <ip or "localhost">]
+ ${0##*/} link      <container one>:<port> <container two>:<port> [from <ip or "localhost">]
           link-raw  <container> <command>
           link-edit <container>
 
