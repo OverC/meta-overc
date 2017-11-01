@@ -25,9 +25,9 @@ class Package(object):
             subp=subprocess.Popen("rpm -qa | grep kernel-image | xargs rpm -ql | grep bzImage | awk -F'/' '{print $3}'", shell=True,stdout=subprocess.PIPE)
         else:
             subp1 = subprocess.Popen("chroot %s rpm -qa | grep kernel-image" % path, shell=True,stdout=subprocess.PIPE)
-            rpm_package = subp1.stdout.readline().strip()
+            rpm_package = subp1.stdout.readline().decode("utf-8").strip()
             subp=subprocess.Popen("chroot %s rpm -ql %s | grep bzImage | awk -F'/' '{print $3}'" % (path, rpm_package), shell=True,stdout=subprocess.PIPE)
 
-        c=subp.stdout.readline().strip()
+        c=subp.stdout.readline().decode("utf-8").strip()
         return c
 
