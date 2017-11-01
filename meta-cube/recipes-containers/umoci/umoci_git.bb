@@ -6,11 +6,11 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=3b83ef96387f14655fc854ddc3c6bd57"
 RDEPENDS_${PN} = "skopeo \
                  "
 
-SRCREV_umoci = "d7e1c84252f7eb1b1b1193c2fd85a084a4a97d7e"
+SRCREV_umoci = "6e68a6a2ae3e12ad78110ab9e68aa56f8281498f"
 SRC_URI = "git://github.com/openSUSE/umoci;branch=master;name=umoci;destsuffix=git/src/github.com/openSUSE/umoci \
           "
 
-PV = "v0.1.0-dev+git${SRCPV}"
+PV = "v0.3.1-dev+git${SRCPV}"
 S = "${WORKDIR}/git/src/github.com/openSUSE/umoci"
 GO_IMPORT = "github.com/openSUSE/umoci"
 
