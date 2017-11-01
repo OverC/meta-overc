@@ -1,0 +1,246 @@
+# Bash completion for 'c3', 'c3-ctl', 'cube-ctl', 'c3-cfg', 'cube-cfg'
+#
+
+#
+# Returns the list of known containers
+#
+_c3_containers()
+{
+    echo $(c3 list | awk '{print $1}' | tail +3)
+}
+
+#
+# Checks for the occurance of a string in a bash array
+#
+_c3_contains()
+{
+    local array="$1[@]"
+    local seeking=$2
+    local in=1
+    for element in "${!array}"; do
+        if [[ $element == $seeking ]]; then
+            in=0
+            break
+        fi
+    done
+    return $in
+}
+
+#
+# Completions for c3-cfg per the help text at the top of cube-cfg
+#
+_c3_cfg_module()
+{
+    local cur prev
+
+    # We can't use _init_completion since if we are called via
+    # _c3_module() we sub 'cfg' with 'cube-cfg' which appears
+    # to throw off the references that _init_completion uses.
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    #echo "cur: $cur, prev: $prev, words: ${COMP_WORDS[@]}, cword: $COMP_CWORD" >> /tmp/here
+
+    # Handle the simple commands
+    case "$prev" in
+    '-n'|'link-raw'|'link-edit'|'show')
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
+        return 0
+        ;;
+    '-o')
+        _filedir
+        return 0
+        ;;
+    'attribute')
+        COMPREPLY=( $(compgen -W '+ -' -- $cur) )
+        return 0
+        ;;
+    esac
+
+    # handle the multipart commands
+    if _c3_contains COMP_WORDS "link"; then
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -S ':' -- $cur) )
+        return 0
+    elif _c3_contains COMP_WORDS "gen"; then
+        if [[ "$prev" == ":" ]] || [[ "$cur" == ":" ]]; then
+            cur=${cur##*:}
+            COMPREPLY=( $(compgen -W 'cube oci' -- $cur) )
+            return 0
+        fi
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -S ':' -- $cur) )
+        return 0
+    elif _c3_contains COMP_WORDS "hook" || _c3_contains COMP_WORDS "hook-script"; then
+        if [[ "$prev" == ":" ]] || [[ "$cur" == ":" ]]; then
+            cur=${cur##*:}
+            _filedir
+            return 0
+        fi
+        COMPREPLY=( $(compgen -W 'prestart poststart poststop' -S ':' -- $cur) )
+        return 0
+    elif _c3_contains COMP_WORDS "mount"; then
+        _filedir
+        if [[ "$cur" == "" ]]; then
+            COMPREPLY=("bind:" "${COMPREPLY[@]}")
+        fi
+        return 0
+    elif _c3_contains COMP_WORDS "device"; then
+        if [[ "$prev" == ":" ]] || [[ "$cur" == ":" ]]; then
+            if _c3_contains COMP_WORDS "console"; then
+                if ! [[ "$COMP_LINE" =~ ":tty"|":vt" ]]; then
+                    cur=${cur##*:}
+                    COMPREPLY=( $(compgen -W 'tty vt' -S ':' -- $cur) )
+                    return 0
+                fi
+            fi
+            return 0
+        fi
+        COMPREPLY=( $(compgen -W 'network network-virt vt whitelist blacklist console' -S ':' -- $cur) )
+        return 0
+    fi
+
+    case "$cur" in
+    -*)
+        COMPREPLY=( $(compgen -W '-o -n --clean' -- $cur) )
+        return 0
+        ;;
+    esac
+
+    COMPREPLY=( $(compgen -W 'gen show mount hook hook-script link \
+                              link-raw link-edit device id attribute \
+                              get set -n -o --clean' -- $cur) )
+
+    return 0
+} &&
+complete -o nospace -F _c3_cfg_module cube-cfg &&
+complete -o nospace -F _c3_cfg_module c3-cfg
+
+#
+# Completions for c3-ctl per the help text at the top of cube-ctl
+#
+_c3_ctl_module()
+{
+    local cur prev
+
+    # We can't use _init_completion since if we are called via
+    # _c3_module() we sub 'ctl' with 'cube-ctl' which appears
+    # to throw off the references that _init_completion uses.
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    #echo "cur: $cur, prev: $prev, words: ${COMP_WORDS[@]}, cword: $COMP_CWORD" >> /tmp/here
+
+    # Handle the simple commands
+    case "$prev" in
+    '-i')
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -S ':' -- $cur) )
+        return 0
+        ;;
+    'info'|'show'|'prep'|'netprime'|'stop')
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
+        return 0
+        ;;
+    esac
+
+    # Handle the multipart commands
+    if _c3_contains COMP_WORDS "del"; then
+        if _c3_contains COMP_WORDS "-F"; then
+            COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
+        else
+            COMPREPLY=( $(compgen -W '-F $(_c3_containers)' -- $cur) )
+        fi
+        return 0
+    elif _c3_contains COMP_WORDS "start"; then
+        if [[ "$COMP_LINE" =~ "--auto" ]]; then
+            COMPREPLY=( $(compgen -W '--peer --nested' -- $cur) )
+        else
+            COMPREPLY=( $(compgen -W '--peer --nested --auto= $(_c3_containers)' -- $cur) )
+        fi
+        return 0
+    elif _c3_contains COMP_WORDS "stack"; then
+        COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
+        return 0
+    elif _c3_contains COMP_WORDS "add"; then
+        case "$prev" in
+        '-o')
+            _filedir
+            return 0
+            ;;
+        '-t')
+            COMPREPLY=( $(compgen -W 'lxc oci cube' -- $cur) )
+            return 0
+            ;;
+        esac
+        COMPREPLY=( $(compgen -W '-n -u -o -t --auto=' -- $cur) )
+        return 0
+    elif _c3_contains COMP_WORDS "store"; then
+        if [[ "$prev" == "store" ]]; then
+            COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
+            return 0
+        else
+            if [[ "$COMP_LINE" =~ "dir://" ]] && [[ "$cur" == "//"* ]]; then
+                cur=${cur#//}
+                _filedir
+                for ((i=0; i<${#COMPREPLY[@]} ;i++)); do
+                    COMPREPLY[i]="//${COMPREPLY[i]}"
+                done
+                return 0
+            fi
+            COMPREPLY=( $(compgen -W 'dir:// cube:// docker://' -- $cur) )
+            return 0
+        fi
+        return 0
+    fi
+
+    case "$cur" in
+    -*)
+        COMPREPLY=( $(compgen -W '-i' -- $cur) )
+        return 0
+        ;;
+    esac
+
+    COMPREPLY=( $(compgen -W 'start stop netprime stack store prep \
+                              add del status list -i info show \
+                              ' -- $cur) )
+
+    return 0
+} &&
+complete -o nospace -F _c3_ctl_module cube-ctl &&
+complete -o nospace -F _c3_ctl_module c3-ctl
+
+#
+# Completions for the 'c3' aggregator. The heavy lifting
+# is handled by the cfg and ctl modules above but this
+# acts as an entry point.
+#
+_c3_module()
+{
+    local cur prev words cword
+    _init_completion || return
+
+    # We can determine that we are completing a 'cfg' or
+    # 'ctl' operation, so pass completion duties to the
+    # appropriate module. Default to cube-ctl.
+    if [ ${#COMP_WORDS[@]} -gt 2 ]; then
+        if [[ ${COMP_WORDS[1]} == "cfg" ]] || [[ ${COMP_WORDS[1]} == "ctl" ]]; then
+	    # We 'hack' things some since the command will be 'cfg' or 'ctl' and
+	    # we need 'cube-ctl' or 'cube-cfg' for the completion code to find
+	    # the correct completion function.
+            COMP_WORDS[1]='cube-'${COMP_WORDS[1]}
+            _command_offset 1
+            return
+        else
+	    # Similar here, we 'hack' the command but slightly different
+	    # than above since we are in a different position in the cmdline
+            COMP_WORDS[0]='cube-ctl'
+            _command_offset 0
+            return
+	fi
+    fi
+
+    # Include the cube-ctl "level 0" matches since we default to cube-ctl cmds
+    COMPREPLY=( $(compgen -W 'ctl cmd cfg start stop netprime stack store prep \
+                              add del status list -i info show' -- $cur) )
+
+    return
+} &&
+complete -F _c3_module c3

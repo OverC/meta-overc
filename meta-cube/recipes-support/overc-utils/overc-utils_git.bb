@@ -18,6 +18,7 @@ SRC_URI = " \
     file://source/13-cube-device.rules \
     file://source/cube-device.sh \
     file://source/cube-device-functions \
+    file://source/c3-completions \
 "
 
 S = "${WORKDIR}/git"
@@ -55,11 +56,15 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-device.sh ${D}${sysconfdir}/udev/scripts
     install -m644 ${WORKDIR}/source/13-cube-device.rules ${D}${sysconfdir}/udev/rules.d
     install -m644 ${WORKDIR}/source/cube-device-functions ${D}${sysconfdir}/cube-device
+
+    install -d ${D}${datadir}/bash-completion
+    install -d ${D}${datadir}/bash-completion/completions
+    install -m644 ${WORKDIR}/source/c3-completions ${D}${datadir}/bash-completion/completions/c3
 }
 
 PACKAGES =+ "overc-device-utils"
 
-FILES_${PN} += "/opt/${BPN} \
+FILES_${PN} += "/opt/${BPN} ${datadir}/bash-completion \
                ${bindir} ${sbindir} ${localstatedir}/lib/cube-cmd-server/"
 
 FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
