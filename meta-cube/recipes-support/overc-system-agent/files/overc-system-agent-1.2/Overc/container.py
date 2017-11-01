@@ -226,7 +226,7 @@ class Container(object):
         # Insert request into lxc.service
         lxcfile = '%s/overlayrestore' % (CONTAINER_MOUNT)
         lxc = open(lxcfile, 'a+')
-        lines=lxc.readlines()
+        lines=lxc.readlines().decode("utf-8")
         found = 0
         for oldir in dirs.split(','):
             basepara = "%s %s" % (cn,oldir)

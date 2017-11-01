@@ -40,12 +40,12 @@ class Btrfs(Utils):
 
     def _getrootdev(self, mountdir):
         subp=subprocess.Popen('mount',shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline().strip()
+        c=subp.stdout.readline().decode("utf-8").strip()
         while c:
             c_list = c.split()
             if  c_list[2] == mountdir:
                 return c_list[0]
-            c=subp.stdout.readline()
+            c=subp.stdout.readline().decode("utf-8")
 
         return None
     
@@ -54,7 +54,7 @@ class Btrfs(Utils):
             os.mkdir(SYSROOT)
 
         subp=subprocess.Popen('mount',shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline().strip()
+        c=subp.stdout.readline().decode("utf-8").strip()
         need_mount = True
         while c:
             c_list = c.split()
@@ -62,7 +62,7 @@ class Btrfs(Utils):
                 #root volume has been mount to SYSROOT
                 need_mount = False
                 break
-            c=subp.stdout.readline()
+            c=subp.stdout.readline().decode("utf-8")
             
         if need_mount:
             os.system('mount -o subvolid=5 %s %s' % (self.rootdev, SYSROOT))
@@ -76,17 +76,17 @@ class Btrfs(Utils):
 
     def _get_btrfs_value(self, path, key):
         subp=subprocess.Popen('/usr/bin/btrfs subvolume show %s' % path, shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline()
+        c=subp.stdout.readline().decode("utf-8")
         while c:
-            c_list = c.split(":", 1)
+            c_list = c.split(':')
             if  c_list[0].strip() == key:
                 return c_list[1].strip()
                 
-            c=subp.stdout.readline()
+            c=subp.stdout.readline().decode("utf-8")
 
     def _cleanup_subvol(self, subvoldir, exclude):
         subp=subprocess.Popen('/usr/bin/btrfs subvolume list %s' % subvoldir,shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline()
+        c=subp.stdout.readline().decode("utf-8")
         subvol_stack = []
         while c:
             c_list = c.split()
@@ -94,7 +94,7 @@ class Btrfs(Utils):
             if  subvolid != self.rootfs and subvolid not in exclude:
                 subvol = 'subvolume delete -C %s/%s' % (subvoldir, c_list[-1])
                 subvol_stack.append(subvol)
-            c=subp.stdout.readline()
+            c=subp.stdout.readline().decode("utf-8")
 
         while subvol_stack:
             self._btrfs(subvol_stack.pop())
@@ -183,7 +183,7 @@ class Btrfs(Utils):
 
         #snapshot the children subvolumes
         subp=subprocess.Popen('/usr/bin/btrfs subvolume list -o %s/.tmp/%s' % (CONTAINER_MOUNT, FACTORY_SNAPSHOT),shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline()
+        c=subp.stdout.readline().decode("utf-8")
         while c:
             c_list = c.split()
             factory_subvol = c_list[-1]
@@ -194,11 +194,11 @@ class Btrfs(Utils):
             ret = self._btrfs('subvolume snapshot %s/.tmp/%s %s' % (CONTAINER_MOUNT, factory_subvol, snapshot_dir))
             if ret != 0:
                 self.message += 'Cannot snapshot subvolume of %s.tmp/%s' % (CONTAINER_MOUNT, factory_subvol)
-                    self.message += '\nto %s' % snapshot_dir
-                    self.message += 'Factory reset aborted!'
-                    return False
+                self.message += '\nto %s' % snapshot_dir
+                self.message += 'Factory reset aborted!'
+                return False
             
-            c=subp.stdout.readline()
+            c=subp.stdout.readline().decode("utf-8")
         
         #setup default subvolume
         subvolid = self._get_btrfs_value(workdir, 'Subvolume ID')
