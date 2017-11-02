@@ -550,6 +550,7 @@ IFS='
 	             ${tty_flag} \
 	             ${hooks} \
 		     ${app_args} \
+                     --linux-cgroups-path=/runc/${container_name} \
                      --linux-seccomp-remove-all \
                      --hostname=${container_name} \
 		     --env container=docker \
@@ -583,10 +584,11 @@ IFS='
 
     # Generate an oci.cmd that can be used to launch this container via runc
     echo "#!/bin/bash" > oci.cmd
+    echo "if [ -d /sys/fs/cgroup/unified ]  ; then mkdir -p /sys/fs/cgroup/unified/runc/${container_name}; echo \$\$ > /sys/fs/cgroup/unified/runc/${container_name}/cgroup.procs; fi" >> oci.cmd
     if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
 	runc_console="--console-socket=/var/lib/cube/$container_name/runc-sock"
 	echo "rm -f /var/lib/cube/${container_name}/dtach-sock /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
-	echo "/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 -p /var/lib/cube/${container_name}/pty-console -c -C -E -q /var/lib/cube/${container_name}/runc-sock" >> oci.cmd
+	echo "/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 -p /var/lib/cube/${container_name}/pty-console -c -C -E -q /var/lib/cube/${container_name}/runc-sock < /dev/null > /dev/null 2> /dev/null" >> oci.cmd
 	jq -r  '.process.terminal = true' config.json > config.json.terminal
     else
 	jq -r  '.process.terminal = false' config.json > config.json.terminal
