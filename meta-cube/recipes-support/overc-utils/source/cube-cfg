@@ -600,6 +600,8 @@ IFS='
 
     # Generate an oci.cmd that can be used to launch this container via runc
     echo "#!/bin/bash" > oci.cmd
+    echo "# this creates a new cgroup for the container we are launching. runc is pointed at it" >> oci.cmd
+    echo "# via its json config and will reparent to that new cgroup and escape systemd tracking" >> oci.cmd
     echo "if [ -d /sys/fs/cgroup/unified ]  ; then mkdir -p /sys/fs/cgroup/unified/runc/${container_name}; echo \$\$ > /sys/fs/cgroup/unified/runc/${container_name}/cgroup.procs; fi" >> oci.cmd
     if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
 	runc_console="--console-socket=/var/lib/cube/$container_name/runc-sock"
