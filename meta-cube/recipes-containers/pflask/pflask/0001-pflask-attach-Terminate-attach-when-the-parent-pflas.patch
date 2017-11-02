@@ -1,0 +1,51 @@
+From d55dcb5333da2c65d1025a918790bf66eb7abe4c Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Thu, 2 Nov 2017 11:26:02 -0700
+Subject: [PATCH] pflask attach: Terminate attach when the parent pflask is
+ terminated
+
+After a read failure from the master pty, the client should check if
+the server pid is still valid.  If not, execute the timeout checks, if
+the server is gone the client should exit immediately to avoid an
+infinite loop.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/pty.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/pty.c b/src/pty.c
+index 0ca7325..7579418 100644
+--- a/src/pty.c
++++ b/src/pty.c
+@@ -52,6 +52,7 @@
+ static struct termios stdin_attr;
+ static struct winsize stdin_ws;
+ static int stdin_is_tty = 1;
++static int master_pid = 0;
+ 
+ static int recv_fd(int sock);
+ static void send_fd(int sock, int fd);
+@@ -199,6 +200,10 @@ void process_pty(int master_fd, char escape_char) {
+ 			if (!rc)
+ 				goto done;
+ 			else if (rc < 0) {
++				/* If the parent process is gone, hang up immediately*/
++				if (master_pid && kill(master_pid, 0))
++					goto done;
++
+ 				/* during the handover on some systems, we'll get a read error
+ 				   But a quick exit kills the container. Instead, lets do a short
+ 				   sleep and retry. If this happens 100 times .. we admit defeat
+@@ -401,6 +406,8 @@ int recv_pty(pid_t pid) {
+ 	rc = connect(sock, (struct sockaddr *) &servaddr_un, sizeof(struct sockaddr_un));
+ 	sys_fail_if(rc < 0, "connect()");
+ 
++	master_pid = pid;
++
+ 	return recv_fd(sock);
+ }
+ 
+-- 
+2.11.0
+

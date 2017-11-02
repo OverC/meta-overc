@@ -19,6 +19,7 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
            file://0001-netif-Add-support-for-a-wild-card-interface-with-the.patch \
            file://0001-pflask-support-move-wireless-netwrok-to-another-netn.patch \
            file://0001-pflask-add-hook-support.patch \
+	   file://0001-pflask-attach-Terminate-attach-when-the-parent-pflas.patch \
 	"
 
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
