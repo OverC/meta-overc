@@ -40,16 +40,7 @@ if [ "${action}" = "up" ]; then
     
     # Add the veth that stays in essential to the ovs-bridge. This gets us
     # connectivity to the network prime, and hence the outside world
-    count=0
-    while [ $count -lt 10 ]; do
-	ovs-vsctl add-port br-int ${veth_name}
-	if [ $? -ne 0 ]; then
-	    let count=$count+1
-	    sleep 0.5
-	else
-	    count=10
-	fi
-    done
+    ovs-vsctl add-port br-int ${veth_name}
 
     # Bring up the interface we just added to the bridge. It must be up so dhcp
     # can get an ip address.
