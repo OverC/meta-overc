@@ -47,6 +47,22 @@ cat << EOF
        <type>:       optional "bind" if a bind mount is to be used
        <name>:<name> source and destination directory
 
+ ${0##*/} auth <type>:<userid>:<password>
+
+    Create an authorization
+
+       <type>:       Type of registry: "docker" or "cube"
+       <userid>:
+       <password>
+
+    Authorization will be stored in the user's home directory .overc/auths.json
+
+    If a container name is provided via [-n <name>], then the authorization is
+    stored per-container in the same "auths.json" file.
+
+    if only <type> is provided, then the default authorization for that registry
+    type will be returned.
+
  ${0##*/} [-n <container name>] hook <type>:<name>
  ${0##*/} [-n <container name>] hook-script <type>:<name>
 
@@ -855,9 +871,80 @@ etcd_inject()
     fi
 }
 
+set_authorization()
+{
+    local auth_type=$1
+    local auth_user=$2
+    local auth_password=$3
+    local container_name=$4
+    local auth_file="auths.json"
+    local auth_dir="~/.overc/"
+
+    eval auth_dir=${auth_dir}
+    if [ -n "${container_name}" ]; then
+	auth_dir="/opt/container/${container_name}"
+    fi
+    if [ "${auth_type}" == "docker" ]; then
+	if [ ! -d "${auth_dir}" ]; then
+	    mkdir -p "${auth_dir}"
+	fi
+
+	if [ ! -f "${auth_dir}/${auth_file}" ]; then
+cat > ${auth_dir}/${auth_file} <<EOF
+	{
+	    "auths": {
+		"https://index.docker.io/v1/": {
+		    "auth": ""
+		}
+	    },
+	    "HttpHeaders": {
+		"User-Agent": "Docker-Client/unknown-version (linux)"
+	    }
+	}
+EOF
+	fi
+
+        auth_string=$(echo "${auth_user}:${auth_password}" | base64)
+	auth_string="${auth_string}="
+
+	jq ".[\"auths\"][\"https://index.docker.io/v1/\"][\"auth\"] = \"${auth_string}\"" ${auth_dir}/${auth_file} > ${auth_dir}/${auth_file}.new 
+	mv ${auth_dir}/${auth_file}.new ${auth_dir}/${auth_file}
+    fi
+}
+
+get_authorization()
+{
+    local auth_type=$1
+    local container_name=$2
+    local auth_file="auths.json"
+    local auth_dir="~/.overc/"
+
+    if [ -n "${container_name}" ]; then
+	auth_dir="/opt/container/${container_name}"
+    fi
+    if [ "${auth_type}" == "docker" ]; then
+	if [ -f "${auth_dir}/${auth_file}" ]; then
+	    jq '.["auths"]["https://index.docker.io/v1/"]["auth"]' ${auth_dir}/${auth_file}
+	fi
+    fi
+}
+
 case "${cmd}" in
     clean)
 	clean_config_artifacts
+	;;
+    auth)
+	auth_string=${cmd_options_non_dashed[1]}
+
+	auth_type=$(echo ${auth_string} | cut -f1 -d:)
+	auth_user=$(echo ${auth_string} | cut -f2 -d:)
+	auth_password=$(echo ${auth_string} | cut -f3 -d:)
+
+	if [ "${auth_user}" != "${auth_password}" ]; then
+	    set_authorization ${auth_type} ${auth_user} ${auth_password} ${container_name}
+	else
+	    get_authorization ${auth_type} ${container_name}
+	fi
 	;;
     show)
 	if [ -z "${container_name}" ]; then

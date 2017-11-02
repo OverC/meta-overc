@@ -316,6 +316,7 @@ build_container_lists()
 	elif [ -e "/opt/container/${c}/config.json" ]; then
 	    open_container_available="${open_container_available} ${c}"
 	fi
+	## TODO: test for some other oci artifacts.
     done
 
     # short form output
@@ -1124,16 +1125,51 @@ case "${cmd}" in
 		rm -f ${container_source}-oci/config.json
 		cp -r ${container_source}-oci/* ${container_source}/
 		rm -rf ${container_source}-oci
+	    fi
 
-		umoci repack --image ${container_source} ${container_source} &
-		spinner
-		echo ""
+	    # This can be expensive, but really only on the first run. consider detecting
+	    # that situation and dumping a warning. Or we make the refresh an option Or
+	    # we detect a timestamp and only do it if changed. But for now, we play it safe
+	    # and always refresh.
+	    umoci repack --refresh-bundle --image ${container_source} ${container_source} &
+	    spinner
+	    echo ""
+
+	    if [ ! -f "${container_source}/index.json" ]; then
+cat > ${container_source}/index.json <<EOF
+		 {
+		    "schemaVersion": 2,
+		    "manifests": [
+		      {
+		        "mediaType": $(jq .mediaType ${container_source}/refs/latest),
+		        "digest": $(jq .digest ${container_source}/refs/latest),
+		        "size": $(jq .size ${container_source}/refs/latest),
+		        "annotations": {
+			    "org.opencontainers.image.ref.name": "latest"
+		        },
+		        "platform": {
+			    "architecture": "amd64",
+			    "os": "linux"
+		        }
+		      }
+		    ]
+		 }
+EOF
 	    fi
 
 	    # TODO: make the tls setting an option
 	    flags="--dest-tls-verify=false --src-tls-verify=false"
+
+	    auth_string=$(cube-cfg auth docker | sed 's/\"//g' | sed 's/=$//')
+	    if [ -n "${auth_string}" ]; then
+		auth_parms="--dest-creds $(echo ${auth_string} | base64 -d)"
+	    fi
 	    echo "[INFO]: storing container ${container_source}"
-	    skopeo copy ${flags} oci:${container_source} ${container_dest}
+	    if [ -n "${verbose}" ]; then
+		skopeo_flags="--debug"
+		echo "[INFO]: skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source} ${container_dest}"
+	    fi
+	    skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source} ${container_dest}
 	elif [ -z "${src_proto}" ] && [ -z "${dest_proto}" ]; then
 	    echo "[INFO]: local -> local storage"
 
