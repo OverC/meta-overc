@@ -1140,7 +1140,7 @@ case "${cmd}" in
 	    fi
 
 	    # TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
-	    check_isset ${out_dir}/cube.network.stack $cmd_1
+	    check_isset ${out_dir}/cube.network.stack "$cmd_1"
 	    if [ $? -eq 0 ]; then
 		echo "${cmd_1}" >> ${out_dir}/cube.network.stack
 		echo "${cmd_2}" >> ${out_dir}/cube.network.stack
