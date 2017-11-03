@@ -25,6 +25,7 @@ LINUX_VERSION_EXTENSION = "-cube"
 
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES_append = " features/tmpfs/tmpfs-posix-acl.scc"
+KERNEL_FEATURES_append = " features/cgroups/cgroups.scc"
 
 KERNEL_MODULE_AUTOLOAD += "openvswitch"
 KERNEL_MODULE_AUTOLOAD += "kvm"

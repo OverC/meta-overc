@@ -12,6 +12,7 @@ SRC_URI += "file://xt-checksum.scc \
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES_append = " features/nfsd/nfsd-enable.scc"
 KERNEL_FEATURES_append = " features/tmpfs/tmpfs-posix-acl.scc"
+KERNEL_FEATURES_append = " features/cgroups/cgroups.scc"
 KERNEL_FEATURES_append = " cfg/systemd.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext2.scc"
