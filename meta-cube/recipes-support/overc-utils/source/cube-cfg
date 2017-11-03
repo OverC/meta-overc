@@ -923,6 +923,7 @@ get_authorization()
     local auth_file="auths.json"
     local auth_dir="~/.overc/"
 
+    eval auth_dir=${auth_dir}
     if [ -n "${container_name}" ]; then
 	auth_dir="/opt/container/${container_name}"
     fi
