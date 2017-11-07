@@ -170,6 +170,9 @@ while [ $# -gt 0 ]; do
 	    container_name=${2}
 	    shift
 	    ;;
+	--foreground|-f)
+	    foreground=t
+	    ;;
         --i|-i)
 	    interactive=t
 	    ;;
@@ -394,7 +397,11 @@ check_is_known_container()
 	if [ $? -eq 0 ]; then
 	    container_is_a_cube=t
 	fi
-	echo ${open_containers} ${open_container_available} | grep -w -q ${container_name}
+	# grep -w can fail us, since containers with '.' in their name will be
+	# mistaken as already in the system. So we replace the start of the string, the end
+	# and any spaces with '#' and then use that as our delimeter
+	containers=$(echo ${open_containers} ${open_container_available} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+	echo ${containers} | grep -q "#${container_name}#"
 	if [ $? -eq 0 ]; then
 	    container_is_a_oci=t
 	fi
@@ -823,11 +830,26 @@ case "${cmd}" in
 
 		if [ -f "${out_dir}/${container_name}/oci-runtime/config.json" ]; then
 		    entry_point=$(jq -r '.process.args | .[]' ${out_dir}/${container_name}/oci-runtime/config.json)
+		    envs=$(jq -r '.process.env' ${out_dir}/${container_name}/oci-runtime/config.json)
+		    if [ "${envs}" != "null" ]; then
+			envs=$(jq -r '.process.env | .[]' ${out_dir}/${container_name}/oci-runtime/config.json)
+		    else
+			envs=""
+		    fi
 		fi
 
 		# recursive call!! This may mean we need an import tool front end, instead of doing this here
 		cube-ctl add -n ${container_name} ${out_dir}/${container_name}/oci-runtime
 
+OLDIFS=$IFS
+IFS='
+'
+		if [ -n "${envs}" ]; then
+		    for e in $envs; do
+			cube-cfg -n ${container_name} set cube.env:${e}
+		    done
+		fi
+IFS=$OLDIFS
 		if [ -n "${entry_point}" ]; then
 		    cube-cfg -n ${container_name} set app:${entry_point}
 		    echo ${entry_point} | grep -q init
@@ -1007,23 +1029,23 @@ case "${cmd}" in
 	# and the second is the dest
 	container_dest=${cmd_options_non_dashed[2]}
 
+	# The test below covers the following use case:
+	#
+	#   c3 store -n <name> <dest>
+	#
+	# Since the dest gets pulled in as the source, and the
+	# source is really the container name. We shuffle things around
+	# to get the right source and dest.
+	if [ -z "${container_dest}" ]; then
+	    if [ -n "${container_name}" ]; then
+		container_dest=${container_source}
+		container_source=${container_name}
+	    fi
+	fi
 	if [ -z "${container_source}" ]; then
 	    echo "[ERROR]: no container source provided"
 	    exit 1
 	fi
-
-	for o in ${dashed}; do
-	    case ${o} in
-		-n*)
-		    container_name=`echo $o | cut -d: -f2`
-		    ;;
-		*)
-		    echo "Unknow parameter ..."
-		    usage
-		    exit 1
-		    ;;
-	    esac
-	done
 
 	if [ -z "${container_name}" ]; then
 	    container_name="${container_source}"
@@ -1134,6 +1156,30 @@ case "${cmd}" in
 	    umoci repack --refresh-bundle --image ${container_source} ${container_source} &
 	    spinner
 	    echo ""
+
+	    # Note: this could (and probably should) be done with cube.* values
+	    #       rather than the json. But the json will always be in sync with
+	    #       them .. so we go this way for now.
+	    if [ -f "${container_source}/config.json" ]; then
+		entry_point=$(jq -r '.process.args | .[]' ${container_source}/config.json)
+		umoci config --config.entrypoint="${entry_point}" --image ${container_source}
+
+		envs=$(jq -r '.process.env' ${container_source}/config.json)
+		if [ "${envs}" != "null" ]; then
+		    envs=$(jq -r '.process.env | .[]' ${container_source}/config.json)
+		else
+		    envs=""
+		fi
+OLDIFS=$IFS
+IFS='
+'
+		if [ -n "${envs}" ]; then
+		    for e in $envs; do
+			umoci config --config.env="${e}" --image ${container_source}
+		    done
+		fi
+IFS=$OLDIFS
+	    fi
 
 	    if [ ! -f "${container_source}/index.json" ]; then
 cat > ${container_source}/index.json <<EOF
@@ -1332,15 +1378,27 @@ EOF
 
 			    echo "${open_container_running}" | grep -q ${container}
 			    if [ $? -ne 0 ]; then
+				if [ -n "${foreground}" ]; then
+				    oci_args="foreground"
+				    cube-cfg -n ${container} set cube.console.mgr:
+				else
+				    cube-cfg -n ${container} set cube.console.mgr:tty
+				fi
+
+				console_mgr=$(cube-cfg -n ${container} cube.console.mgr:)
+				tty_flag="f"
+				if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
+				    tty_flag="t"
+				fi
 
 				# re-run the tweaks (in case a config changed)
-				tweak_container_terminal ${container} ${container_dir} t
+				tweak_container_terminal ${container} ${container_dir} ${tty_flag}
 				tweak_container_fstab ${container_dir}/${container}/rootfs
 				tweak_container_devices ${container} ${container_dir}
 
 				# oci.cmd is created dynamically at install time without IMA signature.
 				# So we can't run it directly, use "/bin/bash oci.cmd" to work around IMA checking
-				nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd
+				nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd ${oci_args}
 				# TODO: move this cube-cfg call into a pre-start hook, same with the
 				#       delete of the key
 				machine=$(cube-cfg id)
@@ -1633,7 +1691,9 @@ IFS=$OLDIFS
 		machine=$(cube-cfg id)
 		cube-cfg set overc/$machine/oci/${container_name}/status:inactive
 	    else
-		echo "[INFO]: container ${container_name} is not running, cannot stop"
+		if [ "${cmd}" == "stop" ]; then
+		    cube-cmd ${runc_essential} delete -f ${container_name}
+		fi
 	    fi
 	fi
 	;;
