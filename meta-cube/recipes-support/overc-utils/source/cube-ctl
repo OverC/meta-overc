@@ -84,6 +84,20 @@ cat << EOF
 
        <source>: path to the container source. Either a directory or a tar.gz
 
+ ${0##*/} rename <current name> <new name>
+ ${0##*/} mv <current name> <new name>
+
+    rename an existing container.
+
+    Note 1: this stops the container, renames it, and restarts it if it was
+            running.
+
+    Note 2: this is an advanced command. If any other containers reference
+            the original container by name, you may have future runtime problems.
+
+    Note 3: currently restricted to 'oci' containers, to avoid system containers
+            from being renamed (they are 'cubes')
+
  ${0##*/} del [-F] <name>
 
     remove a container from the system. Once this completes, the container is
@@ -299,6 +313,13 @@ build_container_lists()
     # drop the machinectl count of machines
     machines=$(echo "${machines}" | sed '/machines listed/d')
 
+    # these are globally used, and must be reset whenever the
+    # container list is rebuilto
+    open_containers=
+    cubes=
+    open_container_available=
+    cubes_available=
+
     # and then there are open containers
     graft_binaries_to_essential runc
     if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
@@ -321,6 +342,12 @@ build_container_lists()
 	fi
 	## TODO: test for some other oci artifacts.
     done
+
+    # take a copy of the "available" variables, since if a container is
+    # detected as running below it is removed from the 'available', since
+    # 'available' means "available to be started"
+    cubes_all="${cubes_available}"
+    open_container_all="${open_container_available}"
 
     # short form output
     OLDIFS=$IFS
@@ -1013,9 +1040,75 @@ IFS=$OLDIFS
 	    generate_lxc_config ${container_name} ${out_dir}
 	fi
 
+	# TODO: this is likely not required anymore
 	if [ -n "${we_are_dom0}" ]; then
 	    # now we need to restart the command server, so the new container can be monitored
 	    systemctl restart cube-cmd-server
+	fi
+	;;
+    rename|mv)
+	orig_name=${cmd_options_non_dashed[1]}
+	new_name=${cmd_options_non_dashed[2]}
+
+	if [ -z "${orig_name}" ]; then
+	    echo "[ERROR]: existing name not provided"
+	    exit 1
+	fi
+	if [ -z "${new_name}" ]; then
+	    echo "[ERROR]: new name not provided"
+	    exit 1
+	fi
+
+	check_is_known_container ${orig_name}
+	if [ $? -eq 1 ]; then
+	    echo "[ERROR]: container ${orig_name} is unknown, cannot rename"
+	    exit 1
+	fi
+	check_is_known_container ${new_name}
+	if [ $? -eq 0 ]; then
+	    echo "[ERROR]: container ${new_name} already exists"
+	    exit 1
+	fi
+
+	echo "${open_container_all}" | grep -q ${orig_name}
+	if [ $? -ne 0 ]; then
+	    echo "[ERROR]: only 'oci' containers can be renamed"
+	    exit 1
+	fi
+
+	np=$(container_by_attribute netprime)
+	if [ "${np}" = "${orig_name}" ]; then
+	    echo "[ERROR]: ${orig_name} is the netprime, it cannot be renamed. See the 'netprime' command"
+	    exit 1
+	fi
+
+	build_container_lists
+	# TODO: could be a function to check for a running container
+	rcontainers=$(echo ${open_container_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+	echo ${rcontainers} | grep -q "#${orig_name}#"
+	if [ $? -eq 0 ]; then
+	    # the container is running, we must stop it
+	    echo "[INFO]: container ${orig_name} is running, stopping ..."
+	    ${0##*/} stop ${orig_name}
+	    was_running=t
+	fi
+
+	mv /opt/container/${orig_name} /opt/container/${new_name}
+	sed "s#${orig_name}#${new_name}#g" -i /opt/container/${new_name}/oci.cmd
+	if [ ! -d /var/lib/cube/${orig_name} ]; then
+	    echo "[WARNING]: container state directory /var/lib/cube/${orig_name} not found"
+	else
+	    mv /var/lib/cube/${orig_name} /var/lib/cube/${new_name}
+	    # TODO: this could be a series of cube-cfg calls ..
+	    sed "s#/var/lib/cube/${orig_name}#/var/lib/cube/${new_name}#g" -i /opt/container/${new_name}/.cube.mount.bind
+	fi
+
+	echo "[INFO]: regenerating container configuration for ${new_name}"
+	c3-cfg gen ${new_name}:oci
+
+	if [ -n "${was_running}" ]; then
+	    echo "[INFO]: restarting ${orig_name} as ${new_name} ..."
+	    ${0##*/} start ${orig_name}
 	fi
 	;;
     prep)
@@ -1704,7 +1797,7 @@ IFS=$OLDIFS
 	    build_container_lists
 	    echo ${open_container_running} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
-		echo "[INFO] stopping container ${container_name}"
+		echo "[INFO]: stopping container ${container_name}"
 		cube-cmd ${runc_essential} kill ${container_name} KILL
 		if [ "${cmd}" == "stop" ]; then
 		    cube-cmd ${runc_essential} delete -f ${container_name}
