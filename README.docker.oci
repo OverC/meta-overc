@@ -18,21 +18,44 @@ are controlled/set via the cube-cfg command.
 Examples:
 --------
 
-     % c3 add docker://httpd
-     % c3 start httpd
-     % c3 stop httpd
-     % c3-cfg auth docker:<username>:<password>
-     % c3 store -n httpd docker://<username>/httpd
+  # pull something from docker hub
+  % c3 add docker://httpd
 
-     % c3 add -n mycontainer docker://<my account>/mycontainer
-     % c3 start mycontainer
+  # if you want a different name than 'httpd' for the container
+  % c3 add -n myhttpd docker://httpd
+
+  # start the container
+  % c3 start httpd
+
+  # determine the 'netprime' of the system
+  % netprime=$(c3 netprime)
+  # 'c3 list' will also show this in table format
+
+  # link port 8000 of the netprime to your container
+  % c3-cfg link cube-server:8000 httpd:80
+  # activat the link by stacking the container
+  % c3 stack cube-server
+
+  # set the container to autostart
+  % c3-cfg -n httpd set autostart:dom0
+
+  # push the container to your dockerhub
+  % c3 stop httpd
+
+  # authenticate and store
+  % c3-cfg auth docker:
+  # answer the prompts!
+  % c3 store -n httpd docker://<username>/httpd
+
+  % c3 add -n mycontainer docker://<my account>/mycontainer
+  % c3 start mycontainer
 
 Note:
 
 If a container shows startup issues, the --foreground (or -f) flag
 can be used to force container output to the launching terminal.
 
-    % c3 start -f mycontainer
+  % c3 start -f mycontainer
 
 if your container daemonizes or runs in the background, only use this for
 debugging.
