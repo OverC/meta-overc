@@ -1,0 +1,39 @@
+Working with OCI containers imported from dockerhub
+---------------------------------------------------
+
+OverC can interact directly with docker registries, without requiring
+docker as part of the image. These manipulations work whether the registry
+is public (i.e. dockerhub) or private.
+
+When interacting with docker registries the public APIs are used to
+push/pull content, and then converted to OCI containers before executing
+them on target. This conversion step allows security policies and other
+integration steps to be seamlessly performed.
+
+As part of the import process, OverC extracts the application entry
+point (i.e. /sbin/init, or httpd) and any environment variables that
+are required for the application. All other parts of the configuration
+are controlled/set via the cube-cfg command.
+
+Examples:
+--------
+
+     % c3 add docker://httpd
+     % c3 start httpd
+     % c3 stop httpd
+     % c3-cfg auth docker:<username>:<password>
+     % c3 store -n httpd docker://<username>/httpd
+
+     % c3 add -n mycontainer docker://<my account>/mycontainer
+     % c3 start mycontainer
+
+Note:
+
+If a container shows startup issues, the --foreground (or -f) flag
+can be used to force container output to the launching terminal.
+
+    % c3 start -f mycontainer
+
+if your container daemonizes or runs in the background, only use this for
+debugging.
+
