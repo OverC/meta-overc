@@ -74,7 +74,7 @@ cat << EOF
        <type>       type of hook: prestart, poststart or poststop
        <name>       full path to the hook
 
- ${0##*/} link      <container one>:<port> <container two>:<port> [from <ip or "localhost">]
+ ${0##*/} link      <container one>:<port> <container two>:<name> [from <ip or "localhost">]
           link-raw  <container> <command>
           link-edit <container>
 
@@ -454,16 +454,38 @@ IFS=$OLDIFS
     fi
 
     echo ""
+    for K in "${!CONFIG_MAP[@]}"; do
+	var_type=$(echo "${CONFIG_MAP[$K]}" | cut -d';' -f3)
+	if [ "${var_type}" = "multi" ]; then
+	    echo "$K"
+	    echo "------"
+	    vals=$(cube-cfg -n ${container_name} get ${K})
+OLDIFS=$IFS
+IFS='
+'
+	    for v in $vals; do
+		echo -n "${K}: "
+		echo ${v}
+	    done
+IFS=$OLDIFS
+	fi
+    done
+
+    echo ""
     output=$(mktemp)
     echo "option:setting" > ${output}
     echo "------:-------" >> ${output}
     for K in "${!CONFIG_MAP[@]}"; do
-	echo -n "${K}: " >> ${output}
-	value=$(cube-cfg -n ${container_name} get ${K})
-	if [ -n "${value}" ]; then
-	    echo "${value}" >> ${output}
-	else
-	    echo "not set" >> ${output}
+
+	var_type=$(echo "${CONFIG_MAP[$K]}" | cut -d';' -f3)
+	if [ "${var_type}" != "multi" ]; then
+	    echo -n "${K}: " >> ${output}
+	    value=$(cube-cfg -n ${container_name} get ${K})
+	    if [ -n "${value}" ]; then
+		echo "${value}" >> ${output}
+	    else
+		echo "not set" >> ${output}
+	    fi
 	fi
     done
     cat ${output} | column -t -s:
@@ -988,9 +1010,15 @@ case "${cmd}" in
 	fi
 	;;
     show)
+	cn=${cmd_options_non_dashed[1]}
+	if [ -n "${cn}" ]; then
+	    container_name="${cn}"
+	fi
 	if [ -z "${container_name}" ]; then
 	    echo "[ERROR]: a container name must be provided"
+	    exit 1
 	fi
+	determine_outdir
 	show_config_artifacts ${container_name}
 	;;
     gen)
