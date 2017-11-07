@@ -157,6 +157,17 @@ if [ "${action}" = "up" ]; then
     # and now some network namespace accounting
     mkdir -p /var/run/netns
     ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
+
+    # We need to track the pids of dhclient so it can be killed later if the
+    # container dies. Since dhclient isn't in that pid namespace, it will live
+    # on and keep the network device from returning to the root namespace
+    rm -f /opt/container/${cname}/.netns.oci.pids
+    for i in $(pidof dhclient); do
+	ns=$(ip netns identify $i)
+	if [ "${ns}" == "${cname}" ]; then
+	    echo $i >> /opt/container/${cname}/.netns.oci.pids
+	fi
+    done
 fi
 
 if [ "${action}" = "down" ]; then
@@ -181,11 +192,16 @@ if [ "${action}" = "down" ]; then
 	done
     fi
 
-    # if pids are being tracked in our net namespace, make sure
-    # we kill them before deleting it. Otherwise, the exit is not
-    # clean
+    # if pids are being tracked in our net namespace, make sure we kill them
+    # before deleting it. Otherwise, the exit is not clean
     if [ -f "${path}/.netns.pids" ]; then
 	for pid in $(cat "${path}/.netns.pids"); do
+	    kill -9 $pid
+	done
+    fi
+
+    if [ -f "${path}/.netns.oci.pids" ]; then
+	for pid in $(cat "${path}/.netns.oci.pids"); do
 	    kill -9 $pid
 	done
     fi
