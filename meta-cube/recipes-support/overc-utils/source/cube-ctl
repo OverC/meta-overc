@@ -1244,7 +1244,7 @@ EOF
 
 		# we need to resolve an variable references. Currently this
 		# is IPS and devices
-		vars=$(cat cube.network.stack | grep -o -E '\${[A-Za-z0-9])*[A-Za-z](_?[A-Za-z0-9])*}' | uniq)
+		vars=$(cat cube.network.stack | awk -F"[{}]" '{print $2}' | sort | uniq)
 		spid=$(cat .cube.pid)
 
 		for v in $vars; do
@@ -1260,7 +1260,7 @@ EOF
 			    done
 			    ;;
 			*_ip*)
-			    cname=$(echo $v | sed -r 's/.*\$\{(.+)_.*\}.*/\1/')
+			    cname=$(echo $v | sed -r 's/(.+)_.*/\1/')
 			    # this doesn't actually go out on the wire, but it is the best
 			    # way to get the IP of the interface in the container. If we need
 			    # something besides the external route for the IP, this can be
