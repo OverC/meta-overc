@@ -415,6 +415,23 @@ check_is_known_container()
     return 0
 }
 
+# return the names of containers, found by an attribute
+container_by_attribute() {
+    local attribute=$1
+    local matches=""
+
+    build_container_lists
+    for c in ${open_containers} ${cubes}; do
+	a=$(cube-cfg -n ${c} attribute)
+	if [ "${a}" = "${attribute}" ]; then
+	    matches="${matches} ${c}"
+	fi
+    done
+
+    # strip leading and trailing whitespace
+    echo ${matches} | sed 's/^[ \t]*//;s/[ \t]*$//'
+}
+
 graft_binaries_to_essential()
 {
     local binaries=$@
@@ -1537,8 +1554,12 @@ IFS=$OLDIFS
 	container_name=${cmd_options_non_dashed[1]}
 
 	if [ -z "${container_name}" ]; then
-	    echo "[ERROR]: no container name provided"
-	    exit 1
+	    # if no container name was passed, we just output the netprime
+	    np=$(container_by_attribute netprime)
+	    if [ -n "${np}" ]; then
+		echo ${np}
+	    fi
+	    exit 0
 	fi
 
 	if ! check_is_known_container ${container_name}; then
