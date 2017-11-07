@@ -285,6 +285,9 @@ determine_outdir()
     # we take a container_name as the last part of the directory
     if [ -z "${container_name}" ] && [ "${out_dir}" = "./" ]; then
 	container_name=$(basename $(pwd))
+	if [ ! -d "/opt/container/${container_name}" ]; then
+	    container_name=""
+	fi
     fi
 }
 
@@ -1012,14 +1015,50 @@ case "${cmd}" in
     auth)
 	auth_string=${cmd_options_non_dashed[1]}
 
-	auth_type=$(echo ${auth_string} | cut -f1 -d:)
-	auth_user=$(echo ${auth_string} | cut -f2 -d:)
-	auth_password=$(echo ${auth_string} | cut -f3 -d:)
+	echo "${auth_string}" | grep -q ":"
+	if [ $? -eq 0 ]; then
+	    # if there were any colons, we are setting the authorization
+	    auth_type=$(echo ${auth_string} | cut -f1 -d:)
+	    auth_user=$(echo ${auth_string} | cut -f2 -d:)
+	    auth_password=$(echo ${auth_string} | cut -f3 -d:)
 
-	if [ "${auth_user}" != "${auth_password}" ]; then
+	    if [ -z "${auth_user}" ]; then
+		echo -n "${auth_type} user: "
+		read auth_user
+	    fi
+	    if [ -z "${auth_password}" ]; then
+
+		# fancy reading and echo'ing of * for each char
+		tty -s
+		if [ $? -eq 0 ]; then
+		    echo -n "${auth_type} password: "
+		fi
+		while IFS= read -p "$prompt" -r -s -n 1 char
+		do
+		    # Enter - accept password
+		    if [[ $char == $'\0' ]] ; then
+			break
+		    fi
+		    # Backspace
+		    if [[ $char == $'\177' ]] ; then
+			prompt=$'\b \b'
+			password="${password%?}"
+		    else
+			prompt='*'
+			password+="$char"
+		    fi
+		done
+		auth_password=${password}
+		tty -s
+		if [ $? -eq 0 ]; then
+		    echo
+		fi
+	    fi
+
 	    set_authorization ${auth_type} ${auth_user} ${auth_password} ${container_name}
 	else
-	    get_authorization ${auth_type} ${container_name}
+	    # no colons, return the auth for the container type
+	    get_authorization ${auth_string} ${container_name}
 	fi
 	;;
     show)
@@ -1273,7 +1312,7 @@ case "${cmd}" in
 	if [ -z "${op}" ] && [ -z "${attribute}" ]; then
 	    # we should output the attributes if they exist
 	    if [ -e ${out_dir}/cube.attributes ]; then
-		cat ${out_dir}/cube.attributes
+		cat ${out_dir}/cube.attributes | sed 's/^[ \t]*//;s/[ \t]*$//'
 	    fi
 	    exit 0
 	fi
