@@ -453,6 +453,19 @@ IFS=$OLDIFS
 	echo ""
     fi
 
+    if [ -e "${out_dir}/cube.network.stack" ]; then
+	echo ""
+	echo "network rules:"
+	echo "--------------"
+OLDIFS=$IFS
+IFS='
+'
+        for r in $(cat ${out_dir}/cube.network.stack); do
+            echo "$r"
+	done
+IFS=$OLDIFS
+    fi
+
     echo ""
     for K in "${!CONFIG_MAP[@]}"; do
 	var_type=$(echo "${CONFIG_MAP[$K]}" | cut -d';' -f3)
