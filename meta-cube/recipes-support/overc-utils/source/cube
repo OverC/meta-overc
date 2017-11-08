@@ -32,6 +32,7 @@ command=$1
 while [ $# -gt 0 ]; do
     case "$1" in
 	-v) verbose=t
+	    verbose_flag="-v"
             ;;
         *) break
             ;;
@@ -58,10 +59,10 @@ case ${command} in
 	;;
     cfg)
 	shift
-	c3-cfg $@
+	c3-cfg ${verbose_flag} $@
 	;;
     *)
 	# front cube-ctl by default
-	c3-ctl $@
+	c3-ctl ${verbose_flag} $@
 	;;
 esac
