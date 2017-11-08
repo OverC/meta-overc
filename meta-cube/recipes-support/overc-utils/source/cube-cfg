@@ -988,19 +988,22 @@ app_hook() {
     new_val=$2
     db_var=$3
 
+    if [ -n "${container_name}" ]; then
+	container_name_flag="-n ${container_name}"
+    fi
     if [ "${old_val}" != "${new_val}" ]; then
 	# we have a delta
 	echo $old_val | grep -q sbin/init
 	if [ $? -eq 0 ]; then
 	    # we are switching from a system container to something else, drop the systemd hooks
-	    ${mydir}/cube-cfg -n ${container_name} hook -prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
-	    ${mydir}/cube-cfg -n ${container_name} hook -poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg ${container_name_flag} hook -prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg ${container_name_flag} hook -poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
 	fi
 	echo $new_val | grep -q sbin/init
 	if [ $? -eq 0 ]; then
 	    # we are switching to a system container to something else, addd the systemd hooks
-	    ${mydir}/cube-cfg -n ${container_name} hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
-	    ${mydir}/cube-cfg -n ${container_name} hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg ${container_name_flag} hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	    ${mydir}/cube-cfg ${container_name_flag} hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
 	fi
     fi
 }
