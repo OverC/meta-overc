@@ -250,6 +250,9 @@ while [ $# -gt 0 ]; do
 	    auto=${2}
 	    shift
 	    ;;
+	--track)
+	    track_containers=t
+	    ;;
 	-u)
 	    # This is an unprivileged container. We need to config subuid/subgid.
 	    if [ "${2}" -eq "${2}" ] 2>/dev/null; then
@@ -901,17 +904,36 @@ case "${cmd}" in
 	    filename=$(basename "$container_source")
 	    extension="${filename##*.}"
 	    filename="${filename%%.*}"
-	    container_name="`cubename ${filename}`"
+	    container_name="$(cubename ${filename})"
+	fi
+
+	if [ -n "${host}" ]; then
+	    # see if there's a tag in the input. awk gets us the last : ->
+	    # end of line, which could be a tag.  but if that tag has //
+	    # in it, it is just the docker:// that started the source
+	    tag="latest"
+	    possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
+	    echo ${possible_tag} | grep -q '//'
+	    if [ $? -ne 0 ]; then
+		# no slashes found, that's a tag
+		tag="${possible_tag}"
+	    fi
+	    container_source=$(echo ${container_source} | sed "s#:${tag}##")
+	    host=$(echo ${host} | sed "s#:${tag}##")
+	    path=$(echo ${path} | sed "s#:${tag}##" | sed "s#/#-#")
 	fi
 
 	if [ -z "${container_name}" ]; then
-	    # try and see if the container_source was a url, and if so, the host
-	    # name can be the container name
-	    container_name=${host}
-	    if [ -z "${container_name}" ]; then
-		echo "[ERROR]: ${container_source} is not a valid container source location"
-		exit 1
+	    container_name="$host"
+	    if [ -n "${path}" ]; then
+		container_name="$host-$path"
 	    fi
+	fi
+
+	if [ -z "${container_name}" ]; then
+	    echo "[ERROR]: no container name could be determined from ${container_source}"
+	    echo "         a name can be provided via -n <name>"
+	    exit 1
 	fi
 
 	if check_is_known_container ${container_name}; then
@@ -939,7 +961,9 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
+	if [ -n "${track_containers}" ]; then
+	    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
+	fi
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
@@ -960,17 +984,17 @@ case "${cmd}" in
 		# make an oci format copy from the registry
 		container_source=$(echo ${container_source} | sed 's%cube://%docker://%')
 
-		# see if there's a tag in the input. awk gets us the last : ->
-		# end of line, which could be a tag.  but if that tag has //
-		# in it, it is just the docker:// that started the source
-		tag="latest"
-		possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
-		echo ${possible_tag} | grep -q '//'
-		if [ $? -ne 0 ]; then
-		    # no slashes found, that's a tag
-		    tag="${possible_tag}"
-		fi
-		container_source=$(echo ${container_source} | sed "s#:${tag}##")
+		# # see if there's a tag in the input. awk gets us the last : ->
+		# # end of line, which could be a tag.  but if that tag has //
+		# # in it, it is just the docker:// that started the source
+		# tag="latest"
+		# possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
+		# echo ${possible_tag} | grep -q '//'
+		# if [ $? -ne 0 ]; then
+		#     # no slashes found, that's a tag
+		#     tag="${possible_tag}"
+		# fi
+		#container_source=$(echo ${container_source} | sed "s#:${tag}##")
 
 		# TODO: make the tls setting an option
 		flags="--dest-tls-verify=false --src-tls-verify=false"
@@ -1590,7 +1614,9 @@ EOF
 	    if [ $? -ne 0 ]; then
 		echo "[INFO] deleting container ${container_name}"
 		cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
-		${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
+		if [ -n "${track_containers}" ]; then
+		    ${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
+		fi
 		cube-cfg set overc/$(cube-cfg id)/oci/${container_name}/:
 	    else
 		echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
