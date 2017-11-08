@@ -16,7 +16,7 @@ fi
 usage_start()
 {
 cat << EOF
- ${0##*/} start [--peer] [--nested] [--auto] <name>
+ ${0##*/} start [--auto] <name>
 
     start (launch) a container:
 
@@ -69,7 +69,7 @@ cat << EOF
     Put a container into storage. <location> is a directory or a registry (local
     or remote).
 
-       <container>: name of the first container to be stored
+       <container>: name of the container to be stored
        <location>:  storage location. dir:// for directories, cube:// or docker:// for
                     registries.
 
@@ -233,7 +233,6 @@ fi
 raw_command=($@)
 
 force=""
-peer=t
 non_dashed=""
 
 if [ -z "${SBINDIR}" ]; then
@@ -247,20 +246,8 @@ while [ $# -gt 0 ]; do
     case "$1" in
 	-v|--verbose) verbose=t
             ;;
-        --peer)
-	    peer=t
-	    nested=
-	    ;;
         --auto)
 	    auto=${2}
-	    shift
-	    ;;
-	--nested)
-	    nested=t
-	    peer=
-	    ;;
-	--parent)
-	    parent=${2}
 	    shift
 	    ;;
 	-u)
@@ -330,14 +317,24 @@ while [ $# -gt 0 ]; do
 	*://*)
 	    non_dashed="${non_dashed} $1"
 	    ;;
+
 	*:*)
-	    # once we see something of the format <foo>:<var>, we are done processing,
-	    # since all other options are for the embedded command
-	    cmd=exec
-	    exec_cmd=$@
-	    shift $#
+	    if [ -z "${no_exec_in_input}" ]; then
+		# once we see something of the format <foo>:<var>, we are done processing,
+		# since all other options are for the embedded command
+		cmd=exec
+		exec_cmd=$@
+		shift $#
+	    else
+		non_dashed="${non_dashed} $1"
+	    fi
 	    ;;
-        *) non_dashed="${non_dashed} $1"
+        *)  non_dashed="${non_dashed} $1"
+	    if [ "$1" = "store" ]; then
+		# store takes a possible format that could be mistaken for the *:* of
+		# the exec below. So we need to set a flag to inhibit it.
+		no_exec_in_input=t
+	    fi
             ;;
     esac
     shift
@@ -960,24 +957,33 @@ case "${cmd}" in
                 ;&
 	    docker://*)
 		# make an oci format copy from the registry
-
 		container_source=$(echo ${container_source} | sed 's%cube://%docker://%')
+
+		# see if there's a tag in the input. awk gets us the last : ->
+		# end of line, which could be a tag.  but if that tag has //
+		# in it, it is just the docker:// that started the source
+		tag="latest"
+		possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
+		echo ${possible_tag} | grep -q '//'
+		if [ $? -ne 0 ]; then
+		    # no slashes found, that's a tag
+		    tag="${possible_tag}"
+		fi
+		container_source=$(echo ${container_source} | sed "s#:${tag}##")
 
 		# TODO: make the tls setting an option
 		flags="--dest-tls-verify=false --src-tls-verify=false"
 		if [ -n "${verbose}" ]; then
-		    # TODO: vary the tag
-		    echo "skopeo copy ${flags} ${container_source}:latest oci:${out_dir}/${container_name}/docker:latest"
+		    echo "skopeo copy ${flags} ${container_source}:${tag} oci:${out_dir}/${container_name}/docker:${tag}"
 		fi
-		# TODO: vary the tag
-		skopeo copy ${flags} ${container_source}:latest oci:${out_dir}/${container_name}/docker:latest 2> /dev/null
+
+		skopeo copy ${flags} ${container_source}:${tag} oci:${out_dir}/${container_name}/docker:${tag} 2> /dev/null
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: docker container ${container_source} not found, check input and try again"
 		    exit 1
 		fi
 	
-		# TODO: allow the variation of the ref tag
-		oci-image-tool create --ref latest ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
+		oci-image-tool create --ref ${tag} ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: error OCI runtime could not be created from ${container_source}"
 		    exit 1
@@ -1289,6 +1295,19 @@ IFS=$OLDIFS
 	# extract the path (if any)
 	src_path="$(echo $url | grep / | cut -d/ -f2-)"
 
+	src_tag="latest"
+	echo ${container_source} | grep -q :
+	if [ $? -eq 0 ]; then
+	    possible_src_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
+	    echo ${possible_src_tag} | grep -q '//'
+	    if [ $? -ne 0 ]; then
+		# no slashes found, that's a tag
+	        src_tag="${possible_src_tag}"
+	    fi
+	fi
+	container_source=$(echo ${container_source} | sed "s#:${src_tag}##")
+	container_name=$(echo ${container_name} | sed "s#:${src_tag}##")
+
 	# extract the protocol
 	dest_proto="$(echo ${container_dest} | grep :// | sed -e's,^\(.*://\).*,\1,g')"
 	# remove the protocol
@@ -1301,6 +1320,17 @@ IFS=$OLDIFS
 	dest_port="$(echo $host | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
 	# extract the path (if any)
 	dest_path="$(echo $url | grep / | cut -d/ -f2-)"
+
+	# see if there's a tag in the input. awk gets us the last : ->
+	# end of line, which could be a tag.  but if that tag has //
+	# in it, it is just the docker:// that started the source
+	dest_tag="latest"
+	possible_dest_tag=$(echo ${container_dest} | awk -F':' '{print $NF}')
+	echo ${possible_dest_tag} | grep -q '//'
+	if [ $? -ne 0 ]; then
+	    # no slashes found, that's a tag
+	    dest_tag="${possible_dest_tag}"
+	fi
 
 	if [ -z "${src_proto}" ]; then
 	    # we are working with a local container, so validate the name
@@ -1346,14 +1376,15 @@ IFS=$OLDIFS
 	    exit 1
 	elif [ -z "${src_proto}" ] && [ -n "${dest_proto}" ]; then
 	    echo "[INFO]: local -> registry storage"
-	    # we have to make sure that the container is a valid OCI container, or
-	    # we won't be able to copy it to the registry.
 
 	    container_source="/opt/container/${container_source}"
 	    if [ ! -d "${container_source}" ]; then
 		echo "[ERROR] container source ${container_source} not found"
 		exit 1
 	    fi
+
+	    # we have to make sure that the container is a valid OCI container, or
+	    # we won't be able to copy it to the registry.
 
 	    if [ ! -e "${container_source}/oci-layout" ]; then
 		# the container is not in OCI format, we'll need to convert it
@@ -1380,6 +1411,8 @@ IFS=$OLDIFS
 	    spinner
 	    echo ""
 
+	    umoci tag --image ${container_source} ${src_tag}
+
 	    # Note: this could (and probably should) be done with cube.* values
 	    #       rather than the json. But the json will always be in sync with
 	    #       them .. so we go this way for now.
@@ -1404,17 +1437,20 @@ IFS='
 IFS=$OLDIFS
 	    fi
 
-	    if [ ! -f "${container_source}/index.json" ]; then
+	    if [ -f "${container_source}/index.json" ]; then
+		# placeholder for any manipulations we might want to do
+		true
+	    else
 cat > ${container_source}/index.json <<EOF
 		 {
 		    "schemaVersion": 2,
 		    "manifests": [
 		      {
-		        "mediaType": $(jq .mediaType ${container_source}/refs/latest),
-		        "digest": $(jq .digest ${container_source}/refs/latest),
-		        "size": $(jq .size ${container_source}/refs/latest),
+		        "mediaType": $(jq .mediaType ${container_source}/refs/${src_tag}),
+		        "digest": $(jq .digest ${container_source}/refs/${src_tag}),
+		        "size": $(jq .size ${container_source}/refs/${src_tag}),
 		        "annotations": {
-			    "org.opencontainers.image.ref.name": "latest"
+			    "org.opencontainers.image.ref.name": "${src_tag}"
 		        },
 		        "platform": {
 			    "architecture": "amd64",
@@ -1436,9 +1472,9 @@ EOF
 	    echo "[INFO]: storing container ${container_source}"
 	    if [ -n "${verbose}" ]; then
 		skopeo_flags="--debug"
-		echo "[INFO]: skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source} ${container_dest}"
+		echo "[INFO]: skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source}:${src_tag} ${container_dest}"
 	    fi
-	    skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source} ${container_dest}
+	    skopeo ${skopeo_flags} copy ${auth_parms} ${flags} oci:${container_source}:${src_tag} ${container_dest}
 	elif [ -z "${src_proto}" ] && [ -z "${dest_proto}" ]; then
 	    echo "[INFO]: local -> local storage"
 
