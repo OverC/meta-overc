@@ -1641,7 +1641,8 @@ EOF
 			    # then use it directly.
 			    build_container_lists
 
-			    echo "${open_container_running}" | grep -q ${container}
+			    oc=$(echo ${open_container_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+			    echo "${oc}" | grep -q "#${container}#"
 			    if [ $? -ne 0 ]; then
 				if [ -n "${foreground}" ]; then
 				    oci_args="foreground"
