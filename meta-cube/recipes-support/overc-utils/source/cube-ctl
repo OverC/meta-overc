@@ -15,7 +15,7 @@ fi
 
 usage()
 {
-cat << EOF
+cat << EOF | less
 
  ${0##*/} <options> <cmd>
 

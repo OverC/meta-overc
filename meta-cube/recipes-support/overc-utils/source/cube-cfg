@@ -18,7 +18,7 @@ fi
 
 usage()
 {
-cat << EOF
+cat << EOF | less
 
  ${0##*/} [--clean] <command> <value>
 
