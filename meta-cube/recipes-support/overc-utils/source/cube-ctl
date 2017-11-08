@@ -1492,7 +1492,15 @@ EOF
 				    oci_args="foreground"
 				    cube-cfg -n ${container} set cube.console.mgr:
 				else
-				    cube-cfg -n ${container} set cube.console.mgr:tty
+				    # if there's already a cube.console.mgr, do nothing, otherwise
+				    # set it to 'tty'. Note that orginally installed 'screen-tty'
+				    # console managed containers will be overwritten with this, but
+				    # if you are debugging with foreground, you should know enough
+				    # to put screen-tty back as the console manager.
+				    mgr=$(cube-cfg -n ${container} get cube.console.mgr)
+				    if [ -z "${mgr}" ]; then
+					cube-cfg -n ${container} set cube.console.mgr:tty
+				    fi
 				fi
 
 				console_mgr=$(cube-cfg -n ${container} cube.console.mgr:)
