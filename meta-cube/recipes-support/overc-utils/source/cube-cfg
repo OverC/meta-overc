@@ -16,9 +16,10 @@ if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
     set -x
 fi
 
-usage()
+usage_global()
 {
-cat << EOF | less
+    output=$(mktemp)
+cat << EOF > ${output}
 
  ${0##*/} [--clean] <command> <value>
 
@@ -30,16 +31,47 @@ cat << EOF | less
 
  commands (and options):
 
+EOF
+    usage_gen >> ${output}
+    usage_show >> ${output}
+    usage_mount >> ${output}
+    usage_auth >> ${output}
+    usage_hook >> ${output}
+    usage_link >> ${output}
+    usage_device >> ${output}
+    usage_id >> ${output}
+    usage_attribute >> ${output}
+    usage_get_set >> ${output}
+
+    cat ${output} | less
+
+    rm -f ${output}
+}
+
+usage_gen()
+{
+cat << EOF
  ${0##*/} gen <name>:<type>
 
     generate a base configuration
 
        <name>:<type> container name and type
 
+EOF
+}
+
+usage_show()
+{
+cat << EOF
  ${0##*/} show <name>
 
     show the configuration options for container <name>
 
+EOF
+}
+usage_mount()
+{
+cat << EOF
  ${0##*/} [-n <container name>] mount <type>:<name>:<name>
 
     mount a directory into the container
@@ -47,6 +79,11 @@ cat << EOF | less
        <type>:       optional "bind" if a bind mount is to be used
        <name>:<name> source and destination directory
 
+EOF
+}
+usage_auth()
+{
+cat <<EOF
  ${0##*/} auth <type>:<userid>:<password>
 
     Create an authorization
@@ -63,6 +100,11 @@ cat << EOF | less
     if only <type> is provided, then the default authorization for that registry
     type will be returned.
 
+EOF
+}
+usage_hook()
+{
+cat <<EOF
  ${0##*/} [-n <container name>] hook <type>:<name>
  ${0##*/} [-n <container name>] hook-script <type>:<name>
 
@@ -74,6 +116,12 @@ cat << EOF | less
        <type>       type of hook: prestart, poststart or poststop
        <name>       full path to the hook
 
+EOF
+}
+
+usage_link()
+{
+cat <<EOF
  ${0##*/} link      <container one>:<port> <container two>:<name> [from <ip or "localhost">]
           link-raw  <container> <command>
           link-edit <container>
@@ -89,6 +137,11 @@ cat << EOF | less
        link-edit    invokes $EDITOR to manipulated the staged link
                     commands.
 
+EOF
+}
+usage_device()
+{
+cat <<EOF
  ${0##*/} [-n <container name>] device <type>:<name>:<name>
 
     add a device to a container
@@ -102,14 +155,38 @@ cat << EOF | less
        <type>:           console
           <type>:<value> type: tty or vt. value: tty or VT number
 
+EOF
+}
+usage_id()
+{
+cat <<EOF
  ${0##*/} [-n <container name>] id
 
     get the unique machine / platform identifier
 
- ${0##*/} [-n <container name>] attribute [+][-] <attribute>
+EOF
+}
+usage_attribute()
+{
+cat <<EOF
+${0##*/} [-n <container name>] attribute [+][-] <attribute>
 
     associated an attribute with a container. + to add, - to remove.
 
+EOF
+}
+
+usage_get()
+{
+    usage_get_set
+}
+usage_set()
+{
+    usage_get_set
+}
+usage_get_set()
+{
+cat <<EOF
  ${0##*/} get/set:
 
    NOTE: variables with embedded / are etcd set/get operations.
@@ -158,7 +235,7 @@ CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;single;The nam
 CONFIG_MAP[cube.env]="cube.env;noop;multi;Set an environment variable for the container startup. cube.env:<var>=<value>"
 
 if [ -z "$1" ]; then
-    usage
+    usage_global
     exit
 fi
 
@@ -237,7 +314,17 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	-h|--help)
-	    usage
+	    cmd_help=${2}
+	    if [ -z "${cmd_help}" ]; then
+		usage_global
+	    else
+		f=$(type -t usage_${cmd_help})
+		if [ "${f}" = "function" ]; then
+		    usage_${cmd_help}
+		else
+		    echo "No help information found for command ${cmd_help}"
+		fi
+	    fi
 	    exit
 	    ;;
 	--*)
@@ -1068,6 +1155,7 @@ case "${cmd}" in
 	fi
 	if [ -z "${container_name}" ]; then
 	    echo "[ERROR]: a container name must be provided"
+	    usage_show
 	    exit 1
 	fi
 	determine_outdir
@@ -1077,6 +1165,11 @@ case "${cmd}" in
 	name_temp=${cmd_options_non_dashed[1]}
 	container_name=$(echo ${name_temp} | cut -f1 -d:)
 	container_type=$(echo ${name_temp} | cut -f2 -d:)
+
+	if [ -z "${container_name}" ]; then
+	    usage_gen
+	    exit 1
+	fi
 
 	determine_outdir
 
@@ -1140,10 +1233,12 @@ case "${cmd}" in
 
 	if [ -z "${source}" ]; then
 	    echo "[ERROR]: no source mount provided"
+	    usage_mount
 	    exit 1
 	fi
 	if [ -z "${dest}" ]; then
 	    echo "[ERROR]: no dest mount provided"
+	    usage_mount
 	    exit 1
 	fi
 
@@ -1199,6 +1294,11 @@ case "${cmd}" in
 	container_a=${cmd_options_non_dashed[1]}
 	container_b=${cmd_options_non_dashed[2]}
 
+	if [ -z "${container_a}" ] || [ -z "${container_b}" ]; then
+	    usage_link
+	    exit 1
+	fi
+
 	from=${cmd_options_non_dashed[3]}
 	from_ip=${cmd_options_non_dashed[4]}
 
@@ -1231,6 +1331,7 @@ case "${cmd}" in
 	if [ -n "${from}" ]; then
 	    if [ -z "${from_ip}" ]; then
 		echo "[ERROR]: 'from' requires a source IP address"
+		usage_link
 		exit 1
 	    fi
 
@@ -1318,10 +1419,12 @@ case "${cmd}" in
 	fi
 	if [ -z "${op}" ]; then
 	    echo "ERROR: no operation was specified (+ or -)"
+	    usage_attribute
 	    exit 1
 	fi
 	if [ -z "${attribute}" ]; then
 	    echo "ERROR: no attribute was specified"
+	    usage_attribute
 	    exit 1
 	fi
 
@@ -1415,6 +1518,7 @@ case "${cmd}" in
 	    fi
 	else
 	    echo "ERROR: Invalid hook specified ${name_temp}"
+	    usage_hook
 	    exit 1
 	fi
 	;;
@@ -1501,6 +1605,7 @@ case "${cmd}" in
 	    esac
 	else
 	    echo "ERROR: Invalid device specified ${name_temp}"
+	    usage_device
 	    exit 1
 	fi
 	;;
@@ -1633,6 +1738,6 @@ case "${cmd}" in
 	;;
     *)
 	echo "Unknown command ..."
-	usage
+	usage_global
 	;;
 esac

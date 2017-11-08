@@ -13,14 +13,9 @@ if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
     set -x
 fi
 
-usage()
+usage_start()
 {
-cat << EOF | less
-
- ${0##*/} <options> <cmd>
-
- commands (and options):
-
+cat << EOF
  ${0##*/} start [--peer] [--nested] [--auto] <name>
 
     start (launch) a container:
@@ -28,19 +23,35 @@ cat << EOF | less
        --auto=<name>: launch autostart containers tagged with <name>
 
        <name>: name of the container to be launched (if not "--auto")
+EOF
+}
 
+usage_stop()
+{
+cat << EOF
  ${0##*/} stop <name>
 
     stop a container:
 
        <name>: name of the container to be stopped
 
+EOF
+}
+
+usage_netprime()
+{
+cat << EOF
  ${0##*/} netprime <name>
 
     set container as the netprime:
 
        <name>: name of the container to be the netprime
+EOF
+}
 
+usage_stack()
+{
+cat << EOF
  ${0##*/} stack <container a> <container b>
 
     stack (connect) two containers. This ensures that container a can communicate
@@ -48,7 +59,11 @@ cat << EOF | less
 
        <container a>: name of the first container and port to be stacked
        <container b>: name of the second container and port to be stacked
-
+EOF
+}
+usage_store()
+{
+cat << EOF
  ${0##*/} store <container> <location>
 
     Put a container into storage. <location> is a directory or a registry (local
@@ -58,10 +73,20 @@ cat << EOF | less
        <location>:  storage location. dir:// for directories, cube:// or docker:// for
                     registries.
 
+EOF
+}
+usage_prep()
+{
+cat << EOF
  ${0##*/} prep <container>
 
     Execute any tweaks/prep against the specified container
 
+EOF
+}
+usage_add()
+{
+cat << EOF
  ${0##*/} add [-n <name>] [-u <subuid>] <source>
 
     add a container to the platform. Once added, the container is monitored, but
@@ -84,6 +109,15 @@ cat << EOF | less
 
        <source>: path to the container source. Either a directory or a tar.gz
 
+EOF
+}
+usage_mv()
+{
+    usage_rename
+}
+usage_rename()
+{
+cat << EOF
  ${0##*/} rename <current name> <new name>
  ${0##*/} mv <current name> <new name>
 
@@ -98,18 +132,46 @@ cat << EOF | less
     Note 3: currently restricted to 'oci' containers, to avoid system containers
             from being renamed (they are 'cubes')
 
+EOF
+}
+usage_remove()
+{
+    usage_del
+}
+usage_delete()
+{
+    usage_del
+}
+usage_del()
+{
+cat << EOF
  ${0##*/} del [-F] <name>
+ ${0##*/} delete [-F] <name>
+ ${0##*/} remove [-F] <name>
 
     remove a container from the system. Once this completes, the container is
     stopped and purged from the filesystem.
 
        -F force remove container without prompting
 
+  Note: only valid for 'oci' container types
+  Note: container must be stopped before removing
+
+EOF
+}
+usage_status()
+{
+cat << EOF
  ${0##*/} status
  ${0##*/} list
 
     list of known containers
 
+EOF
+}
+usage_exec()
+{
+cat << EOF
  ${0##*/} [-i] <target>:<command>
 
     execute command <command> against a named target. Either a container
@@ -117,6 +179,15 @@ cat << EOF | less
 
       -i :    The command is interactive and a terminal should be allocated
 
+EOF
+}
+usage_show()
+{
+    usage_info
+}
+usage_info()
+{
+cat << EOF
  ${0##*/} info <name>
  ${0##*/} show <name>
 
@@ -125,8 +196,36 @@ cat << EOF | less
 EOF
 }
 
+usage_global()
+{
+   output=$(mktemp)
+
+cat << EOF > ${output}
+
+ ${0##*/} <options> <cmd>
+
+ commands (and options):
+EOF
+
+   usage_start >> ${output}
+   usage_stop >> ${output}
+   usage_netprime >> ${output}
+   usage_stack >> ${output}
+   usage_store >> ${output}
+   usage_prep >> ${output}
+   usage_add >> ${output}
+   usage_rename >> ${output}
+   usage_del >> ${output}
+   usage_status >> ${output}
+   usage_exec >> ${output}
+   usage_info >> ${output}
+
+   cat ${output} | less
+   rm -f ${output}
+}
+
 if [ -z "$1" ]; then
-    usage
+    usage_global
     exit
 fi
 
@@ -199,7 +298,17 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	-h|--help)
-	    usage
+	    cmd_help=${2}
+	    if [ -z "${cmd_help}" ]; then
+		usage_global
+	    else
+		f=$(type -t usage_${cmd_help})
+		if [ "${f}" = "function" ]; then
+		    usage_${cmd_help}
+		else
+		    echo "No help information found for command ${cmd_help}"
+		fi
+	    fi
 	    exit
 	    ;;
 	--*)
@@ -748,6 +857,8 @@ case "${cmd}" in
 
 	if [ -z "${container_source}" ]; then
 	    echo "[ERROR]: no container source provided"
+	    echo ""
+	    usage_add
 	    exit 1
 	fi
 
@@ -758,7 +869,7 @@ case "${cmd}" in
 		    ;;
 		*)
 		    echo "Unknow parameter ..."
-		    usage
+		    usage_add
 		    exit 1
 		    ;;
 	    esac
@@ -1052,33 +1163,39 @@ IFS=$OLDIFS
 
 	if [ -z "${orig_name}" ]; then
 	    echo "[ERROR]: existing name not provided"
+	    usage_mv
 	    exit 1
 	fi
 	if [ -z "${new_name}" ]; then
 	    echo "[ERROR]: new name not provided"
+	    usage_mv
 	    exit 1
 	fi
 
 	check_is_known_container ${orig_name}
 	if [ $? -eq 1 ]; then
 	    echo "[ERROR]: container ${orig_name} is unknown, cannot rename"
+	    usage_mv
 	    exit 1
 	fi
 	check_is_known_container ${new_name}
 	if [ $? -eq 0 ]; then
 	    echo "[ERROR]: container ${new_name} already exists"
+	    usage_mv
 	    exit 1
 	fi
 
 	echo "${open_container_all}" | grep -q ${orig_name}
 	if [ $? -ne 0 ]; then
 	    echo "[ERROR]: only 'oci' containers can be renamed"
+	    usage_mv
 	    exit 1
 	fi
 
 	np=$(container_by_attribute netprime)
 	if [ "${np}" = "${orig_name}" ]; then
 	    echo "[ERROR]: ${orig_name} is the netprime, it cannot be renamed. See the 'netprime' command"
+	    usage_netprime
 	    exit 1
 	fi
 
@@ -1121,6 +1238,7 @@ IFS=$OLDIFS
 	    container_name=${cmd_options_non_dashed[1]}
 	    if [ -z "${container_name}" ]; then
 		echo "[ERROR]: no container name provided"
+		usage_prep
 		exit 1
 	    fi
 	fi
@@ -1154,6 +1272,7 @@ IFS=$OLDIFS
 	fi
 	if [ -z "${container_source}" ]; then
 	    echo "[ERROR]: no container source provided"
+	    usage_store
 	    exit 1
 	fi
 
@@ -1426,11 +1545,13 @@ EOF
 	    echo "[ERROR] Container ${container_name} not found, cannot delete."
 	    echo -n "Valid containers are: "
 	    echo ${cubes} ${open_containers} ${open_container_available}
+	    usage_del
 	    exit 1
 	fi
 
 	if [ -n "${container_is_a_cube}" ]; then
 	    # nothing to do at the moment
+	    echo "[INFO]: not removing, container is a cube, only 'oci' containers can be removed"
 	    true
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
@@ -1452,6 +1573,10 @@ EOF
     start)
 	# the second non dashed argument will be the container name
 	container_names=${cmd_options_non_dashed[1]}
+	if [ -z "${container_names}" ] && [ -z "${auto}" ]; then
+	    usage_start
+	    exit 1
+	fi
 
 	# if single_launch is set, then we don't use dtach, but instead let the
 	# container go directly at the tty
@@ -1647,6 +1772,7 @@ IFS=$OLDIFS
 	    fi
 	else
 	    echo "[ERROR]: provide a container name to see detailed information"
+	    usage_show
 	    exit 1
 	fi
 	;;
@@ -1788,6 +1914,7 @@ IFS=$OLDIFS
 
 	if [ -z "${container_name}" ]; then
 	    echo "[ERROR]: no container name provided"
+	    usage_stop
 	    exit 1
 	fi
 
@@ -1879,6 +2006,6 @@ IFS=$OLDIFS
 	;;
     *)
 	echo "Unknown command ..."
-	usage
+	usage_global
 	;;
 esac
