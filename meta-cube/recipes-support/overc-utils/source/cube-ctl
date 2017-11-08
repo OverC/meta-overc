@@ -1150,12 +1150,6 @@ IFS=$OLDIFS
 	    echo "[INFO] Performing lxc configuration ..."
 	    generate_lxc_config ${container_name} ${out_dir}
 	fi
-
-	# TODO: this is likely not required anymore
-	if [ -n "${we_are_dom0}" ]; then
-	    # now we need to restart the command server, so the new container can be monitored
-	    systemctl restart cube-cmd-server
-	fi
 	;;
     rename|mv)
 	orig_name=${cmd_options_non_dashed[1]}
