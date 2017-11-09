@@ -347,7 +347,7 @@ rpm_upgrade() {
 		delete_snapshots $container
 	fi
 
-	$OVERC_CTL upgrade $container
+	$OVERC_CTL upgrade $container -f
 }
 
 delete_container() {
@@ -521,6 +521,7 @@ case "${command}" in
 		verify_arg_set container
 		log_info "RPM upgrade container: $container"
 		rpm_upgrade $container
+		retval=$?
 		;;
 	delete_snapshots)
 		verify_arg_set container
