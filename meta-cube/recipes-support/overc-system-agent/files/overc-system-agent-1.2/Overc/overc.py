@@ -3,12 +3,9 @@ import subprocess
 from Overc.package import Package
 from Overc.container import Container
 from Overc.utils import Utils
-from Overc.utils import ROOTMOUNT
-from Overc.utils import HOSTPID
-from Overc.utils  import SYSROOT
 
 def Is_btrfs():
-    return not os.system('btrfs subvolume show %s >/dev/null 2>&1' % ROOTMOUNT)
+    return not os.system('cube-cmd btrfs subvolume show / >/dev/null 2>&1')
 
 def Is_lvm():
     #to be done
@@ -41,7 +38,7 @@ class Overc(object):
         self.bakup_mode = self.agency.bakup_mode
 
     def help(self):
-        if os.path.exists("/usr/bin/smart"):
+        if os.path.exists("/usr/bin/dnf"):
             return _('OverC Management Tool for Host update')
 
     def set_args(self, args):
@@ -128,7 +125,7 @@ class Overc(object):
                         
     def _need_upgrade(self):
         self.host_update()
-        if self.host_newer() == 0:
+        if self.host_newer() == 100:
             return True
         else:
             return False
@@ -137,18 +134,29 @@ class Overc(object):
         print("host status")
 
     def host_newer(self):
-        rc = self.utils._nsenter(HOSTPID,'smart newer')
-        self.message += self.utils.message
+        try:
+            rc = subprocess.check_call("cube-cmd dnf check-update", shell=True)
+        except subprocess.CalledProcessError as e:
+            rc = e.returncode
+
         return rc
 
     def host_update(self):
-        rc = self.utils._nsenter(HOSTPID, 'smart update')
-        self.message += self.utils.message
+        rc = 0
+        try:
+            output = subprocess.check_output("cube-cmd dnf updateinfo", stderr=subprocess.STDOUT, shell=True).decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            rc = e.returncode
+            output = e.output.decode("utf-8")
+
+        self.message += output
+        print(self.message)
         return rc
 
     def host_upgrade(self):
         self._host_upgrade(self.args.reboot, self.args.force)
         print(self.message)
+
     def _host_upgrade(self, reboot, force):
         if self._need_upgrade() or force:
             self.agency.do_upgrade()

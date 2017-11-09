@@ -3,7 +3,6 @@ import subprocess
 import os.path
 from Overc.utils import Process
 from Overc.utils  import CONTAINER_MOUNT
-from Overc.utils  import ROOTMOUNT
 
 # containers template named scripts
 CONTAINER_SCRIPT_PATH = "/etc/overc/container/"
@@ -73,6 +72,9 @@ class Container(object):
         return retval
 
     def get_overlay(self, name):
+        # FIXME: we do not support overlay so far, so disable it
+        return []
+
         fstabfile="%s/%s/fstab" % (CONTAINER_MOUNT,name)
         fstab=open(fstabfile, 'r')
         dirlist=[]
@@ -101,7 +103,7 @@ class Container(object):
             if skip_del:
                 args = "-r -n %s -f" % name
             else:
-                args = "-r -n %s" % name 
+                args = "-r -n %s" % name
             retval = self.run_script(template, args)
 
         if retval is 0:
@@ -152,26 +154,12 @@ class Container(object):
         return retval
 
     def get_issue(self, name, template):
-        cmd = "cube-cmd"
-        stdout = ''
-        loop = 100 #cube-cmd is not stable, and some times it will responde
-                   #noting, thus we loop a large times to fetch the issue string. 
-        while loop > 0:
-            p = subprocess.Popen([cmd,'lxc-attach', '-n', name, 'cat', '/etc/issue'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            if stdout.strip() != '':
-                break
-            loop = loop - 1
-        
-        if stdout == '':
-            print("Cannot get container %s issue string" % name)
-        return stdout
+        cmd = "cube-ctl %s:'cat /etc/issue'" % name
+        return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n")
 
     def get_container(self, template):
-        cmd = "cube-cmd lxc-ls"
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout,stderr = p.communicate()
-        return stdout.split()
+        cmd = "cube-ctl list | tail -2 | awk '{ if ($1 != \"dom0\") print $1 }'"
+        return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n").split()
 
     def is_active(self, cn, template):
         args = "-A -n %s" % cn

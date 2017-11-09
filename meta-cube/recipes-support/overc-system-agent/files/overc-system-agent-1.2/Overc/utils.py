@@ -4,11 +4,9 @@ import select
 import random
 import string
 
-ROOTMOUNT = "/essential"
 SYSROOT = "/sysroot"
-HOSTPID = "/host/proc/1"
 FACTORY_SNAPSHOT = ".factory"
-CONTAINER_MOUNT = "/var/lib/lxc"
+CONTAINER_MOUNT = "/opt/container"
 
 class Utils(object):
     def __init__(self):
@@ -25,11 +23,12 @@ class Utils(object):
         assert stat is None
         return res, stat
 
-    def _compute_checksum(self, filename):
+    def _compute_checksum(self, filename, host=False):
         """Computes the MD5 checksum of the contents of a file.
         filename: string
         """
-        cmd = 'md5sum ' + filename
+        cube_cmd = "cube-cmd " if host else ""
+        cmd = '%smd5sum %s' % (cube_cmd, filename)
         return self._pipe(cmd)[0].split()[0].strip()
 
     def _nsenter(self, pid, args):
