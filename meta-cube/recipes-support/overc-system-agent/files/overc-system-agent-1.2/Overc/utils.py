@@ -3,6 +3,7 @@ import subprocess
 import select
 import random
 import string
+from Overc.logger import logger as log
 
 SYSROOT = "/sysroot"
 FACTORY_SNAPSHOT = ".factory"
@@ -53,7 +54,7 @@ class Process(object):
         self.retval = 0
 
     def run(self, cmd):
-        print("Running: %s" % cmd)
+        log.info("Running: %s" % cmd)
 
         child = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
