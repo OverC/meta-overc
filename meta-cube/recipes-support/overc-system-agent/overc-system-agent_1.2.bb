@@ -11,6 +11,10 @@ inherit distutils systemd
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "factory-reset.service"
 
+PACKAGES += "${PN}-bash-completion"
+
+RDEPENDS_${PN}-bash-completion = "bash-completion"
+
 RDEPENDS_${PN} = "\
 	btrfs-tools \
 	python3-argparse \
@@ -23,9 +27,11 @@ RDEPENDS_${PN} = "\
 	bash \
 	bc \
 	overc-installer \
+	${PN}-bash-completion \
 	"
 
 FILES_${PN}-dev += "${libdir}/pkgconfig"
+FILES_${PN}-bash-completion = "${datadir}/bash-completion/*"
 
 do_install() {
 	install -d ${D}/opt/${BPN}/
@@ -54,6 +60,9 @@ do_install() {
         install -d ${D}${systemd_unitdir}/system
         install -m 0644 ${S}/factory-reset.service ${D}${systemd_unitdir}/system/
 
+        # Install bash-completion script
+        install -d ${D}/${datadir}/bash-completion/completions/
+        install -m 644 ${S}/bash-completion/* ${D}/${datadir}/bash-completion/completions/overc
 }
 
 FILES_${PN} += "/opt/${BPN} ${sysconfdir}/overc \
