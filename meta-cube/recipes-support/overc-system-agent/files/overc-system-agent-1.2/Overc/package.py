@@ -1,5 +1,6 @@
 import sys, os 
 from Overc.utils import Process 
+from Overc.logger import logger as log
 
 class Package(object):
     def __init__(self):
@@ -17,7 +18,7 @@ class Package(object):
         retval = process.run(cmd_s)
         self.message = process.message
         if retval is not 0:
-            print("Error!: %s" % cmd_s)
+            log.error("%s" % cmd_s)
         return retval
 
     def _get_kernel(self, path):
