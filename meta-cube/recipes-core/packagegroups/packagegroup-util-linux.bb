@@ -35,7 +35,6 @@ RDEPENDS_packagegroup-util-linux-partition = "\
 
 RDEPENDS_packagegroup-util-linux-console = "\
     util-linux-agetty \
-    util-linux-reset \
     "
 
 RDEPENDS_packagegroup-util-linux-block = " \
