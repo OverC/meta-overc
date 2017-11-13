@@ -62,13 +62,13 @@ class Process(object):
 
             for fd in fds[0]:
                 if fd == child.stdout.fileno():
-                    read = child.stdout.readline().decode("utf-8")
+                    read = child.stdout.read().decode("utf-8")
                     if read != '':
                         sys.stdout.write(read)
                     self.stdout += read
                     self.message += read
                 if fd == child.stderr.fileno():
-                    read = child.stderr.readline().decode("utf-8")
+                    read = child.stderr.read().decode("utf-8")
                     if read != '':
                         sys.stderr.write(read)
                     self.stderr += read
