@@ -108,7 +108,9 @@ if __name__ == '__main__':
     c_rollback.set_defaults(func=overc.container_rollback)
     c_rollback.add_argument('name', help="name of container")
     c_rollback.add_argument('template', help="template of container")
-    c_rollback.add_argument('snapshot_name', nargs='?', help="name of snapshot")
+    c_rollback.add_argument("-f", "--force", dest="force",
+                          action="store_true",
+                          help=_("do container rollback without asking user questions"))
 
     c_list_containers = container_subparser.add_parser("list_containers", help=_("list containers available"))
     c_list_containers.set_defaults(func=overc.container_list)
