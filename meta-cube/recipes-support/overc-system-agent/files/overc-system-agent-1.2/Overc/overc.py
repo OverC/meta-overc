@@ -179,7 +179,7 @@ class Overc(object):
             os.system('reboot')
         
     def container_rollback(self):
-        self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template, False)
+        self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template, True)
         sys.exit(self.retval)
     def _container_rollback(self, container, snapshot, template, force):
         self.retval = self.container.rollback(container, snapshot, template, force)

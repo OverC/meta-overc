@@ -286,7 +286,7 @@ class Btrfs(Utils):
             os.system('%smount -t tmpfs tmpfs %s/%s/var/lib/rpm' % (cube_cmd, SYSROOT, self.next_rootfs))
             self._host_copyfile('%s/*' % tempd, '%s/%s/var/lib/rpm/' % (SYSROOT, self.next_rootfs))
 
-            result = os.system('%schroot %s/%s dnf upgrade --refresh' % (cube_cmd, SYSROOT, self.next_rootfs))
+            result = os.system('%schroot %s/%s dnf -y upgrade --refresh' % (cube_cmd, SYSROOT, self.next_rootfs))
 
             self._host_copyfile('%s/%s/var/lib/rpm/*' % (SYSROOT, self.next_rootfs), tempd)
             os.system('%sumount %s/%s/var/lib/rpm' % (cube_cmd, SYSROOT, self.next_rootfs))
