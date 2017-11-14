@@ -24,10 +24,11 @@ cat << EOF > ${output}
  ${0##*/} [--clean] <command> <value>
 
  global options:
-    
+
    --clean: remove artifacts before performing <command>
    -o     : output/config directory
    -n     : container name
+   -r     : temporary (runonce) value
 
  commands (and options):
 
@@ -313,6 +314,9 @@ while [ $# -gt 0 ]; do
 	    out_dir=${2}
 	    shift
 	    ;;
+        --runonce|-r)
+	    runonce=t
+	    ;;
 	-h|--help)
 	    cmd_help=${2}
 	    if [ -z "${cmd_help}" ]; then
@@ -442,6 +446,27 @@ check_if_present()
 clean_config_artifacts()
 {
     local type=$1
+
+    # we exit with 1 if we deleted something, otherwise, 0
+    if [ -n "${runonce}" ]; then
+	ls *.runonce  >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+	    ls .*.runonce  >/dev/null 2>&1
+	    if [ $? -eq 0 ]; then
+		runonce_found=t
+	    fi
+	else
+	    runonce_found=t
+	fi
+
+	# we just delete all runonce settings and exit
+	rm -f ${out_dir}/*.runonce ${out_dir}/.*.runonce
+
+	if [ -n "${runonce_found}" ]; then
+	    exit 1
+	fi
+	exit 0
+    fi
 
     if [ -z "${type}" ]; then
 	type="all"
@@ -604,8 +629,43 @@ generate_base_config()
 {
     local container_name=$1
 
+    # if runonce is set, check for any runonce values, if found, we do
+    # a regen. Otherwise, we do not
+    if [ -n "${runonce}" ]; then
+	ls *.runonce  >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+	    ls .*.runonce  >/dev/null 2>&1
+	    if [ $? -eq 0 ]; then
+		runonce_found=t
+	    fi
+	else
+	    runonce_found=t
+	fi
+	if [ -n "${runonce_found}" ]; then
+	    var_extension=".runonce"
+	    get_flag="-r"
+
+	    runonce_settings=".cube.mount.bind .cube.device.vt cube.app \
+                              .cube.hooks.prestart .cube.hooks.poststart \
+                              .cube.hooks.poststop cube.env cube.console.mgr"
+
+	    # if a setting doesn't have a .runonce value, we make one for it
+	    # this could go into a utility routine to copy, or clean all the
+	    # settings
+	    for v in ${runonce_settings}; do
+		if [ -e "${v}" ]; then
+		    if [ ! -e "${v}.runonce" ]; then
+			cp ${v} ${v}.runonce
+		    fi
+		fi
+	    done
+	else
+	    exit 0
+	fi
+    fi
+
     if [ -e ".cube.mount.bind" ]; then
-	for d in $(cat .cube.mount.bind); do
+	for d in $(cat .cube.mount.bind${var_extension}); do
 	    mount_args="${mount_args} --mount-bind $d"
 	done
     fi
@@ -613,7 +673,7 @@ generate_base_config()
     # temp. once the oci-runtime-tool is updated, we can pass devices
     #       directly. for now this is a bind mount.
     if [ -e ".cube.device.vt" ]; then
-	for d in $(cat .cube.device.vt); do
+	for d in $(cat .cube.device.vt${var_extension}); do
 	    mount_args="${mount_args} --mount-bind ${d}"
 	done
     fi
@@ -631,7 +691,7 @@ generate_base_config()
                   --process-cap-add CAP_SYSLOG \
                   --process-cap-add CAP_SYS_TTY_CONFIG"
 
-    app=$(cat cube.app)
+    app=$(cat cube.app${var_extension})
     app_args=""
     for a in ${app}; do
 	app_args="--args $a $app_args"
@@ -641,7 +701,7 @@ generate_base_config()
 IFS='
 '
     if [ -e ".cube.hooks.prestart" ]; then
-	for hook in $(cat .cube.hooks.prestart); do
+	for hook in $(cat .cube.hooks.prestart${var_extension}); do
 	    cmd=$(echo ${hook} | cut -d' ' -f1)
 	    count=$(echo ${hook} | wc -w)
 	    if [ $count -gt 1 ]; then
@@ -656,7 +716,7 @@ IFS='
 	done
     fi
     if [ -e ".cube.hooks.poststart" ]; then
-	for hook in $(cat .cube.hooks.poststart); do
+	for hook in $(cat .cube.hooks.poststart${var_extension}); do
 	    cmd=$(echo ${hook} | cut -d' ' -f1)
 	    count=$(echo ${hook} | wc -w)
 	    if [ $count -gt 1 ]; then
@@ -671,7 +731,7 @@ IFS='
 	done
     fi
     if [ -e ".cube.hooks.poststop" ]; then
-	for hook in $(cat .cube.hooks.poststop); do
+	for hook in $(cat .cube.hooks.poststop${var_extension}); do
 	    cmd=$(echo ${hook} | cut -d' ' -f1)
 	    count=$(echo ${hook} | wc -w)
 	    if [ $count -gt 1 ]; then
@@ -687,14 +747,14 @@ IFS='
     fi
 
     if [ -e "cube.env" ]; then
-	for e in $(cat cube.env); do
+	for e in $(cat cube.env${var_extension}); do
 	    e_nspc=$(echo ${e} | sed 's/ /#/g')
 	    env_args="${env_args} --env ${e_nspc}"
 	done
     fi
     IFS=$OLDIFS
 
-    console_mgr=$(cube-cfg cube.console.mgr:)
+    console_mgr=$(cube-cfg ${get_flag} cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
 	tty_flag="--process-tty"
     fi
@@ -755,7 +815,11 @@ if [ -d /sys/fs/cgroup/unified ]; then
     mkdir -p /sys/fs/cgroup/unified/runc/${container_name}
     echo \$\$ > /sys/fs/cgroup/unified/runc/${container_name}/cgroup.procs
 fi
-console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr)
+if [ -e "/opt/container/${container_name}/cube.console.mgr.runonce" ]; then
+    console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr.runonce)
+else
+    console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr)
+fi
 if [ "\${console_mgr}" = "tty" ] || [ "\${console_mgr}" = "screen-tty" ]; then
     rm -f /var/lib/cube/${container_name}/dtach-sock /var/lib/cube/${container_name}/runc-sock
     rm -f /var/lib/cube/${container_name}/pty-console
@@ -1691,7 +1755,13 @@ case "${cmd}" in
 		etcd_fetch ${var}
 	    fi
 	else
+
 	    if [ "${cmd}" = "set" ]; then
+		outvar=${out_dir}/${db_var}
+		if [ -n "${runonce}" ]; then
+		    outvar=${out_dir}/${db_var}.runonce
+		fi
+
 		if [ -f ${out_dir}/${db_var} ]; then
 		    previous=$(cat ${out_dir}/${db_var})
 		fi
@@ -1704,38 +1774,52 @@ case "${cmd}" in
 		    append_multi=t
 		fi
 
+		if [ -n "${runonce}" ]; then
+		    if [ -e ${out_dir}/${db_var} ]; then
+			cp ${out_dir}/${db_var} ${out_dir}/${db_var}.runonce
+		    fi
+		    # trigger a regen on the next start command
+		    touch ${out_dir}/.cube.runonce.regen
+		fi
 		if [ "${op}" == "+" ]; then
 		    if [ -n "${prepend}" ]; then
-			echo "${value} ${previous}" > ${out_dir}/${db_var}
+			echo "${value} ${previous}" > ${outvar}
+
 		    elif [ -n "${append}" ]; then
-			echo "${previous} ${value}" > ${out_dir}/${db_var}
+			echo "${previous} ${value}" > ${outvar}
 		    elif [ -n "${append_multi}" ]; then
-			check_isset ${out_dir}/${db_var} "${value}"
+			check_isset ${outvar} "${value}"
 			if [ $? -eq 0 ]; then
-			    echo "${value}" >> ${out_dir}/${db_var}
+			    echo "${value}" >> ${outvar}
 			fi
 		    else
-			echo "${value}" > ${out_dir}/${db_var}
+			echo "${value}" > ${outvar}
 		    fi
 		else
-		    if [ -f ${out_dir}/${db_var} ]; then
-			sed "s%${value} *%%g" -i ${out_dir}/${db_var}
+		    if [ -f ${outvar} ]; then
+			sed "s%${value} *%%g" -i ${outvar}
 		    fi
 		fi
+
+		if [ -z "${previous}" ]; then
+		    previous="none"
+		fi
+		set_hook=$(echo "${CONFIG_MAP[$var]}" | cut -d';' -f2)
+		if [ -n "${set_hook}" ] && [ "${set_hook}" != "noop" ]; then
+		    eval ${set_hook} ${previous} ${value} ${outvar}
+		fi
 	    else
-		if [ -e "${out_dir}/${db_var}" ]; then
-		    cat "${out_dir}/${db_var}"
+		outvar=${out_dir}/${db_var}
+		if [ -n "${runonce}" ]; then
+		    if [ -e "${out_dir}/${db_var}.runonce" ]; then
+			outvar=${out_dir}/${db_var}.runonce
+		    fi
+		fi
+		if [ -e "${outvar}" ]; then
+		    cat "${outvar}"
 		else
 		    echo ""
 		fi
-	    fi
-
-	    if [ -z "${previous}" ]; then
-		previous="none"
-	    fi
-	    set_hook=$(echo "${CONFIG_MAP[$var]}" | cut -d';' -f2)
-	    if [ -n "${set_hook}" ] && [ "${set_hook}" != "noop" ]; then
-		eval ${set_hook} ${previous} ${value} ${out_dir}/${db_var}
 	    fi
 	fi
 	;;

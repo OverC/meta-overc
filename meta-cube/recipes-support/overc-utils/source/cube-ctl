@@ -1669,20 +1669,10 @@ EOF
 			    if [ $? -ne 0 ]; then
 				if [ -n "${foreground}" ]; then
 				    oci_args="foreground"
-				    cube-cfg -n ${container} set cube.console.mgr:
-				else
-				    # if there's already a cube.console.mgr, do nothing, otherwise
-				    # set it to 'tty'. Note that orginally installed 'screen-tty'
-				    # console managed containers will be overwritten with this, but
-				    # if you are debugging with foreground, you should know enough
-				    # to put screen-tty back as the console manager.
-				    mgr=$(cube-cfg -n ${container} get cube.console.mgr)
-				    if [ -z "${mgr}" ]; then
-					cube-cfg -n ${container} set cube.console.mgr:tty
-				    fi
+				    cube-cfg -r -n ${container} set cube.console.mgr:
 				fi
 
-				console_mgr=$(cube-cfg -n ${container} cube.console.mgr:)
+				console_mgr=$(cube-cfg -r -n ${container} cube.console.mgr:)
 				tty_flag="f"
 				if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
 				    tty_flag="t"
@@ -1693,6 +1683,10 @@ EOF
 				tweak_container_fstab ${container_dir}/${container}/rootfs
 				tweak_container_devices ${container} ${container_dir}
 
+				# this will regenerate the config using any .runonce values, otherwise
+				# it will do nothing.
+				cube-cfg -r gen ${container}:oci
+
 				# oci.cmd is created dynamically at install time without IMA signature.
 				# So we can't run it directly, use "/bin/bash oci.cmd" to work around IMA checking
 				nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd ${oci_args}
@@ -1700,6 +1694,13 @@ EOF
 				#       delete of the key
 				machine=$(cube-cfg id)
 				cube-cfg set overc/$machine/oci/${container}/status:active
+
+				# remove any runonce settings
+				cube-cfg -r -n ${container} clean
+				# a return code of one means that settings were cleared, so we regen
+				if [ $? -eq 1 ]; then
+				    cube-cfg gen ${container}:oci
+				fi
 			    else
 				echo "container ${container} is already running ..."
 			    fi
