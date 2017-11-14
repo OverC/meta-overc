@@ -3,6 +3,7 @@ import subprocess
 import select
 import random
 import string
+from Overc.logger import logger as log
 
 SYSROOT = "/sysroot"
 FACTORY_SNAPSHOT = ".factory"
@@ -53,7 +54,7 @@ class Process(object):
         self.retval = 0
 
     def run(self, cmd):
-        print("Running: %s" % cmd)
+        log.info("Running: %s" % cmd)
 
         child = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
@@ -61,13 +62,13 @@ class Process(object):
 
             for fd in fds[0]:
                 if fd == child.stdout.fileno():
-                    read = child.stdout.readline().decode("utf-8")
+                    read = child.stdout.read().decode("utf-8")
                     if read != '':
                         sys.stdout.write(read)
                     self.stdout += read
                     self.message += read
                 if fd == child.stderr.fileno():
-                    read = child.stderr.readline().decode("utf-8")
+                    read = child.stderr.read().decode("utf-8")
                     if read != '':
                         sys.stderr.write(read)
                     self.stderr += read

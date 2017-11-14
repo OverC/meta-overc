@@ -2,6 +2,7 @@ import sys, os
 import subprocess
 import os.path
 from Overc.utils import Process
+from Overc.logger import logger as log
 from Overc.utils  import CONTAINER_MOUNT
 
 # containers template named scripts
@@ -22,10 +23,8 @@ class Container(object):
             self.message += "\nActivate ok"
         return retval
 
-    def rollback(self, name, snapshot_name, template, force):
+    def rollback(self, name, template, force):
         args = "-R -n %s" % name
-        if snapshot_name is not None:
-            args += " -b %s" % snapshot_name
         if force:
             args += " -f"
         retval = self.run_script(template, args)
@@ -158,7 +157,7 @@ class Container(object):
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n")
 
     def get_container(self, template):
-        cmd = "cube-ctl list | tail -2 | awk '{ if ($1 != \"dom0\") print $1 }'"
+        cmd = "cube-ctl list | tail -2 | awk '{ print $1 }'"
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n").split()
 
     def is_active(self, cn, template):
@@ -178,25 +177,25 @@ class Container(object):
         retval = process.run(cmd)
         self.message = process.message
         if retval is 0:
-            print("%s ok" % fname)
+            log.info("%s ok" % fname)
         elif not failok:
-                print("Error! %s failed" % fname)
+            log.error("%s failed" % fname)
         return retval
 
     def _overlay(self, cn, dirs, restore, sources=None):
         # Pararmeter check
         retval = 0
         if (dirs == None):
-            print("No dirs in parameter")
+            log.error("No dirs in parameter")
             return -1
         if (restore == False):
             if (sources == None):
-                print("No sources in parameter")
+                log.error("No sources in parameter")
                 return -1
             else: # Check source container name
                 for cn0 in sources.split(','):
                     if (cn0 == cn):
-                        print("Can not set same container in source list")
+                        log.error("Can not set same container in source list")
                         return -1
 
         # check if overlay dir exists, ex /var/lib/lxc/dom0/rootfs/usr_temp
@@ -205,11 +204,11 @@ class Container(object):
             fullpath="%s/%s/rootfs%s" % (CONTAINER_MOUNT,cn,oldir)
             if (restore == True): # Stop an overlay,
                 if (os.path.isdir(temppath) == False): #no such dir
-                    print("%s:not an overlay-ed dir in container" % (oldir))
+                    log.error("%s:not an overlay-ed dir in container" % (oldir))
                     return -1
             else: # Create an overlay
                 if (os.path.isdir(temppath) == True): # already overlay dir
-                    print("%s:already an overlay-ed dir in container" % (oldir))
+                    log.error("%s:already an overlay-ed dir in container" % (oldir))
                     return -1
         # Insert request into lxc.service
         lxcfile = '%s/overlayrestore' % (CONTAINER_MOUNT)
@@ -230,7 +229,7 @@ class Container(object):
                 lxc.write(cmdline)
                 retval = 1
             else:
-                print("%s already in overlay rebuild list, ignored" % basepara)
+                log.info("%s already in overlay rebuild list, ignored" % basepara)
         lxc.close()
         return retval
 
@@ -241,7 +240,7 @@ class Container(object):
         if (val == 0):
             return 0
         if (val == 1):
-            print("Reboot required to rebuild overlay directories")
+            log.info("Reboot required to rebuild overlay directories")
             return 0
 
     def overlay_stop(self, cn, dirs):
@@ -252,5 +251,5 @@ class Container(object):
         if (val == 0):
             return 0
         if (val == 1):
-            print("Reboot required to rebuild overlay directories")
+            log.info("Reboot required to rebuild overlay directories")
             return 0
