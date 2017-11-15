@@ -53,7 +53,7 @@ class Process(object):
         self.message = ''
         self.retval = 0
 
-    def run(self, cmd):
+    def run(self, cmd, liveoutput=True):
         log.info("Running: %s" % cmd)
 
         child = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -62,13 +62,19 @@ class Process(object):
 
             for fd in fds[0]:
                 if fd == child.stdout.fileno():
-                    read = child.stdout.read().decode("utf-8")
+                    if liveoutput:
+                        read = child.stdout.readline().decode("utf-8")
+                    else:
+                        read = child.stdout.read().decode("utf-8")
                     if read != '':
                         sys.stdout.write(read)
                     self.stdout += read
                     self.message += read
                 if fd == child.stderr.fileno():
-                    read = child.stderr.read().decode("utf-8")
+                    if liveoutput:
+                        read = child.stderr.readline().decode("utf-8")
+                    else:
+                        read = child.stderr.read().decode("utf-8")
                     if read != '':
                         sys.stderr.write(read)
                     self.stderr += read
