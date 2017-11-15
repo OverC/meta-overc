@@ -17,7 +17,7 @@ SRC_URI += " \
 	file://cube-update.service \
 	file://cube-update.timer \
 	file://config.default \
-	file://smart_newer.sh \
+	file://system_newer.sh \
 	"
 
 S = "${WORKDIR}"
@@ -51,7 +51,7 @@ do_install () {
 	install -m 0555 ${WORKDIR}/cubeupdated ${D}${sysconfdir}/cube-update/cubeupdated
 	install -m 0555 ${WORKDIR}/cubepkgcheck ${D}${sysconfdir}/cube-update/cubepkgcheck
 	install -d -m 0755 ${D}${bindir}
-	install -m 0555 ${WORKDIR}/smart_newer.sh ${D}${bindir}/smart_newer.sh
+	install -m 0555 ${WORKDIR}/system_newer.sh ${D}${bindir}/system_newer.sh
 
 	if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
 	    # systemd:
