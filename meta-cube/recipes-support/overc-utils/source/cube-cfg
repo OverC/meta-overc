@@ -694,7 +694,7 @@ generate_base_config()
     app=$(cat cube.app${var_extension})
     app_args=""
     for a in ${app}; do
-	app_args="--args $a $app_args"
+	app_args="$app_args --args $a"
     done
 
     OLDIFS=$IFS
