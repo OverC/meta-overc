@@ -14,10 +14,8 @@ function updatepkg_info()
     echo "CUBEUPDATE: " >> /tmp/$$.motd
     echo "CUBEUPDATE: update packages information on `date`" > /etc/cube-update/network.log
     for cn in $CNList; do
-        RET=`smart_newer.sh $cn | tail -n 1`
+        RET=`system_newer.sh $cn | tail -n 1`
 	if [ X"$RET" == X"-1" ]; then
-            echo "CUBEUPDATE: WARNING: The $cn smart channels require a user account and password" >> /tmp/$$.motd
-	elif [ X"$RET" == X"-2" ]; then
             echo "CUBEUPDATE: WARNING: The $cn networks is unreachable" >> /tmp/$$.motd
 	elif [ $RET -gt 0 ]; then
             echo "CUBEUPDATE: NOTICE: The $cn has updates available" >> /tmp/$$.motd
