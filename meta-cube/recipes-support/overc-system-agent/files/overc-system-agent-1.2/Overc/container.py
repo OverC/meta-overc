@@ -115,7 +115,7 @@ class Container(object):
 
     def list(self, template):
         args = "-L"
-        retval = self.run_script(template, args)
+        retval = self.run_script(template, args, liveoutput=False)
         if retval != 0:
             self.message += "\nList failed"
         return retval
@@ -169,14 +169,14 @@ class Container(object):
         else:
             return False
 
-    def run_script(self, template, args, failok=False):
+    def run_script(self, template, args, failok=False, liveoutput=True):
         fname = CONTAINER_SCRIPT_PATH + "/" + template
         if not os.path.isfile(fname):
             self.message = "Error! Missing file: %s" % fname
             return 1
         cmd = "%s %s" % (fname, args)
         process = Process()
-        retval = process.run(cmd)
+        retval = process.run(cmd, liveoutput)
         self.message = process.message
         if retval is 0:
             log.info("%s ok" % fname)
