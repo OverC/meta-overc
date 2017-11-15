@@ -27,7 +27,7 @@ SystemContainer=""
 function system_container() {
     ContainerNames=`cube-ctl list | awk '{print $1}' | xargs`
     #At present, system container includes cube-desktop cube-server cube-gw#
-    SystemContainers="cube-desktop cube-server cube-gw"
+    SystemContainers="cube-desktop cube-server cube-gw cube-gw-gfx"
     for cn in $SystemContainers;
     do
         echo $ContainerNames | grep "$cn"
