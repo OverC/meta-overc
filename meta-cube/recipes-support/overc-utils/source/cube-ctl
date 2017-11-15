@@ -52,13 +52,13 @@ EOF
 usage_stack()
 {
 cat << EOF
- ${0##*/} stack <container a> <container b>
+ ${0##*/} stack <container> [<instructions>]
 
-    stack (connect) two containers. This ensures that container a can communicate
-    with container b via a defined port.
+    stack
 
-       <container a>: name of the first container and port to be stacked
-       <container b>: name of the second container and port to be stacked
+       <container>: name of the container to be stacked
+       <instructions>: name of the stacking instructions file, which is a series of
+                       commands to be executed as part of stacking the container.
 EOF
 }
 usage_store()
