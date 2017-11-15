@@ -155,7 +155,7 @@ class Container(object):
         return retval
 
     def get_issue(self, name, template):
-        cmd = "cube-ctl %s:'cat /etc/issue'" % name
+        cmd = "cat /etc/issue" if name == "dom0" else "cube-ctl %s:'cat /etc/issue'" % name
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n")
 
     def get_container(self, template):
