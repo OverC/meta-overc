@@ -343,6 +343,11 @@ format_size() {
 rpm_upgrade() {
 	local container=$1
 
+	# Do nothing if no package upgrades available
+	if ! $OVERC_CTL check-update $container; then
+		return 0
+	fi
+
 	if [ ! $force -eq 1 ]; then
 		delete_snapshots $container
 	fi
