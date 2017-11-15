@@ -224,7 +224,7 @@ declare -A CONFIG_MAP
 #
 
 CONFIG_MAP[app]="cube.app;app_hook;single;The application to start in the container"
-CONFIG_MAP[cube.container.mgr]="cube.container.mgr;noop;single;The manager for the container: the path to the container runtime"
+CONFIG_MAP[cube.container.mgr]="cube.container.mgr;mgr_hook;single;The manager for the container: the path to the container runtime"
 CONFIG_MAP[cube.console.mgr]="cube.console.mgr;noop;single;The console manager (if access is not direct): 'tty' or 'screen-tty'"
 CONFIG_MAP[cube.device.mgr]="cube.device.mgr;noop;single;The device manager for the container: essential (static) or detected/standalone"
 CONFIG_MAP[autostart]="autostart;noop;single;The autostart runlevel for the container"
@@ -382,7 +382,78 @@ determine_outdir()
     fi
 }
 
+# returns 1 if we are container, 0 otherwise
+function am_i_a_container()
+{
+    local virt_bin=$(which systemd-detect-virt)
+
+    # if we can't run detection, just say we aren't a container
+    if [ -z "${virt_bin}" ]; then
+	return 0
+    fi
+
+    local virt=$(systemd-detect-virt)
+    case $virt in
+	lxc*)
+	    return 1
+	    ;;
+	container*)
+	    return 1
+	    ;;
+	docker*)
+	    return 1
+	    ;;
+    esac
+
+    return 0
+}
+
 determine_outdir
+
+# only dom0 has visibility to essential
+if [ -d "/var/lib/cube/essential" ]; then
+    we_are_dom0=t
+fi
+am_i_a_container
+if [ $? -eq 1 ]; then
+    we_are_a_container=t
+fi
+
+
+## Note: this routine is also in cube-ctl, so if you change this,
+##       change it there. Rather than do a .inc for the scripts,
+##       they are being kept standalone
+graft_binaries_to_essential()
+{
+    local binaries=$@
+
+    if [ -z "${we_are_a_container}" ]; then
+	return
+    fi
+    if [ -z "${we_are_dom0}" ]; then
+	return
+    fi
+
+    if [ ! -d "/var/lib/cube/essential/sbin/" ]; then
+	mkdir -p "/var/lib/cube/essential/sbin/"
+    fi
+
+    for b in ${binaries}; do
+	if [ ! -e "/var/lib/cube/essential/sbin/${b}" ]; then
+	    bin="${b}"
+	    if [ ! -f "${bin}" ]; then
+		bin=$(which ${b})
+	    fi
+	    if [ ! -f "${bin}" ]; then
+		echo "ERROR: binary ${b} not found"
+		continue
+	    fi
+	    # Copy it in archive mode to include extend attributes used for IMA
+	    echo cp -af ${bin} /var/lib/cube/essential/sbin/
+	    cp -af ${bin} /var/lib/cube/essential/sbin/
+	fi
+    done
+}
 
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
@@ -1068,6 +1139,25 @@ app_hook() {
 	    # we are switching to a system container to something else, addd the systemd hooks
 	    ${mydir}/cube-cfg ${container_name_flag} hook prestart:/usr/libexec/oci/hooks.d/oci-systemd-hook
 	    ${mydir}/cube-cfg ${container_name_flag} hook poststop:/usr/libexec/oci/hooks.d/oci-systemd-hook
+	fi
+    fi
+}
+
+mgr_hook() {
+    old_val=$1
+    new_val=$2
+    db_var=$3
+
+    if [ -n "${container_name}" ]; then
+	container_name_flag="-n ${container_name}"
+    fi
+    if [ "${old_val}" != "${new_val}" ]; then
+	# we have a delta
+	echo $new_val | grep -q runv
+	if [ $? -eq 0 ]; then
+	    # we are switching to a runv container. graft the binaries
+	    graft_binaries_to_essential runv
+	    ${mydir}/cube-cfg set cube.container.mgr:/var/lib/cube/essential/sbin/runv
 	fi
     fi
 }
