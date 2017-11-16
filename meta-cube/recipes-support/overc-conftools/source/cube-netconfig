@@ -136,6 +136,12 @@ if [ "${action}" = "vrf" ]; then
 	fi
     fi
 
+    # create the local lan configuration. When the oci-network hooks run, they'll
+    # populate the vrf's host file so we can have resolution on <container>.cube.lan
+    nsenter -t ${pid} -m echo "local=/cube.lan/" >> /etc/dnsmasq.conf
+    nsenter -t ${pid} -m echo "expand-hosts" >> /etc/dnsmasq.conf
+    nsenter -t ${pid} -m echo "domain=cube.lan" >> /etc/dnsmasq.conf
+
     ## TODO: in a self managed netprime configuration the VRF needs to go get the
     ##       dns information. If the netprime is doing it above (which it always
     ##       does now, we are covered.

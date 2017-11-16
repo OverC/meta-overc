@@ -138,6 +138,18 @@ if [ "${action}" = "up" ]; then
 	nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
     fi
 
+    ## TODO: this should be arbitrated to make sure we don't race, and so that dnsmasq
+    ##       can be properly restarted
+    vrf=dom0
+    grep -q -w "${cname}.cube.lan" /opt/container/${vrf}/rootfs/etc/hosts
+    if [ $? -eq 0 ]; then
+	# the name is already in there, replace it
+	sed -r "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} ${cname}.cube.lan/${primary_ip} ${cname}.cube.lan/g" -i /opt/container/${vrf}/rootfs/etc/hosts
+    else
+	# add the name
+	echo ${primary_ip} ${cname}.cube.lan >> /opt/container/${vrf}/rootfs/etc/hosts
+    fi
+
     # note: this should be conditional with the fixed dhclient call abovee
     nameserver="192.168.42.1"
     if [ -f "cube.network.nameserver" ]; then

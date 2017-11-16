@@ -154,6 +154,18 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -m sh -c "rm -f /etc/resolv.conf"
     nsenter -t ${pid} -m sh -c "echo nameserver ${nameserver} > /etc/resolv.conf"
 
+    ## TODO: this should be arbitrated to make sure we don't race, and so that dnsmasq
+    ##       can be properly restarted
+    vrf=dom0
+    grep -q -w "${cname}.cube.lan" /opt/container/${vrf}/rootfs/etc/hosts
+    if [ $? -eq 0 ]; then
+	# the name is already in there, replace it
+	sed -r "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} ${cname}.cube.lan/${primary_ip} ${cname}.cube.lan/g" -i /opt/container/${vrf}/rootfs/etc/hosts
+    else
+	# add the name
+	echo ${primary_ip} ${cname}.cube.lan >> /opt/container/${vrf}/rootfs/etc/hosts
+    fi
+
     # and now some network namespace accounting
     mkdir -p /var/run/netns
     ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
