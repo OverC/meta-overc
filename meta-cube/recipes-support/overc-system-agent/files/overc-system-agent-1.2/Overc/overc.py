@@ -132,7 +132,7 @@ class Overc(object):
 
     def host_newer(self):
         try:
-            rc = subprocess.check_call("cube-cmd dnf check-update", shell=True)
+            rc = subprocess.check_call("cube-cmd dnf check-update --refresh", shell=True)
         except subprocess.CalledProcessError as e:
             rc = e.returncode
 
@@ -141,7 +141,7 @@ class Overc(object):
     def host_update(self):
         rc = 0
         try:
-            output = subprocess.check_output("cube-cmd dnf updateinfo", stderr=subprocess.STDOUT, shell=True).decode("utf-8")
+            output = subprocess.check_output("cube-cmd dnf updateinfo --refresh", stderr=subprocess.STDOUT, shell=True).decode("utf-8")
         except subprocess.CalledProcessError as e:
             rc = e.returncode
             output = e.output.decode("utf-8")
