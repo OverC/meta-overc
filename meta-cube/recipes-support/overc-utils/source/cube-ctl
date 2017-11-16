@@ -1686,7 +1686,6 @@ EOF
 		    ${container_dir}/${container}/pflask.cmd
 		    cube-cfg set overc/$machine/cube/${container}/:active
 		elif [ -e "${container_dir}/${container}/config.json" ]; then
-		    (
 			if [ -n "${we_are_dom0}" ]; then
 			    # This escapes our namespace and launches the containers in our parents (essential)
 			    # namespace. But in that structure, runc may not be available so we copy it first and
@@ -1698,7 +1697,11 @@ EOF
 			    if [ $? -ne 0 ]; then
 				if [ -n "${foreground}" ]; then
 				    oci_args="foreground"
-				    cube-cfg -r -n ${container} set cube.console.mgr:
+				    if [ -n "${interactive}" ]; then
+					cube-cfg -r -n ${container} set cube.console.mgr:interactive
+				    else
+					cube-cfg -r -n ${container} set cube.console.mgr:
+				    fi
 				fi
 
 				console_mgr=$(cube-cfg -r -n ${container} cube.console.mgr:)
@@ -1718,6 +1721,9 @@ EOF
 
 				# oci.cmd is created dynamically at install time without IMA signature.
 				# So we can't run it directly, use "/bin/bash oci.cmd" to work around IMA checking
+				if [ "${oci_args}" = "foreground" ] ; then
+					echo "Running container '${container}' in foreground:"
+				fi
 				nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd ${oci_args}
 				# TODO: move this cube-cfg call into a pre-start hook, same with the
 				#       delete of the key
@@ -1737,7 +1743,6 @@ EOF
 			    # TODO: use cube-cmd to talk to a remote container manager
 			    true
 			fi
-		    )
 		fi
 	    fi
 	done
@@ -1746,6 +1751,8 @@ EOF
 	for container in ${container_names}; do
 	    cube-ctl stack ${container}
 	done
+	# conditionally wait on any backgounded processes
+	wait
 	;;
     status|list)
 	build_container_lists

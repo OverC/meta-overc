@@ -869,7 +869,7 @@ IFS='
 	echo "runc" > cube.container.mgr
     fi
 
-    if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ]; then
+    if [ "${console_mgr}" = "tty" ] || [ "${console_mgr}" = "screen-tty" ] || [ "${console_mgr}" = "interactive" ] ; then
 	jq -r  '.process.terminal = true' config.json > config.json.terminal
     else
 	jq -r  '.process.terminal = false' config.json > config.json.terminal
@@ -903,15 +903,16 @@ else
     touch /var/lib/cube/${container_name}/pty-console
 fi
 mgr=\$(cat /opt/container/${container_name}/cube.container.mgr)
-\${mgr} create --bundle /opt/container/${container_name} \${runc_console} ${container_name}
-if [ "\${console_mgr}" = "screen-tty" ] || [ "\${args}" = "debug" ]; then
-    /usr/bin/screen -ls console > /dev/null && /usr/bin/screen -S console -x -X \
-                    screen -t ${container_name} /var/lib/cube/${container_name}/pty-console
+if [ "\${args}" = "foreground" ] ; then
+     \${mgr} run --bundle /opt/container/${container_name} ${container_name}
+else
+     \${mgr} create --bundle /opt/container/${container_name} \${runc_console} ${container_name}
+    if [ "\${console_mgr}" = "screen-tty" ] || [ "\${args}" = "debug" ]; then
+	/usr/bin/screen -ls console > /dev/null && /usr/bin/screen -S console -x -X \
+	  screen -t ${container_name} /var/lib/cube/${container_name}/pty-console
+    fi
+    \${mgr} start ${container_name}
 fi
-\${mgr} start ${container_name}
-#if [ "\${args}" = "foreground" ]; then
-#    dtach -a /var/lib/cube/${container_name}/dtach-sock
-#fi
 EOF
 
     chmod +x oci.cmd
