@@ -1,6 +1,6 @@
 [Unit]
 Description=Dom0 Autoboot Code
-After=syslog.target network.target
+After=container-shutdown-notifier.service syslog.target network.target
 
 [Service]
 Type=forking
