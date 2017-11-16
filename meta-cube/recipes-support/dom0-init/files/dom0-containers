@@ -58,9 +58,12 @@ case "$1" in
         # The stop is serialized and can take excessive time.  We need to avoid
         # delaying the system shutdown / reboot as much as we can since it's not
         # parallelized...  Even 5 second timout may be too long.
-
-	## TODO: implement stop for a group
-        #"$bindir"/dom0_contctl stop $STOPOPTS $SHUTDOWNDELAY
+        # As a temporary implementation, stop all running containers except
+        # dom0 itself
+        for cube in $(/usr/sbin/cube-ctl list \
+            awk '{ if(($3 == "running") && ($1 != "dom0")) print $1 }'); do
+            /usr/sbin/cube-ctl stop $cube
+        done
         rm -f "$lockdir"/dom0
     ;;
 
