@@ -29,7 +29,7 @@ class Logger(object):
     def colorize(self, levelno, msg):
         color = self.COLORS[levelno]
         levelname = self.LEVELNAMES[levelno]
-        if self.colored and color is not None and levelname is not None:
+        if self.colored and color is not None and levelname is not None and msg:
             level = "".join([self.BLD % color, "[%s]" % levelname, self.RST])
             msg = "".join([self.STD % color, msg, self.RST])
             return "%s: %s" % (level, msg)

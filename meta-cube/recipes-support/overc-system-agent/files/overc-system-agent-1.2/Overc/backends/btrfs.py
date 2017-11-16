@@ -85,7 +85,7 @@ class Btrfs(Utils):
             c_list = c.split()
             if  c_list[2] == mountdir:
                 return c_list[0]
-            c=subp.stdout.readline().decode("utf-8")
+            c=subp.stdout.readline().decode("utf-8").strip()
 
         return None
     
@@ -103,7 +103,7 @@ class Btrfs(Utils):
                 #root volume has been mount to SYSROOT
                 need_mount = False
                 break
-            c=subp.stdout.readline().decode("utf-8")
+            c=subp.stdout.readline().decode("utf-8").strip()
             
         if need_mount:
             os.system('%smount -o subvolid=5 %s %s' % (cube_cmd, self.rootdev, SYSROOT))
@@ -118,18 +118,18 @@ class Btrfs(Utils):
     def _get_btrfs_value(self, path, key, host=False):
         cube_cmd = "cube-cmd " if host else ""
         subp=subprocess.Popen('%s/usr/bin/btrfs subvolume show %s' % (cube_cmd, path), shell=True,stdout=subprocess.PIPE)
-        c=subp.stdout.readline().decode("utf-8")
+        c=subp.stdout.readline().decode("utf-8").strip()
         while c:
             c_list = c.split(':')
             if  c_list[0].strip() == key:
                 return c_list[1].strip()
                 
-            c=subp.stdout.readline().decode("utf-8")
+            c=subp.stdout.readline().decode("utf-8").strip()
 
     def _cleanup_subvol(self, subvoldir, exclude, host=False):
         cube_cmd = "cube-cmd " if host else ""
         subp=subprocess.Popen('%s/usr/bin/btrfs subvolume list %s' % (cube_cmd, subvoldir), shell=True, stdout=subprocess.PIPE)
-        c=subp.stdout.readline().decode("utf-8")
+        c=subp.stdout.readline().decode("utf-8").strip()
         subvol_stack = []
         while c:
             c_list = c.split()
@@ -137,7 +137,7 @@ class Btrfs(Utils):
             if  subvolid != self.rootfs and subvolid not in exclude:
                 subvol = 'subvolume delete -C %s/%s' % (subvoldir, c_list[-1])
                 subvol_stack.append(subvol)
-            c=subp.stdout.readline().decode("utf-8")
+            c=subp.stdout.readline().decode("utf-8").strip()
 
         while subvol_stack:
             self._btrfs(subvol_stack.pop(), host)
@@ -225,7 +225,7 @@ class Btrfs(Utils):
 
         #snapshot the children subvolumes
         subp=subprocess.Popen('cube-cmd /usr/bin/btrfs subvolume list -o %s/.tmp/%s' % (CONTAINER_MOUNT, FACTORY_SNAPSHOT), shell=True, stdout=subprocess.PIPE)
-        c=subp.stdout.readline().decode("utf-8")
+        c=subp.stdout.readline().decode("utf-8").strip()
         while c:
             c_list = c.split()
             factory_subvol = c_list[-1]
@@ -240,7 +240,7 @@ class Btrfs(Utils):
                 self.message += 'Factory reset aborted!'
                 return False
             
-            c=subp.stdout.readline().decode("utf-8")
+            c=subp.stdout.readline().decode("utf-8").strip()
         
         #setup default subvolume
         subvolid = self._get_btrfs_value(workdir, 'Subvolume ID', True)
@@ -304,7 +304,7 @@ class Btrfs(Utils):
                 return False
                 # sys.exit(2)
 
-            upgrade_kernel = subprocess.check_output("%srealpath %s/%s/%s" % (cube_cmd, SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8")
+            upgrade_kernel = subprocess.check_output("%srealpath %s/%s/%s" % (cube_cmd, SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8").strip("\n")
             upgrade_kernel_md5 = ''
             if self._path_exists(upgrade_kernel, host):
                 upgrade_kernel_md5 = self._compute_checksum(upgrade_kernel, host)

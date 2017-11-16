@@ -54,10 +54,10 @@ class Overc(object):
         self._system_upgrade(self.args.template, self.args.reboot, self.args.force, self.args.skipscan, self.args.skip_del)
 
     def _system_upgrade(self, template, reboot, force, skipscan, skip_del):
-        log.info("skipscan %d" % skipscan)
         containers = self.container.get_container(template)
         overlay_flag = 0
-        #By now only support "Pulsar" and "overc" Linux upgrading
+
+        # By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
         for cn in containers:
             if self.container.is_active(cn, template):
@@ -88,7 +88,8 @@ class Overc(object):
 
     def system_rollback(self):
         containers = self.container.get_container(self.args.template)
-        #By now only support "Pulsar" and "overc" Linux rollback
+
+        # By now only support "Pulsar" and "overc" Linux rollback
         DIST = "Pulsar overc"
         need_reboot=False
         for cn in containers:
@@ -121,7 +122,6 @@ class Overc(object):
             os.system('reboot')
                         
     def _need_upgrade(self):
-        self.host_update()
         if self.host_newer() == 100:
             return True
         else:
@@ -131,23 +131,31 @@ class Overc(object):
         log.info("host status")
 
     def host_newer(self):
+        rc = 0
         try:
-            rc = subprocess.check_call("cube-cmd dnf check-update --refresh", shell=True)
+            self.message += subprocess.check_output("cube-cmd dnf check-update --refresh", stderr=subprocess.STDOUT, shell=True).decode("utf-8").strip("\n")
         except subprocess.CalledProcessError as e:
             rc = e.returncode
+            self.message += e.output.decode("utf-8").strip()
 
+        if rc == 100 or rc == 0:
+            log.info(self.message)
+        else:
+            log.error(self.message)
         return rc
 
     def host_update(self):
         rc = 0
         try:
-            output = subprocess.check_output("cube-cmd dnf updateinfo --refresh", stderr=subprocess.STDOUT, shell=True).decode("utf-8")
+            self.message += subprocess.check_output("cube-cmd dnf updateinfo --refresh", stderr=subprocess.STDOUT, shell=True).decode("utf-8").strip("\n")
         except subprocess.CalledProcessError as e:
             rc = e.returncode
-            output = e.output.decode("utf-8")
+            self.message += e.output.decode("utf-8").strip()
 
-        self.message += output
-        log.info(self.message)
+        if rc == 0:
+            log.info(self.message)
+        else:
+            log.error(self.message)
         return rc
 
     def host_upgrade(self):
@@ -159,6 +167,7 @@ class Overc(object):
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
+            log.info(self.message)
             return 0
 
         if reboot:
@@ -172,11 +181,14 @@ class Overc(object):
             log.error(self.message)
             return
 
-        log.info("host rollback")
+        log.info("Start doing host rollback")
         r = self.agency.do_rollback()
         self.message = self.agency.message
         if r:
             os.system('reboot')
+        else:
+            log.error(self.message)
+            return 1
         
     def container_rollback(self):
         self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template, True)
