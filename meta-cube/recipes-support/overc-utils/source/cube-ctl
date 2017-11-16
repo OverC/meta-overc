@@ -1526,6 +1526,9 @@ EOF
 	    (
 		cd ${container_dir}/${container_name}
 
+		# we are going to hack this up, so we need a copy
+		cp -f cube.network.stack cube.network.stack.runonce
+
 		# we need to resolve an variable references. Currently this
 		# is IPS and devices
 		vars=$(cat cube.network.stack | awk -F"[{}]" '{print $2}' | sort | uniq)
@@ -1540,6 +1543,7 @@ EOF
 				if [ $? -ne 0 ]; then
 				    # we have a real device. Last one wins.
 				    device=$(echo ${n} | cut -f1 -d:)
+				    sed "s#\${$v}#${device}#g" -i cube.network.stack.runonce
 				fi
 			    done
 			    ;;
@@ -1551,7 +1555,9 @@ EOF
 			    # tweaked.
 			    dpid=$(cat ${container_dir}/${cname}/.cube.pid)
 			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
-			    eval ${cname}_ip=${ip}
+			    # TODO: we could error/warn if the ip comes back empty. avoids a bad rule later
+			    #eval ${cname}_ip=${ip}
+			    sed "s#\${$v}#${ip}#g" -i cube.network.stack.runonce
 			    ;;
 		    esac
 		done
@@ -1564,7 +1570,7 @@ EOF
 		    echo ${cmd} | grep -q iptables
 		    if [ $? -eq 0 ]; then
 			cmd_check=$(echo ${cmd} | sed 's/iptables -A/iptables -C/')
-			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_check" 2> /dev/null
+			cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_check" 2> /dev/null
 		    else
 			# just so $? can run the command without a check :D
 			false
@@ -1572,11 +1578,13 @@ EOF
 		    if [ $? -ne 0 ]; then
 			if [ -n "${verbose}" ]; then
 			    echo -n "INFO:"
-			    eval echo cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
+			    echo cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
 			fi
-			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
+			cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
 		    fi
-		done 10<cube.network.stack
+		done 10<cube.network.stack.runonce
+
+		rm -f cube.network.stack.runonce
 	    )
 	fi
 	;;
