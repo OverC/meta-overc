@@ -1551,7 +1551,8 @@ EOF
 			    # tweaked.
 			    dpid=$(cat ${container_dir}/${cname}/.cube.pid)
 			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
-			    eval ${cname}_ip=${ip}
+			    cnamevar=$(echo $cname | sed -r 's/[^a-zA-Z0-9_]//')
+			    eval ${cnamevar}_ip=${ip}
 			    ;;
 		    esac
 		done
@@ -1564,17 +1565,19 @@ EOF
 		    echo ${cmd} | grep -q iptables
 		    if [ $? -eq 0 ]; then
 			cmd_check=$(echo ${cmd} | sed 's/iptables -A/iptables -C/')
-			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_check" 2> /dev/null
+			cmd_checkvar=$(echo ${cmd_check} | sed ':a; s/{\([^}]*\)[^a-zA-Z0-9_}]\([^}]*\)}/{\1\2}/g; ta')
+			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_checkvar" 2> /dev/null
 		    else
 			# just so $? can run the command without a check :D
 			false
 		    fi
 		    if [ $? -ne 0 ]; then
+			cmd_var=$(echo ${cmd} | sed ':a; s/{\([^}]*\)[^a-zA-Z0-9_}]\([^}]*\)}/{\1\2}/g; ta')
 			if [ -n "${verbose}" ]; then
 			    echo -n "INFO:"
-			    eval echo cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
+			    eval echo cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_var"
 			fi
-			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd"
+			eval cube-cmd nsenter -t ${spid} -n --preserve-credentials "$cmd_var"
 		    fi
 		done 10<cube.network.stack
 	    )
