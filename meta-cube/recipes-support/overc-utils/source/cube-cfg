@@ -892,15 +892,21 @@ else
     console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr)
 fi
 if [ "\${console_mgr}" = "tty" ] || [ "\${console_mgr}" = "screen-tty" ]; then
-    rm -f /var/lib/cube/${container_name}/dtach-sock /var/lib/cube/${container_name}/runc-sock
-    rm -f /var/lib/cube/${container_name}/pty-console
-    /usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 \
-                   -p /var/lib/cube/${container_name}/pty-console -c -C -E \
-                   -q /var/lib/cube/${container_name}/runc-sock < /dev/null > /dev/null 2> /dev/null
+    if [ "\${args}" != "attach" ] ; then
+	rm -f /var/lib/cube/${container_name}/dtach-sock \
+	  /var/lib/cube/${container_name}/runc-sock \
+	  /var/lib/cube/${container_name}/pty-console
+	/usr/bin/dtach -n /var/lib/cube/${container_name}/dtach-sock -W 120 \
+	  -p /var/lib/cube/${container_name}/pty-console -c -C -E \
+	  -q /var/lib/cube/${container_name}/runc-sock < /dev/null > /dev/null 2> /dev/null
+    fi
     runc_console="--console-socket=/var/lib/cube/$container_name/runc-sock"
 else
     rm -f /var/lib/cube/${container_name}/pty-console
     touch /var/lib/cube/${container_name}/pty-console
+fi
+if [ "\${args}" = "consoleonly" ] ; then
+    exit 0
 fi
 mgr=\$(cat /opt/container/${container_name}/cube.container.mgr)
 if [ "\${args}" = "foreground" ] ; then

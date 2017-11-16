@@ -273,6 +273,9 @@ while [ $# -gt 0 ]; do
 	    container_name=${2}
 	    shift
 	    ;;
+	--attach|-a)
+	    consoleattach=t
+	    ;;
 	--foreground|-f)
 	    foreground=t
 	    ;;
@@ -1695,7 +1698,11 @@ EOF
 			    oc=$(echo ${open_container_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
 			    echo "${oc}" | grep -q "#${container}#"
 			    if [ $? -ne 0 ]; then
+				if [ -n "${consoleattach}" ]; then
+				    oci_args="attach"
+				fi
 				if [ -n "${foreground}" ]; then
+				    # foreground always wins for oci args
 				    oci_args="foreground"
 				    if [ -n "${interactive}" ]; then
 					cube-cfg -r -n ${container} set cube.console.mgr:interactive
@@ -1721,6 +1728,16 @@ EOF
 
 				# oci.cmd is created dynamically at install time without IMA signature.
 				# So we can't run it directly, use "/bin/bash oci.cmd" to work around IMA checking
+				if [ "${oci_args}" = "attach" ] ; then
+					nsenter -P -t 1 -p -n -u -m -C /bin/bash /opt/container/${container}/oci.cmd consoleonly
+					# At this point we are taking over stdin from the caller
+					# and feeding it to dtach after the OCI command has setup our
+					# console session
+					set -m
+					echo "Press Control-\\ to exit the console handler:"
+					setsid -w dtach -a /var/lib/cube/${container}/dtach-sock -C -q &
+					exec 0<&-
+				fi
 				if [ "${oci_args}" = "foreground" ] ; then
 					echo "Running container '${container}' in foreground:"
 				fi
