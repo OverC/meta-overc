@@ -907,26 +907,47 @@ case "${cmd}" in
 	    container_name="$(cubename ${filename})"
 	fi
 
-	if [ -n "${host}" ]; then
+	# if host has a value, and path doesn't, then really it was just
+	# a default name (i.e. dockerhub) so the path is the host and
+	# host is empty.
+	if [ -n "${host}" ] && [ -z "${path}" ]; then
+	    path="${host}"
+	    host=""
+	fi
+
+	if [ -n "${path}" ]; then
 	    # see if there's a tag in the input. awk gets us the last : ->
 	    # end of line, which could be a tag.  but if that tag has //
 	    # in it, it is just the docker:// that started the source
 	    tag="latest"
-	    possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
-	    echo ${possible_tag} | grep -q '//'
-	    if [ $? -ne 0 ]; then
-		# no slashes found, that's a tag
-		tag="${possible_tag}"
+	    echo "${path}" | grep -q ':'
+	    if [ $? -eq 0 ]; then
+		possible_tag=$(echo ${path} | awk -F':' '{print $NF}')
+		echo ${possible_tag} | grep -q '//'
+		if [ $? -ne 0 ]; then
+		    # no slashes found, that's a tag
+		    tag="${possible_tag}"
+		fi
 	    fi
+	    if [ -n "${verbose}" ];then
+		echo tag: $tag
+		echo source: $container_source
+		echo host: $host
+		echo path: $path
+	    fi
+
 	    container_source=$(echo ${container_source} | sed "s#:${tag}##")
 	    host=$(echo ${host} | sed "s#:${tag}##")
 	    path=$(echo ${path} | sed "s#:${tag}##" | sed "s#/#-#")
 	fi
 
 	if [ -z "${container_name}" ]; then
-	    container_name="$host"
+	    # the host, minus any ports
+	    container_name=$(echo $host | awk -F':' '{print $1}')
+	    # we prefer the path over the host
 	    if [ -n "${path}" ]; then
-		container_name="$host-$path"
+		# the path, minus any tags
+		container_name=$(echo $path | awk -F':' '{print $1}')
 	    fi
 	fi
 
@@ -1007,7 +1028,7 @@ case "${cmd}" in
 		    echo "[ERROR]: docker container ${container_source} not found, check input and try again"
 		    exit 1
 		fi
-	
+
 		oci-image-tool create --ref ${tag} ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: error OCI runtime could not be created from ${container_source}"
