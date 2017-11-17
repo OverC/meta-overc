@@ -49,9 +49,9 @@ RDEPENDS_${PN} = "gpgme \
                  "
 
 SRC_URI = "git://github.com/projectatomic/skopeo"
-SRC_URI += "file://0001-Vendor-after-merging-mtrmac-image-manifest-list-hotf.patch"
+#SRC_URI += "file://0001-Vendor-after-merging-mtrmac-image-manifest-list-hotf.patch"
 
-SRCREV = "b548b5f96f8c0a3911f26f94c85115268ec9e417"
+SRCREV = "c1a0084bb32c19fde6cc691cfb85300dda381376"
 PV = "v0.1.24-dev+git${SRCPV}"
 GO_IMPORT = "import"
 
