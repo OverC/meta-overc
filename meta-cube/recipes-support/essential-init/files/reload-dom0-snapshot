@@ -1,0 +1,24 @@
+#!/bin/bash
+
+container_dir="/opt/container"
+snapshots_dir="/opt/container/.snapshots"
+snapshot=$(cat ${snapshots_dir}/dom0/.need_reload 2>/dev/null)
+
+# Sanity check
+if [ -z "${snapshot}" -o ! -d ${snapshots_dir}/dom0/${snapshot} ]; then
+        echo "[ERROR]: The required snapshot is not available."
+        exit 1
+    fi
+
+# Delete all subvolumes recursively in reverse order
+subvols=$(btrfs subvolume list -o ${container_dir}/dom0 | awk '{print $NF}' | sed "s#workdir#${container_dir}/dom0#")
+for subvol in $(echo ${subvols} | tr ' ' '\n' | tac | tr '\n' ' '); do
+        btrfs subvolume delete -C ${subvol}
+done
+
+btrfs subvolume delete -C ${container_dir}/dom0
+btrfs subvolume snapshot ${snapshots_dir}/dom0/${snapshot} ${container_dir}/dom0
+btrfs subvolume delete -C ${snapshots_dir}/dom0/${snapshot}
+sed -i "/${snapshot}/d" ${snapshots_dir}/dom0/.container_history
+rm ${snapshots_dir}/dom0/.need_reload
+exit 0

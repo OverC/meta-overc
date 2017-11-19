@@ -8,14 +8,17 @@ RDEPENDS_${PN} = "util-linux bash pflask"
 
 SRC_URI = "file://essential-autostart \
            file://essential-autostart.service \
+           file://reload-dom0-snapshot \
+           file://reload-dom0-snapshot.service \
 "
 
-SRC_FILES_LIST="essential-autostart \
+SRC_FILES_LIST = "essential-autostart \
+                  reload-dom0-snapshot \
 "
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "essential-autostart.service"
+SYSTEMD_SERVICE_${PN} = "essential-autostart.service reload-dom0-snapshot.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 systemd_postinst() {
@@ -39,6 +42,7 @@ do_install() {
 
     install -d ${D}/lib/systemd/system/
     install -m 0644 ${WORKDIR}/essential-autostart.service ${D}/lib/systemd/system/
+    install -m 0644 ${WORKDIR}/reload-dom0-snapshot.service ${D}/lib/systemd/system/
 }
 
 FILES_${PN} += "${sbin} \
