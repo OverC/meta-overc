@@ -1,0 +1,13 @@
+[Unit]
+Description=Reload dom0 snapshot if needed
+After=syslog.target
+Before=essential-autostart.service
+ConditionPathExists=/opt/container/.snapshots/dom0/.need_reload
+
+[Service]
+Type=forking
+RemainAfterExit=no
+ExecStart=-/usr/sbin/reload-dom0-snapshot
+
+[Install]
+WantedBy=basic.target
