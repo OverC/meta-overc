@@ -351,7 +351,7 @@ container_dir="/opt/container"
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt_bin=$(which systemd-detect-virt)
+    local virt_bin=$(which systemd-detect-virt 2> /dev/null)
 
     # if we can't run detection, just say we aren't a container
     if [ -z "${virt_bin}" ]; then
@@ -421,7 +421,7 @@ check_if_present()
 build_container_lists()
 {
     # there are cubes, find them via machinectl
-    machines="$(cube-cmd machinectl)"
+    machines="$(cube-cmd /bin/machinectl)"
     # drop the machinectl count of machines
     machines=$(echo "${machines}" | sed '/machines listed/d')
 
@@ -1860,9 +1860,9 @@ IFS=$OLDIFS
 
 	    if [ -n "${container_is_a_cube}" ]; then
 		if [ -n "${verbose}" ]; then
-		    cube-cmd machinectl status ${container_name}
+		    cube-cmd /bin/machinectl status ${container_name}
 		else
-		    cube-cmd machinectl show ${container_name}
+		    cube-cmd /bin/machinectl show ${container_name}
 		fi
 	    fi
 	    if [ -n "${container_is_a_oci}" ]; then
@@ -2034,7 +2034,7 @@ IFS=$OLDIFS
 	fi
 
 	if [ -n "${container_is_a_cube}" ]; then
-	    cube-cmd machinectl stop ${container_name}
+	    cube-cmd /bin/machinectl stop ${container_name}
 	fi
 	if [ -n "${container_is_a_oci}" ]; then
 	    build_container_lists

@@ -385,7 +385,7 @@ determine_outdir()
 # returns 1 if we are container, 0 otherwise
 function am_i_a_container()
 {
-    local virt_bin=$(which systemd-detect-virt)
+    local virt_bin=$(which systemd-detect-virt 2> /dev/null)
 
     # if we can't run detection, just say we aren't a container
     if [ -z "${virt_bin}" ]; then
