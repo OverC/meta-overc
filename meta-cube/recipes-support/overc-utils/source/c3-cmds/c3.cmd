@@ -1,0 +1,12 @@
+#define cube-cfg
+#define c3-cfg
+#define c3-ctl
+#define systemd-detect-virt
+#define mv
+#define jq
+#define chmod
+#define cube-cmd
+#define touch
+#define nctl
+#define nanocat
+#define nsenter

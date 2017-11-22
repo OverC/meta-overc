@@ -19,6 +19,8 @@ SRC_URI = " \
     file://source/cube-device.sh \
     file://source/cube-device-functions \
     file://source/c3-completions \
+    file://source/c3-construct \
+    file://source/c3-cmds/* \
 "
 
 S = "${WORKDIR}/git"
@@ -37,6 +39,10 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-cfg ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
     install -m755 ${WORKDIR}/source/nctl ${D}${sbindir}
+
+    install -d ${D}${sbindir}/c3-cmds
+    install -m755 ${WORKDIR}/source/c3-cmds/* ${D}${sbindir}/c3-cmds
+    install -m755 ${WORKDIR}/source/c3-construct ${D}${sbindir}
 
     # alias "cube" as "c3"
     (
