@@ -1580,8 +1580,11 @@ EOF
 			    dpid=$(cat ${container_dir}/${cname}/.cube.pid)
 			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
 			    # TODO: we could error/warn if the ip comes back empty. avoids a bad rule later
-			    #eval ${cname}_ip=${ip}
-			    sed "s#\${$v}#${ip}#g" -i cube.network.stack.runonce
+			    if [ -z "${ip}" ]; then
+				sed "s#\${$v}#donotrun#g" -i cube.network.stack.runonce
+			    else
+				sed "s#\${$v}#${ip}#g" -i cube.network.stack.runonce
+			    fi
 			    ;;
 		    esac
 		done
@@ -1591,6 +1594,10 @@ EOF
 		while read -u 10 cmd; do
 		    # With the variable creation above, these will echo without any unknown
 		    # variables .. if there are remaining vars, it is an error.
+		    echo ${cmd} | grep -q donotrun
+		    if [ $? -eq 0 ]; then
+			continue
+		    fi
 		    echo ${cmd} | grep -q iptables
 		    if [ $? -eq 0 ]; then
 			cmd_check=$(echo ${cmd} | sed 's/iptables -A/iptables -C/')

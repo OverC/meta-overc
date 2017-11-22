@@ -449,7 +449,6 @@ graft_binaries_to_essential()
 		continue
 	    fi
 	    # Copy it in archive mode to include extend attributes used for IMA
-	    echo cp -af ${bin} /var/lib/cube/essential/sbin/
 	    cp -af ${bin} /var/lib/cube/essential/sbin/
 	fi
     done
@@ -1164,7 +1163,7 @@ mgr_hook() {
 	if [ $? -eq 0 ]; then
 	    # we are switching to a runv container. graft the binaries
 	    graft_binaries_to_essential runv
-	    ${mydir}/cube-cfg set cube.container.mgr:/var/lib/cube/essential/sbin/runv
+	    ${mydir}/cube-cfg set ${container_name_flag} cube.container.mgr:/var/lib/cube/essential/sbin/runv
 	fi
     fi
 }
@@ -1519,6 +1518,10 @@ case "${cmd}" in
 	    if [ -n "${verbose}" ]; then
 		echo "[INFO]: linking $container_a $container_a_port to $container_b $container_b_port"
 	    fi
+
+	    # If we are linking containerA and B, they need to be autostarted or
+	    # we'll get bad rules on reboot
+	    cube-cfg set -n ${container_b} autostart:dom0
 
 	    # TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
 	    check_isset ${out_dir}/cube.network.stack "$cmd_1"
