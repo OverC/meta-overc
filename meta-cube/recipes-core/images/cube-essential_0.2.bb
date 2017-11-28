@@ -18,6 +18,8 @@ PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
+OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-vm-sep','',d)}"
+
 IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-essential \
                   packagegroup-util-linux \
@@ -31,6 +33,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  netns \
                   jq \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
+                  ${OVERC_VMSEP_PACKAGES} \
 		  kernel-image \
                  "
 
