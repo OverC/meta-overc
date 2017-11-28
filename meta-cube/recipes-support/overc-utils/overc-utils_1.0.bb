@@ -1,12 +1,10 @@
 SUMMARY = "OverC support utilities"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=751419260aa954499f7abaabaa882bbe"
+LIC_FILES_CHKSUM = "file://${WORKDIR}/source/COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}:"
 
-SRCREV = "${AUTOREV}"
 SRC_URI = " \
-    git://github.com/OverC/overc-installer.git;branch=master \
     file://source/cube-cmd \
     file://source/cube-ctl \
     file://source/cube-cfg \
@@ -23,14 +21,9 @@ SRC_URI = " \
     file://source/c3-cmds/* \
 "
 
-S = "${WORKDIR}/git"
-
 do_install() {
     install -d ${D}${bindir}
     install -d ${D}${sbindir}
-
-    # cubename comes from overc-installer.git
-    install -m755 ${S}/sbin/cubename ${D}${bindir}
 
     # The rest are local utilities
     install -m755 ${WORKDIR}/source/cube-console ${D}${sbindir}
@@ -75,4 +68,4 @@ FILES_${PN} += "/opt/${BPN} ${datadir}/bash-completion \
 
 FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
 
-RDEPENDS_${PN} += "bash dtach nanomsg udev systemd-extra-utils jq"
+RDEPENDS_${PN} += "bash dtach nanomsg udev systemd-extra-utils jq overc-installer"

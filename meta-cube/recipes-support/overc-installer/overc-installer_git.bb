@@ -14,8 +14,10 @@ do_install() {
 	mkdir -p ${D}/opt/${BPN}/
 	mkdir -p ${D}${systemd_system_unitdir}/
 	install -m755 ${S}/sbin/overc-ctl ${D}/opt/${BPN}/
+	install -m755 ${S}/sbin/cubename ${D}/opt/${BPN}/
 	install -d ${D}/${sbindir}
 	lnr ${D}/opt/${BPN}/overc-ctl ${D}/${sbindir}/overc-ctl
+	lnr ${D}/opt/${BPN}/cubename ${D}/${sbindir}/cubename
 	install -m 0755 ${S}/files/overc_cleanup.service ${D}${systemd_system_unitdir}/
 }
 
