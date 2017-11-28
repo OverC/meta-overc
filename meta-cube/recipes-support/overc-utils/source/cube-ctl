@@ -163,9 +163,14 @@ usage_status()
 {
 cat << EOF
  ${0##*/} status
- ${0##*/} list
+ ${0##*/} [-t <sort type>] list
 
     list of known containers
+
+     -t: type of sorting
+          name   : sort by name
+          state  : sort by state
+          type   : sort by container type
 
 EOF
 }
@@ -412,106 +417,79 @@ check_if_present()
     return 1
 }
 
-# outputs:
-#   machines: raw output from machinectl
-#   oci: raw output from runc
-#
-#   cubes: list of running cubes
-#   open_containers: list of running open containers
 build_container_lists()
 {
-    # there are cubes, find them via machinectl
-    machines="$(cube-cmd /bin/machinectl)"
-    # drop the machinectl count of machines
-    machines=$(echo "${machines}" | sed '/machines listed/d')
-
     # these are globally used, and must be reset whenever the
-    # container list is rebuilto
+    # container list is rebuil
     open_containers=
     cubes=
-    open_container_available=
+    open_containers_available=
     cubes_available=
+    open_containers_running=
+    cubes_running=
+    others=
+    others_running=
+    mgrs_all=
 
-    # and then there are open containers
-    graft_binaries_to_essential runc
-    if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
-	runc_essential="/var/lib/cube/essential/sbin/runc"
-    else
-	echo "ERROR: unable to execute runc on essential"
-	exit 1
-    fi
-    oci=$(cube-cmd ${runc_essential} list)
+    # Get a list of all the possible containers, which are all found in
+    # /opt/container/<name>. We can tell the difference between containers
+    # by their cube.container.mgr attribute.
+    local ca=$(ls /opt/container/)
+    for c in ${ca}; do
+	local mgr=$(cube-cfg get -n ${c} cube.container.mgr:)
+	if [ -n "${mgr}" ]; then
+	    echo "${mgrs_all}" | grep -q -q "${mgr}"
+	    if [ $? -ne 0 ]; then
+		mgrs_all="${mgrs_all} ${mgr}"
+	    fi
 
-    # and then there are all the possible containers, which are
-    # all found in /opt/container/<name>. We can tell the difference
-    # between oci and cubes by the config files in the directory
-    containers_available=$(ls /opt/container/)
-    for c in ${containers_available}; do
-	if [ -e "/opt/container/${c}/pflask.cmd" ]; then
-	    cubes_available="${cubes_available} ${c}"
-	elif [ -e "/opt/container/${c}/config.json" ]; then
-	    open_container_available="${open_container_available} ${c}"
+	    # a complete list of every available container
+	    containers_available="${containers_available} ${c}"
+
+	    case ${mgr} in
+		*/runc)
+		    graft_binaries_to_essential runc
+
+		    open_containers="${open_containers} ${c}"
+		    state=$(get_container_state ${c})
+		    case ${state} in
+			stopped|available)
+			    open_containers_available="${open_containers_available} ${c}"
+			    ;;
+			*)
+			    open_containers_running="${open_containers_running} ${c}"
+			    ;;
+		    esac
+		    ;;
+		*pflask)
+		    cubes="${cubes} ${c}"
+		    state=$(get_container_state ${c})
+		    case ${state} in
+			stopped)
+			    cubes_available="${cubes_available} ${c}"
+			    ;;
+			*)
+			    cubes_running="${cubes_running} ${c}"
+			    ;;
+		    esac
+		    ;;
+		*/runv)
+		    graft_binaries_to_essential runv
+		    state=$(get_container_state ${c})
+
+		    others="${others} ${c}"
+		    case ${state} in
+			stopped)
+			    others_available="${others_available} ${c}"
+			    ;;
+			*)
+			    others_running="${others_running}"
+			    ;;
+		    esac
+		    ;;
+	    esac
 	fi
-	## TODO: test for some other oci artifacts.
     done
-
-    # take a copy of the "available" variables, since if a container is
-    # detected as running below it is removed from the 'available', since
-    # 'available' means "available to be started"
-    cubes_all="${cubes_available}"
-    open_container_all="${open_container_available}"
-
-    # short form output
-    OLDIFS=$IFS
-IFS="
-"
-    for l in ${machines} ${oci}; do
-
-	# collapse all whitespace to a single space for the cut lines below
-	l=$(echo ${l} | sed -e "s/[[:space:]]\+/ /g")
-
-	case ${l} in
-	    MACHINE*)
-		# do nothing, it's a header from machinectl
-		ctype="cube"
-		;;
-	    ID*)
-		# do nothing, it's a header from runc
-		ctype="oci"
-		;;
-	    *)
-		cname=$(echo "${l}" | cut -f 1 -d' ')
-		cstate=$(echo "${l}" | cut -f 3 -d' ')
-		if [ "${ctype}" == "cube" ]; then
-		    cubes="${cubes} ${cname}"
-		fi
-		if [ "${ctype}" == "oci" ]; then
-		    open_containers="${open_containers} ${cname}"
-		fi
-
-		case $cstate in
-		    stopped)
-			if [ "${ctype}" == "oci" ]; then
-			    open_container_stopped="${open_container_stopped} ${cname}"
-			    open_container_available=$(echo ${open_container_available} | sed "s/${cname}//")
-			fi
-			;;
-		    *)
-			# if we don't recognize the state .. assume it is running
-			if [ "${ctype}" == "oci" ]; then
-			    open_container_running="${open_container_running} ${cname}"
-			    open_container_available=$(echo ${open_container_available} | sed "s/${cname}//")
-			fi
-			if [ "${ctype}" == "cube" ]; then
-			    cubes_running="${cubes_running} ${cname}"
-			    cubes_available=$(echo ${cubes_available} | sed "s/${cname}//")
-			fi
-			;;
-		esac
-		;;
-	esac
-    done
-    IFS=$OLDIFS
 }
 
 # Check if the passed string matches any known container names
@@ -539,7 +517,7 @@ check_is_known_container()
 	# grep -w can fail us, since containers with '.' in their name will be
 	# mistaken as already in the system. So we replace the start of the string, the end
 	# and any spaces with '#' and then use that as our delimeter
-	containers=$(echo ${open_containers} ${open_container_available} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+	local containers=$(echo ${open_containers} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
 	echo ${containers} | grep -q "#${container_name}#"
 	if [ $? -eq 0 ]; then
 	    container_is_a_oci=t
@@ -815,14 +793,23 @@ spinner()
 get_container_ips() {
     local container_name=$1
 
-    dpid=$(cat ${container_dir}/${container_name}/.cube.pid)
-    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
-    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f5)
+    if [ -f ${container_dir}/${container_name}/.cube.pid ]; then
+	dpid=$(cat ${container_dir}/${container_name}/.cube.pid)
 
-    if [ "${ip_ext}" == "${ip_int}" ]; then
-	echo ${ip_ext}
-    else
-	echo "${ip_int},${ip_ext}"
+	# sometimes the pid is in place, but not really running .. we need
+	# a second check
+	type=$(cube-cmd file /proc/${dpid} 2> /dev/null)
+	echo "$type" | grep -q "cannot"
+	if [ $? -ne 0 ]; then
+	    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
+	    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f5)
+
+	    if [ "${ip_ext}" == "${ip_int}" ]; then
+		echo ${ip_ext}
+	    else
+		echo "${ip_int},${ip_ext}"
+	    fi
+	fi
     fi
 }
 
@@ -841,6 +828,44 @@ get_container_attributes() {
     local attributes=$(cube-cfg -n ${container_name} attribute | sed 's/^ *$//')
 
     echo ${attributes}
+}
+
+get_container_state() {
+    local container_name=$1
+    local state
+
+    if [ -n "${container_name}" ]; then
+	mgr=$(cube-cfg get -n ${container_name} cube.container.mgr:)
+
+	# TODO: status_cmd could become a cube setting, and we can be more
+	#       generic here, to ease the addition of more managers.
+	status_cmd="state"
+	if [ "${mgr}" = "pflask" ]; then
+	    mgr="machinectl"
+	    status_cmd="status"
+	fi
+	if [ -n "${mgr}" ]; then
+	    state=$(cube-cmd ${mgr} ${status_cmd} ${container_name} 2>&1)
+	
+	    if [ -n "${state}" ]; then
+		echo "${state}" | grep "Since:" -q
+		if [ $? -eq 0 ]; then
+		    # this is machinectl output
+		    echo "running"
+		fi
+		echo "${state}" | grep "\"status\":" -q
+		if [ $? -eq 0 ]; then
+		    # this is OCI output
+		    echo "${state}" | awk -F: '/status/ { print $2 }' | sed 's/[", ]//g'
+		fi
+		echo "${state}" | grep -q "does not exist"
+		if [ $? -eq 0 ]; then
+		    # this is OCI output, but the container is not active
+		    echo "available"
+		fi
+	    fi
+	fi
+    fi
 }
 
 #
@@ -1234,7 +1259,7 @@ IFS=$OLDIFS
 	    exit 1
 	fi
 
-	echo "${open_container_all}" | grep -q ${orig_name}
+	echo "${open_containers}" | grep -q ${orig_name}
 	if [ $? -ne 0 ]; then
 	    echo "[ERROR]: only 'oci' containers can be renamed"
 	    usage_mv
@@ -1250,7 +1275,7 @@ IFS=$OLDIFS
 
 	build_container_lists
 	# TODO: could be a function to check for a running container
-	rcontainers=$(echo ${open_container_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+	rcontainers=$(echo ${open_containers_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
 	echo ${rcontainers} | grep -q "#${orig_name}#"
 	if [ $? -eq 0 ]; then
 	    # the container is running, we must stop it
@@ -1620,14 +1645,6 @@ EOF
 	fi
 	;;
     del|delete|remove)
-	graft_binaries_to_essential runc
-	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
-	    runc_essential="/var/lib/cube/essential/sbin/runc"
-	else
-	    echo "ERROR: unable to execute runc on essential"
-	    exit 1
-	fi
-
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
@@ -1638,7 +1655,7 @@ EOF
 	if ! check_is_known_container ${container_name}; then
 	    echo "[ERROR] Container ${container_name} not found, cannot delete."
 	    echo -n "Valid containers are: "
-	    echo ${cubes} ${open_containers} ${open_container_available}
+	    echo ${cubes} ${open_containers}
 	    usage_del
 	    exit 1
 	fi
@@ -1648,11 +1665,13 @@ EOF
 	    echo "[INFO]: not removing, container is a cube, only 'oci' containers can be removed"
 	    true
 	fi
+
+	mgr=$(cube-cfg -n ${container_name} get cube.container.mgr:)
 	if [ -n "${container_is_a_oci}" ]; then
-	    echo ${open_container_running} | grep -q ${container_name}
+	    echo ${open_containers_running} | grep -q ${container_name}
 	    if [ $? -ne 0 ]; then
 		echo "[INFO] deleting container ${container_name}"
-		cube-cmd ${runc_essential} delete ${container_name} 2> /dev/null
+		cube-cmd ${mgr} delete ${container_name} 2> /dev/null
 		if [ -n "${track_containers}" ]; then
 		    ${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
 		fi
@@ -1702,7 +1721,7 @@ EOF
 			    # then use it directly.
 			    build_container_lists
 
-			    oc=$(echo ${open_container_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+			    oc=$(echo ${open_containers_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
 			    echo "${oc}" | grep -q "#${container}#"
 			    if [ $? -ne 0 ]; then
 				if [ -n "${consoleattach}" ]; then
@@ -1779,74 +1798,78 @@ EOF
 	wait
 	;;
     status|list)
-	build_container_lists
-
 	if [ -n "${verbose}" ]; then
-	    machines=$(echo "${machines}" | sed 's/^/   /')
-	    oci=$(echo "${oci}" | sed 's/^/   /')
-	    echo "cubes:"
-	    echo ""
-	    echo "${machines}"
-	    echo ""
-	    echo "open containers:"
-	    echo ""
-	    echo "${oci}"
+	    build_container_lists
+	    for mgr in ${mgrs_all}; do
+		echo ""
+		echo "$(basename ${mgr}):"
+		echo "------"
+		listing=
+		case ${mgr} in
+		    *pflask*)
+			listing=$(cube-cmd machinectl)
+			;;
+		    */runc*)
+			listing=$(cube-cmd ${mgr} list)
+			;;
+		    */runv*)
+			listing=$(cube-cmd ${mgr} list)
+			;;
+		esac
+		echo "${listing}"
+	    done
 	else
+	    containers_available=$(ls /opt/container/)
 	    output=$(mktemp)
+	    sorted_output=$(mktemp)
+
+	    for c in ${containers_available}; do
+		mgr=$(cube-cfg get -n ${c} cube.container.mgr:)
+
+		if [ -n "${mgr}" ]; then
+		    mgr=$(basename ${mgr})
+
+		    attributes=$(get_container_attributes ${c})
+		    if [ -z "${attributes}" ]; then
+			attributes="--"
+		    fi
+		    state=$(get_container_state ${c})
+		    ip=$(get_container_ips ${c})
+		    if [ -z "${ip}" ]; then
+			ip="--"
+		    fi
+		    echo "${c} ${mgr} ${state} ${attributes} ${ip}" >> ${output}
+		fi
+	    done
+
+	    # container type is a sort field
+	    field=1
+	    if [ -n "${container_type}" ]; then
+		case ${container_type} in
+		    name)
+			field=1
+			;;
+		    type|mgr)
+			field=2
+			;;
+		    state)
+			field=3
+			;;
+		esac
+	    fi
+
+	    sort -k${field} ${output} > ${sorted_output}
+
 	    echo "name type status attributes addresses" > ${output}
 	    echo "---- ---- ------ ---------- ---------" >> ${output}
-	    for l in ${open_container_running}; do
-		attributes=$(get_container_attributes ${l})
-		if [ -z "${attributes}" ]; then
-		    attributes="--"
-		fi
-		ip=$(get_container_ips ${l})
-		echo "${l} oci running ${attributes} ${ip}" >> ${output}
-	    done
-	    for l in ${open_container_stopped}; do
-		attributes=$(get_container_attributes ${l})
-		if [ -z "${attributes}" ]; then
-		    attributes="--"
-		fi
-		echo "${l} oci stopped ${attributes} --" >> ${output}
-	    done
-	    for l in ${cubes_running}; do
-		ip=$(get_container_ips ${l})
-		attributes=$(get_container_attributes ${l})
-		if [ -z "${attributes}" ]; then
-		    attributes="--"
-		fi
-		echo "${l} cube running ${attributes} ${ip}" >> ${output}
-	    done
-	    for l in ${open_container_available}; do
-		attributes=$(get_container_attributes ${l})
-		if [ -z "${attributes}" ]; then
-		    attributes="--"
-		fi
-		echo "${l} oci available ${attributes} --" >> ${output}
-	    done
-	    for l in ${cubes_available}; do
-		attributes=$(get_container_attributes ${l})
-		if [ -z "${attributes}" ]; then
-		    attributes="--"
-		fi
-		echo "${l} cube available ${attributes} --" >> ${output}
-	    done
+	    cat ${sorted_output} >> ${output}
+
 	    cat ${output} | column -t
-	    rm ${output}
-IFS=$OLDIFS
+	    rm -f ${output} ${sorted_output}
 	fi
 	;;
     info|show)
 	build_container_lists
-
-	graft_binaries_to_essential runc
-	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
-	    runc_essential="/var/lib/cube/essential/sbin/runc"
-	else
-	    echo "ERROR: unable to execute runc on essential"
-	    exit 1
-	fi
 
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
@@ -1856,7 +1879,7 @@ IFS=$OLDIFS
 	    if [ $? -eq 0 ]; then
 		container_is_a_cube=t
 	    fi
-	    echo ${open_containers} ${open_container_available} | grep -q ${container_name}
+	    echo ${open_containers} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
 		container_is_a_oci=t
 	    fi
@@ -1865,6 +1888,7 @@ IFS=$OLDIFS
 		exit 1
 	    fi
 
+	    mgr=$(cube-cfg -n ${container_name} get cube.container.mgr)
 	    if [ -n "${container_is_a_cube}" ]; then
 		if [ -n "${verbose}" ]; then
 		    cube-cmd /bin/machinectl status ${container_name}
@@ -1877,7 +1901,7 @@ IFS=$OLDIFS
 		echo "------"
 		echo ${open_containers} | grep -q ${container_name}
 		if [ $? -eq 0 ]; then
-		    cube-cmd ${runc_essential} state ${container_name}
+		    cube-cmd ${mgr} state ${container_name}
 		else
 		    echo "not running (or created)"
 		fi
@@ -2016,14 +2040,6 @@ IFS=$OLDIFS
 	fi
 	;;
     stop|pause)
-	graft_binaries_to_essential runc
-	if [ -f "/var/lib/cube/essential/sbin/runc" ]; then
-	    runc_essential="/var/lib/cube/essential/sbin/runc"
-	else
-	    echo "[ERROR]: unable to execute runc on essential"
-	    exit 1
-	fi
-
 	# the second non dashed argument will be the container name
 	container_name=${cmd_options_non_dashed[1]}
 
@@ -2040,23 +2056,25 @@ IFS=$OLDIFS
 	    exit 1
 	fi
 
+	# container_is_a_xxx comes from check_is_known_container
 	if [ -n "${container_is_a_cube}" ]; then
 	    cube-cmd /bin/machinectl stop ${container_name}
 	fi
+	mgr=$(cube-cfg -n ${container_name} get cube.container.mgr:)
 	if [ -n "${container_is_a_oci}" ]; then
 	    build_container_lists
-	    echo ${open_container_running} | grep -q ${container_name}
+	    echo ${open_containers_running} | grep -q ${container_name}
 	    if [ $? -eq 0 ]; then
 		echo "[INFO]: stopping container ${container_name}"
-		cube-cmd ${runc_essential} kill ${container_name} KILL
+		cube-cmd ${mgr} kill ${container_name} KILL
 		if [ "${cmd}" == "stop" ]; then
-		    cube-cmd ${runc_essential} delete -f ${container_name}
+		    cube-cmd ${mgr} delete -f ${container_name}
 		fi
 		machine=$(cube-cfg id)
 		cube-cfg set overc/$machine/oci/${container_name}/status:inactive
 	    else
 		if [ "${cmd}" == "stop" ]; then
-		    cube-cmd ${runc_essential} delete -f ${container_name}
+		    cube-cmd ${mgr} delete -f ${container_name}
 		fi
 	    fi
 	fi
