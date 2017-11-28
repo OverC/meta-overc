@@ -48,7 +48,7 @@ class HelpByDefaultArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 if __name__ == '__main__':
-    overc=Overc.Overc()
+    overc = Overc.Overc()
     parser = HelpByDefaultArgumentParser(description=overc.help())
     subparser = parser.add_subparsers(help=_("commands"))
 
