@@ -110,6 +110,9 @@ class Overc(object):
             log.info("rebooting...")
             os.system('reboot')
 
+    def system_cleanup(self):
+        self.agency.clean_essential()
+        self.container_cleanup()
 
     def factory_reset(self):
         rc = self.agency.factory_reset()
@@ -289,6 +292,13 @@ class Overc(object):
     def container_delete_snapshots(self):
         self._container_delete_snapshots(self.args.name, self.args.template)
         sys.exit(self.retval)
+
+    def container_cleanup(self):
+       # TODO: extend this list according to the supported templates
+       templates = ['dom0']
+       for template in templates:
+           for container in self.container.get_container(template):
+               self._container_delete_snapshots(container, template)
 
     def _container_delete_snapshots(self, container, template):
         self.retval = self.container.delete_snapshots(container, template)
