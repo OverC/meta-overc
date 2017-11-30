@@ -1,5 +1,24 @@
 #!/bin/bash
 
+if [ "$1" = "stop" ] ; then
+    pid=`/bin/machinectl show dom0 -p Leader --value`
+    if [ ! -n "$pid" ] ; then
+	exit 0
+    fi
+
+    # Graceful shutdown required if root name space is shutting down
+    if systemctl list-jobs shutdown.target | grep -q shutdown.target ; then
+	kill -INT $pid
+    else
+	/bin/machinectl kill -s KILL dom0
+    fi
+
+    # Wait for signal to be processed by using tail against process pid
+    # which continues immediately when the pid is already gone
+    tail --pid=$pid -f /dev/null
+    exit 0
+fi
+
 container_dir="/opt/container"
 
 # if single_launch is set, then we don't use dtach, but instead let the
