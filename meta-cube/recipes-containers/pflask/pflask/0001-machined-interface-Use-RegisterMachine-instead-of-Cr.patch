@@ -1,0 +1,60 @@
+From b1d3b7ca677b302d46db70bad18f8aa14820802b Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Thu, 30 Nov 2017 07:10:16 -0800
+Subject: [PATCH] machined interface: Use RegisterMachine instead of
+ CreateMachine
+
+The CreateMachine interface is designed for whole containers where
+machined will take over all the cgroups and re-parent all the
+processes in the pflask into a special machine slice managed by
+systemd.  This is particularly problematic if you want to have custom
+shutdown services to gracefully shutdown the system.  In the case of
+dom0 when the root name space is asked to reboot it would start
+signaling dom0's systemd which prevents any kind of graceful shutdown.
+Instead you end up with the dom0 systemd hanging waiting to talk to
+the root name space systemd which is no longer listening.
+
+The RegisterMachine will allow machinectl to operate on a pflask using
+only the pid operations.  The OverC manager will take care of all the
+cgroups and management of the instances.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ src/machine.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/machine.c b/src/machine.c
+index ae870e4..f451100 100644
+--- a/src/machine.c
++++ b/src/machine.c
+@@ -70,7 +70,11 @@ void register_machine(pid_t pid, const char *dest, const char *machine_name) {
+ 		"org.freedesktop.machine1",
+ 		"/org/freedesktop/machine1",
+ 		"org.freedesktop.machine1.Manager",
++#if USE_DBUS_CREATE_CONTAINER
+ 		"CreateMachine"
++#else /* ! USE_DBUS_CREATE_CONTAINER */
++		"RegisterMachine"
++#endif /* ! USE_DBUS_CREATE_CONTAINER */
+ 	);
+ 
+ 	dbus_message_iter_init_append(req, &args);
+@@ -107,6 +111,7 @@ void register_machine(pid_t pid, const char *dest, const char *machine_name) {
+ 	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &dest))
+ 		fail_printf("OOM");
+ 
++#if USE_DBUS_CREATE_CONTAINER
+ 	/* scope properties */
+ 	if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, "(sv)",
+ 	                                      &scope_iter))
+@@ -114,6 +119,7 @@ void register_machine(pid_t pid, const char *dest, const char *machine_name) {
+ 
+ 	if (!dbus_message_iter_close_container(&args, &scope_iter))
+ 		fail_printf("OOM");
++#endif /* USE_DBUS_CREATE_CONTAINER */
+ 
+ 	rep = dbus_connection_send_with_reply_and_block(conn, req, -1, &err);
+ 	if (dbus_error_is_set(&err))
+-- 
+2.11.0
+

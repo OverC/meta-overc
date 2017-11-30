@@ -20,6 +20,7 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
            file://0001-pflask-support-move-wireless-netwrok-to-another-netn.patch \
            file://0001-pflask-add-hook-support.patch \
 	   file://0001-pflask-attach-Terminate-attach-when-the-parent-pflas.patch \
+	   file://0001-machined-interface-Use-RegisterMachine-instead-of-Cr.patch \
 	"
 
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
