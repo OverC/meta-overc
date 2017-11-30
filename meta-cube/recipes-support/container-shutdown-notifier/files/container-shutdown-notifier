@@ -3,12 +3,14 @@
 target_state=$( systemctl list-units --type=target )
 echo ${target_state} | grep -qi reboot
 if [ $? == 0 ]; then
-	command="reboot"
+	command="kill -INT 1"
 else
 	echo ${target_state} | grep -qi poweroff
 	if [ $? == 0 ]; then
-		command="poweroff"
+		command="kill -RTMIN+4 1"
 	fi
 fi
 
-timeout 5s bash -c "cube-cmd ${command}"
+# Only execute a shutdown if a shutdown is not already pending
+# else systemd will hang
+timeout 5s bash -c "cube-cmd systemctl list-jobs shutdown.target|grep -q shutdown.target||cube-cmd $command"
