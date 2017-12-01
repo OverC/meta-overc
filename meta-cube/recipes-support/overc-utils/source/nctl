@@ -1236,7 +1236,7 @@ if [ -n "${client}" ]; then
 		if [ -n "${verbose}" ]; then
 		    clientcmd_acknack SET verbose true
 		else
-		    clientcmd_acknack SET verbose faluse
+		    clientcmd_acknack SET verbose false
 		fi
 		clientcmd_acknack SET timeout ${timeout}
 		if [ -n "${buffermode}" ]; then
