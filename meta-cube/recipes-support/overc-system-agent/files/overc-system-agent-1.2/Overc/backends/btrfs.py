@@ -178,7 +178,9 @@ class Btrfs(Utils):
             #factory-reset the kernel image
             self.message += "factory reset kernel %s \n" % self.kernel
             real_kernel = subprocess.check_output("cube-cmd realpath %s/%s/%s" % (SYSROOT, FACTORY_SNAPSHOT, self.kernel), shell=True).decode("utf-8").strip("\n")
-            os.system('cube-cmd cp -rf %s %s' % (real_kernel, self.kernel))
+            os.system('cube-cmd cp -f %s %s' % (real_kernel, self.kernel))
+            if self._path_exists(real_kernel + '.p7b', True):
+                os.system('cube-cmd cp -f %s.p7b %s.p7b' % (real_kernel, self.kernel))
 
             #if grub-efi exists, factory-reset those files from the original rootfs too.
             if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, FACTORY_SNAPSHOT), True):
@@ -306,7 +308,11 @@ class Btrfs(Utils):
             if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
                 #backup kernel
                 os.system('%scp -f %s  %s_bakup' % (cube_cmd, self.kernel, self.kernel))
+                if self._path_exists(self.kernel + '.p7b', host):
+                    os.system('%cp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
                 os.system('%scp -f %s %s' % (cube_cmd, upgrade_kernel, self.kernel))
+                if self._path_exists(upgrade_kernel + '.p7b', host):
+                    os.system('%scp -f %s.p7b %s.p7b' % (cube_cmd, upgrade_kernel, self.kernel))
 
             #if grub-efi exists, replace the old one with it in case they are upgraded also
             if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, self.next_rootfs), host):
@@ -353,6 +359,8 @@ class Btrfs(Utils):
 
         if rollback_kernel_md5 != self.kernel_md5:
             os.system('cube-cmd cp -f %s %s' % (rollback_kernel, self.kernel))
+            if self._path_exists(rollback_kernel + '.p7b', True):
+                os.system('cube-cmd cp -f %s.p7b %s.p7b' % (rollback_kernel, self.kernel))
 
         #if grub-efi exists, rollback it too
         if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, self.next_rootfs), True):
