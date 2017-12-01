@@ -55,6 +55,8 @@ read_args() {
                 ROOT_DEVICE=$optarg ;;
             rootdelay=*)
                 ROOT_DELAY=$optarg ;;
+            rootflags=*)
+		ROOT_FLAGS=$optarg ;;
             init=*)
                 INIT=$optarg ;;
         esac
@@ -88,7 +90,8 @@ sleep ${ROOT_DELAY}
 
 try_to_mount_rootfs() {
     local mount_flags="rw,noatime,iversion"
-
+    mount_flags="${mount_flags},${ROOT_FLAGS}"
+    
     mount -o $mount_flags "${ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
 
     [ -x /init.cryptfs ] &&
