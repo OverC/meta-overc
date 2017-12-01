@@ -932,7 +932,7 @@ case "${cmd}" in
 	    filename=$(basename "$container_source")
 	    extension="${filename##*.}"
 	    filename="${filename%%.*}"
-	    container_name="$(cubename ${filename})"
+	    container_name="$(cubename ${filename} 2>/dev/null)"
 	fi
 
 	# if host has a value, and path doesn't, then really it was just
