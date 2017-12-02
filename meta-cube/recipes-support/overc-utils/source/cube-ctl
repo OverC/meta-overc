@@ -593,6 +593,7 @@ tweak_container_fstab()
 	sed -i '/^devpts/d' ${rootfs}/etc/fstab
 	sed -i '/^tmpfs/d' ${rootfs}/etc/fstab
 	sed -i '/^usbdevfs/d' ${rootfs}/etc/fstab
+	sed -i '/^securityfs/d' ${rootfs}/etc/fstab
     fi
 }
 
