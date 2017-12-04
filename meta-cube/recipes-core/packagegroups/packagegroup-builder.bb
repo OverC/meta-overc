@@ -146,7 +146,6 @@ RDEPENDS_packagegroup-builder-extended = "\
     mtools \
     ncurses \
     ncurses-terminfo-base \
-    neon \
     netcat \
     nfs-utils \
     nfs-utils-client \
