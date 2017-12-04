@@ -57,7 +57,7 @@ IMAGE_FEATURES += '${@bb.utils.contains("OVERC_ESSENTIAL_MODE", "read-only", "re
 inherit core-image
 inherit builder-base
 
-ROOTFS_POSTPROCESS_COMMAND += '${@bb.utils.contains("IMAGE_FEATURES", "read-only-rootfs", "read_only_essential; ", "read_write_essential; ",d)}'
+ROOTFS_POSTPROCESS_COMMAND += '${@bb.utils.contains("IMAGE_FEATURES", "read-only-rootfs", "read_only_essential; ", "", d)}'
 
 read_only_essential () {
     echo "none	/etc/openvswitch	tmpfs	defaults	1	1" >> ${IMAGE_ROOTFS}/etc/fstab
@@ -109,10 +109,32 @@ local_tmp      = /var/lib/misc \
     fi
     ln -s ../run/systemd/resolve/localtime ${IMAGE_ROOTFS}/etc/localtime
     ln -s ../run/systemd/resolve/timezone ${IMAGE_ROOTFS}/etc/timezone
-}
 
-read_write_essential () {
-   if [ -e ${IMAGE_ROOTFS}/${sysconfdir}/profile.d/essential_rw.sh ]; then
-       rm -f ${IMAGE_ROOTFS}/${sysconfdir}/profile.d/essential_rw.sh
-   fi
+    mkdir -p ${IMAGE_ROOTFS}/etc/profile.d
+    cat > ${IMAGE_ROOTFS}/etc/profile.d/essential_rw.sh << END
+rw_test=\$(mount |grep " / "|grep rw)
+
+if [ -z "\$rw_test" ]; then
+    if read -t 5 -p "Essential is read-only, if you need to login as read-write, please enter \"yes\":" rw_allow; then
+        if [ "\$rw_allow" == "yes" ]; then
+            mount / -o remount,rw
+        fi
+    fi
+else
+    if read -t 5 -p "Essential is read-write, if you need to login as read-only, please enter \"yes\":" rw_allow; then
+        if [ "\$rw_allow" == "yes" ]; then
+            umount /
+        fi
+    fi
+fi
+echo
+rw_test=\$(mount |grep " / "|grep rw)
+
+if [ ! -z "\$rw_test" ]; then
+    echo "Warning, Essential rootfs is in read-write, all modification on essential will be recorded."
+    echo "To return read-only, please issue \"umount /\" or reboot system."
+else
+    echo "Essential is in read-only."
+fi
+END
 }
