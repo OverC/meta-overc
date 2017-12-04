@@ -31,7 +31,6 @@ SRC_URI = " \
     file://source/ansible/overc.yml \
     file://source/ansible/post.yml \
     file://source/ansible/setup_offset.yml \
-    file://source/essential_rw.sh \
     file://source/oci-network \
     file://source/cube-network \
     file://source/cube-netconfig \
@@ -67,9 +66,6 @@ do_install() {
     # systemd services
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/source/overc-conftools.service ${D}${systemd_unitdir}/system/
-
-    install -d ${D}/${sysconfdir}/profile.d/
-    install -m 0644 ${WORKDIR}/source/essential_rw.sh ${D}/${sysconfdir}/profile.d/
 
     install -d ${D}/${libexecdir}/oci/hooks.d/
     install -d ${D}/${libexecdir}/cube/hooks.d/
