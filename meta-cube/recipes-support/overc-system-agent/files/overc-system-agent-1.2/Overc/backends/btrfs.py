@@ -309,7 +309,7 @@ class Btrfs(Utils):
                 #backup kernel
                 os.system('%scp -f %s  %s_bakup' % (cube_cmd, self.kernel, self.kernel))
                 if self._path_exists(self.kernel + '.p7b', host):
-                    os.system('%cp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
+                    os.system('%scp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
                 os.system('%scp -f %s %s' % (cube_cmd, upgrade_kernel, self.kernel))
                 if self._path_exists(upgrade_kernel + '.p7b', host):
                     os.system('%scp -f %s.p7b %s.p7b' % (cube_cmd, upgrade_kernel, self.kernel))
