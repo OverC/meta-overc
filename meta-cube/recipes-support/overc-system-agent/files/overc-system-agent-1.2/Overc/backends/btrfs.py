@@ -339,7 +339,7 @@ class Btrfs(Utils):
              
     def do_upgrade(self):
             self._mount_rootvolume(True)
-            self._do_upgrade(True)
+            return self._do_upgrade(True)
 
     def do_rollback(self):
         if self.bakup_mode:

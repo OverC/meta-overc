@@ -59,6 +59,7 @@ class Overc(object):
 
         # By now only support "Pulsar" and "overc" Linux upgrading
         DIST = "Pulsar overc"
+        succeeded = []
         for cn in containers:
             if self.container.is_active(cn, template):
                 for dist in DIST.split():
@@ -68,11 +69,19 @@ class Overc(object):
                         if self.retval is not 0:
                             log.error("*** Failed to upgrade container %s" % cn)
                             log.error("*** Abort the system upgrade action")
-                            sys.exit(self.retval)
+                            break
                         else:
+                            succeeded.append(cn)
                             if self.container.is_overlay(cn) > 0:
                                 overlay_flag = 1
                         break
+            if self.retval is not 0:
+                break
+
+        if self.retval is not 0:
+            for cn in succeeded:
+                self._container_rollback(cn, None, template, True)
+            sys.exit(self.retval)
 
         rc = self._host_upgrade(0, force)
 
@@ -165,24 +174,25 @@ class Overc(object):
         self._host_upgrade(self.args.reboot, self.args.force)
 
     def _host_upgrade(self, reboot, force):
+        rc = False
         if self._need_upgrade() or force:
-            self.agency.do_upgrade()
+            rc = self.agency.do_upgrade()
             self.message = self.agency.message
         else:
             self.message = "There is no new system available to upgrade!"
             log.info(self.message)
-            return 0
+            return True
 
         if reboot:
             log.info("rebooting...")
             os.system('reboot')
-        return 1
+        return rc
 
     def host_rollback(self):
         if self.bakup_mode:
             self.message = "You are running in the backup mode, cannot do rollback!"
             log.error(self.message)
-            return
+            return False
 
         log.info("Start doing host rollback")
         r = self.agency.do_rollback()
@@ -191,7 +201,7 @@ class Overc(object):
             os.system('reboot')
         else:
             log.error(self.message)
-            return 1
+            return False
         
     def container_rollback(self):
         self._container_rollback(self.args.name, self.args.snapshot_name, self.args.template, True)
