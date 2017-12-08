@@ -146,6 +146,12 @@ class Btrfs(Utils):
         self._mount_rootvolume(True)
         self._cleanup_subvol(SYSROOT, [FACTORY_SNAPSHOT, 'rootfs_bakup'], True)
 
+    def clean_container(self):
+        self._mount_container_root(True)
+        current_subvol = self._get_btrfs_value(CONTAINER_MOUNT, 'Name', True)
+        self._cleanup_subvol('%s/.tmp' % CONTAINER_MOUNT, [current_subvol, FACTORY_SNAPSHOT], True)
+        os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
+
     def factory_reset(self):
         return self._factory_reset_essential() and self._factory_reset_container() 
 
@@ -207,7 +213,7 @@ class Btrfs(Utils):
             self.message += 'Error: Cannot find the snapshot of factory in %s/.tmp' % CONTAINER_MOUNT
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
         work_subvol =  self._random_str()   
         workdir = '%s/.tmp/%s' % (CONTAINER_MOUNT, work_subvol)
@@ -216,7 +222,7 @@ class Btrfs(Utils):
             self.message += "Cannot factory reset, please check is there enough diskspace left"
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
 
         #snapshot the children subvolumes
@@ -248,7 +254,7 @@ class Btrfs(Utils):
             self.message += "Cannot set default mount subvolume to %s" % workdir
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
    
     def _do_upgrade(self, host=False):
@@ -309,7 +315,7 @@ class Btrfs(Utils):
                 #backup kernel
                 os.system('%scp -f %s  %s_bakup' % (cube_cmd, self.kernel, self.kernel))
                 if self._path_exists(self.kernel + '.p7b', host):
-                    os.system('%cp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
+                    os.system('%scp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
                 os.system('%scp -f %s %s' % (cube_cmd, upgrade_kernel, self.kernel))
                 if self._path_exists(upgrade_kernel + '.p7b', host):
                     os.system('%scp -f %s.p7b %s.p7b' % (cube_cmd, upgrade_kernel, self.kernel))
@@ -333,7 +339,7 @@ class Btrfs(Utils):
              
     def do_upgrade(self):
             self._mount_rootvolume(True)
-            self._do_upgrade(True)
+            return self._do_upgrade(True)
 
     def do_rollback(self):
         if self.bakup_mode:
