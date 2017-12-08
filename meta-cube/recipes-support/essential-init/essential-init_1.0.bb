@@ -10,6 +10,7 @@ SRC_URI = "file://essential-autostart \
            file://essential-autostart.service \
            file://reload-dom0-snapshot \
            file://reload-dom0-snapshot.service \
+           file://daemonize-sigusr1-wait.c \
 "
 
 SRC_FILES_LIST = "essential-autostart \
@@ -33,9 +34,13 @@ if type systemctl >/dev/null 2>/dev/null; then
 fi
 }
 
+do_compile() {
+	${CC} ${CFLAGS} ${LDFLAGS} -Wall ${WORKDIR}/daemonize-sigusr1-wait.c -o ${B}/daemonize-sigusr1-wait
+}
 
 do_install() {
     install -d ${D}/${sbindir}
+    install -m 0755 ${B}/daemonize-sigusr1-wait ${D}/${sbindir}
     for i in ${SRC_FILES_LIST}; do
         install -m 0755 ${WORKDIR}/${i} ${D}/${sbindir}
     done
