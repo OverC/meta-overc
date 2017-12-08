@@ -207,7 +207,7 @@ class Btrfs(Utils):
             self.message += 'Error: Cannot find the snapshot of factory in %s/.tmp' % CONTAINER_MOUNT
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
         work_subvol =  self._random_str()   
         workdir = '%s/.tmp/%s' % (CONTAINER_MOUNT, work_subvol)
@@ -216,7 +216,7 @@ class Btrfs(Utils):
             self.message += "Cannot factory reset, please check is there enough diskspace left"
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
 
         #snapshot the children subvolumes
@@ -248,7 +248,7 @@ class Btrfs(Utils):
             self.message += "Cannot set default mount subvolume to %s" % workdir
             self.message += '\n'
             self.message += 'Factory reset aborted!'
-            os.system('umount %s/.tmp' % CONTAINER_MOUNT)
+            os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
             return False
    
     def _do_upgrade(self, host=False):
