@@ -146,6 +146,12 @@ class Btrfs(Utils):
         self._mount_rootvolume(True)
         self._cleanup_subvol(SYSROOT, [FACTORY_SNAPSHOT, 'rootfs_bakup'], True)
 
+    def clean_container(self):
+        self._mount_container_root(True)
+        current_subvol = self._get_btrfs_value(CONTAINER_MOUNT, 'Name', True)
+        self._cleanup_subvol('%s/.tmp' % CONTAINER_MOUNT, [current_subvol, FACTORY_SNAPSHOT], True)
+        os.system('cube-cmd umount %s/.tmp' % CONTAINER_MOUNT)
+
     def factory_reset(self):
         return self._factory_reset_essential() and self._factory_reset_container() 
 

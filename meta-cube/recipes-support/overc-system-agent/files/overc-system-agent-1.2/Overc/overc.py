@@ -294,11 +294,14 @@ class Overc(object):
         sys.exit(self.retval)
 
     def container_cleanup(self):
-       # TODO: extend this list according to the supported templates
-       templates = ['dom0']
-       for template in templates:
-           for container in self.container.get_container(template):
-               self._container_delete_snapshots(container, template)
+        # clean up temporary snapshots
+        self.agency.clean_container()
+
+        # TODO: extend this list according to the supported templates
+        templates = ['dom0']
+        for template in templates:
+            for container in self.container.get_container(template):
+                self._container_delete_snapshots(container, template)
 
     def _container_delete_snapshots(self, container, template):
         self.retval = self.container.delete_snapshots(container, template)
