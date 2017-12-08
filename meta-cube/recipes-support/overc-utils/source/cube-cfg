@@ -911,7 +911,7 @@ mgr=\$(cat /opt/container/${container_name}/cube.container.mgr)
 if [ "\${args}" = "foreground" ] ; then
      \${mgr} run --bundle /opt/container/${container_name} ${container_name}
 else
-     \${mgr} create --bundle /opt/container/${container_name} \${runc_console} ${container_name}
+     /usr/sbin/daemonize-sigusr1-wait \${mgr} create --bundle /opt/container/${container_name} \${runc_console} ${container_name}
     if [ "\${console_mgr}" = "screen-tty" ] || [ "\${args}" = "debug" ]; then
 	/usr/bin/screen -ls console > /dev/null && /usr/bin/screen -S console -x -X \
 	  screen -t ${container_name} /var/lib/cube/${container_name}/pty-console
