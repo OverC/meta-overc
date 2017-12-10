@@ -14,7 +14,7 @@ SRCREV = "ae61321046ad7f4148a5884c8c6c8b2594ff840e"
 PV = "2017.13+git${SRCPV}"
 S = "${WORKDIR}/git"
 
-inherit autotools pkgconfig systemd gobject-introspection
+inherit autotools-brokensep pkgconfig systemd gobject-introspection
 
 DEPENDS = " \
     glib-2.0 libsoup-2.4 gpgme e2fsprogs \
