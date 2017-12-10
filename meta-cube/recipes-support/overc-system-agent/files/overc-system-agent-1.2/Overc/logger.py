@@ -30,9 +30,9 @@ class Logger(object):
         color = self.COLORS[levelno]
         levelname = self.LEVELNAMES[levelno]
         if self.colored and color is not None and levelname is not None and msg:
-            level = "".join([self.BLD % color, "[%s]" % levelname, self.RST])
+            level = "".join([self.BLD % color, "[%s]:" % levelname, self.RST])
             msg = "".join([self.STD % color, msg, self.RST])
-            return "%s: %s" % (level, msg)
+            return "%s %s" % (level, msg)
         return msg
 
     def debug(self, msg):
