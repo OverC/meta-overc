@@ -23,6 +23,11 @@ cat << EOF
        --auto=<name>: launch autostart containers tagged with <name>
 
        <name>: name of the container to be launched (if not "--auto")
+
+       Startup container debug ONLY options:
+       -f -i  Start interactive container console in foreground on current tty.
+       -f     Start container in foreground on current tty.
+       -a     Attach container console just prior to start on current tty.
 EOF
 }
 
