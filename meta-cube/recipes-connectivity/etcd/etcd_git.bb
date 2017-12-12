@@ -1,7 +1,7 @@
 DESCRIPTION = "A distributed key-value store for shared config and service discovery"
 HOMEPAGE = "https://github.com/coreos/etcd"
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
+LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
 PKG_NAME = "github.com/coreos/etcd"
 SRC_URI = "git://${PKG_NAME}.git \
@@ -9,10 +9,14 @@ SRC_URI = "git://${PKG_NAME}.git \
 
 SRCREV = "99639186cd41eebd3f905935df586a9094a2bfa1"
 PV = "3.1+git${SRCPV}"
+GO_IMPORT = "import"
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 
-inherit golang
+S = "${WORKDIR}/git"
+
+inherit go
+inherit goarch
 
 # During packaging etcd gets the warning "no GNU hash in elf binary"
 # This issue occurs due to compiling without ldflags, but a
@@ -38,10 +42,7 @@ fi
 }
 
 
-
 RDEPENDS_${PN} = "bash"
-
-export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
 
 do_compile() {
 	export GOARCH="${TARGET_GOARCH}"
@@ -53,10 +54,10 @@ do_compile() {
 	#
 	# We also need to link in the ipallocator directory as that is not under
 	# a src directory.
-	ln -sfn . "${S}/cmd/vendor/src"
-	mkdir -p "${S}/cmd/vendor/src/github.com/cockroachdb/cmux"
-	ln -sfn "${S}/cmux" "${S}/cmd/vendor/github.com/cockroachdb/cmux"
-	export GOPATH="${S}/cmd/vendor"
+	ln -sfn . "${S}/src/import/cmd/vendor/src"
+	mkdir -p "${S}/src/import/cmd/vendor/src/github.com/cockroachdb/cmux"
+	ln -sfn "${S}/cmux" "${S}/src/import/cmd/vendor/github.com/cockroachdb/cmux"
+	export GOPATH="${S}/src/import/cmd/vendor"
 
 	# Pass the needed cflags/ldflags so that cgo
 	# can find the needed headers files and libraries
@@ -71,17 +72,17 @@ do_compile() {
 		export GOARCH="386"
 	fi
 
-	./build
+	./src/import/build
 }
 
 # TODO: we could adduser etcd
 do_install() {
 	install -d ${D}/${bindir}
-	install ${S}/bin/etcd ${D}/${bindir}/etcd
-	install ${S}/bin/etcdctl ${D}/${bindir}/etcdctl
+	install ${S}/src/import/bin/etcd ${D}/${bindir}/etcd
+	install ${S}/src/import/bin/etcdctl ${D}/${bindir}/etcdctl
 
 	install -d ${D}/lib/systemd/system/
-	install -m 0644 ${S}/contrib/systemd/etcd.service ${D}/lib/systemd/system/
+	install -m 0644 ${S}/src/import/contrib/systemd/etcd.service ${D}/lib/systemd/system/
 
 	# make sure etcd is willing to listen for more than localhost
 	sed -i 's%ExecStart.*%ExecStart=/usr/bin/etcd -listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 -advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001%g' ${D}/lib/systemd/system/etcd.service
