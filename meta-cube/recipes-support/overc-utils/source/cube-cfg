@@ -1521,7 +1521,10 @@ case "${cmd}" in
 
 	    # If we are linking containerA and B, they need to be autostarted or
 	    # we'll get bad rules on reboot
-	    cube-cfg set -n ${container_b} autostart:dom0
+	    start=$(cube-cfg get -n ${container_b} autostart:)
+	    if [ "${start}" != "essential" ]; then
+		cube-cfg set -n ${container_b} autostart:dom0
+	    fi
 
 	    # TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
 	    check_isset ${out_dir}/cube.network.stack "$cmd_1"
