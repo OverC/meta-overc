@@ -1011,9 +1011,9 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	if [ -n "${track_containers}" ]; then
-	    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-	fi
+	# if [ -n "${track_containers}" ]; then
+	#     ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
+	# fi
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
@@ -1033,18 +1033,6 @@ case "${cmd}" in
 	    docker://*)
 		# make an oci format copy from the registry
 		container_source=$(echo ${container_source} | sed 's%cube://%docker://%')
-
-		# # see if there's a tag in the input. awk gets us the last : ->
-		# # end of line, which could be a tag.  but if that tag has //
-		# # in it, it is just the docker:// that started the source
-		# tag="latest"
-		# possible_tag=$(echo ${container_source} | awk -F':' '{print $NF}')
-		# echo ${possible_tag} | grep -q '//'
-		# if [ $? -ne 0 ]; then
-		#     # no slashes found, that's a tag
-		#     tag="${possible_tag}"
-		# fi
-		#container_source=$(echo ${container_source} | sed "s#:${tag}##")
 
 		# TODO: make the tls setting an option
 		flags="--dest-tls-verify=false --src-tls-verify=false"
@@ -1099,6 +1087,10 @@ IFS=$OLDIFS
 
 		rm -rf ${out_dir}/${container_name}/docker
 		rm -rf ${out_dir}/${container_name}/oci-runtime
+
+		if [ -n "${track_containers}" ]; then
+		    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
+		fi
 
 		exit 0
 		;;
@@ -1675,6 +1667,10 @@ EOF
 		cube-cmd ${mgr} delete ${container_name} 2> /dev/null
 		if [ -n "${track_containers}" ]; then
 		    ${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
+		else
+		    if [ -d "${out_dir}/${container_name}" ]; then
+			rm -rf ${out_dir}/${container_name}
+		    fi
 		fi
 		cube-cfg set overc/$(cube-cfg id)/oci/${container_name}/:
 	    else
