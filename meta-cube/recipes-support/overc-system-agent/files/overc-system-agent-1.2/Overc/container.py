@@ -159,7 +159,7 @@ class Container(object):
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n")
 
     def get_container(self, template):
-        cmd = "cube-ctl list | tail -2 | awk '{ print $1 }'"
+        cmd = "cube-ctl list | sed -n '3,$p' | awk '{ print $1 }'"
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip("\n").split()
 
     def is_active(self, cn, template):
