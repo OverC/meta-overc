@@ -10,9 +10,9 @@ _overc_get_containers()
 {
     local exclude_dom0=$1
     if [ -n "$exclude_dom0" ]; then
-        echo $(/usr/sbin/cube-ctl list | tail -2 | awk '{ if ($1 != "dom0") print $1 }')
+        echo $(/usr/sbin/cube-ctl list | sed -n '3,$p' | awk '{ if ($1 != "dom0") print $1 }')
     else
-        echo $(/usr/sbin/cube-ctl list | tail -2 | awk '{ print $1 }')
+        echo $(/usr/sbin/cube-ctl list | sed -n '3,$p' | awk '{ print $1 }')
     fi
 }
 
