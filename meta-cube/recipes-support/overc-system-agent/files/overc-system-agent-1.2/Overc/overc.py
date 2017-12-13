@@ -61,6 +61,7 @@ class Overc(object):
         DIST = "Pulsar overc"
         succeeded = []
         for cn in containers:
+            self.retval = 0
             if self.container.is_active(cn, template):
                 for dist in DIST.split():
                     if dist in self.container.get_issue(cn, template).split():
