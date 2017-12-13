@@ -93,3 +93,5 @@ do_install() {
 	# we aren't creating a user, so we need to comment out this line
 	sed -i '/User/s/^/#/' ${D}/lib/systemd/system/etcd.service
 }
+
+deltask compile_ptest_base
