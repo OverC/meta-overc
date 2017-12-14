@@ -1,0 +1,204 @@
+From 044f2bed4f57b35231009c82eda879e19a4640d0 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Tue, 9 Jan 2018 11:35:37 -0500
+Subject: [PATCH] nanocat: improve --oneshot send/recv behaviour
+
+The behaviour of send/recv is well documented, so we adjust the
+--oneshot mode of nanocat to ensure more reliable delivery of
+messages (and not require a higher level protocol in most cases).
+
+In particular, we add:
+
+  - The ability to check for FSM errors and reconnect if required
+  - A sleep (aka linger) before closing the socket to ensure that
+    pending data is actually sent
+  - The ability to retry a send/recv operation multiple times to
+    ensure that data is flushed before moving to the next operation
+  - A check that the expected response is recv'd (aka a 'match')
+  - Add new diagnostic messages for --verbose mode runs
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ tools/nanocat.c | 131 +++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 107 insertions(+), 24 deletions(-)
+
+diff --git a/tools/nanocat.c b/tools/nanocat.c
+index 2891db05c7c7..6c8fcf7c0652 100644
+--- a/tools/nanocat.c
++++ b/tools/nanocat.c
+@@ -569,7 +569,11 @@ void nn_recv_loop (nn_options_t *options, int sock)
+         if (rc < 0 && errno == EAGAIN) {
+             continue;
+         } else if (rc < 0 && (errno == ETIMEDOUT || errno == EFSM)) {
+-            return;  /*  No more messages possible  */
++	   if ( options->verbose > 0 ) {
++	      if (errno == ETIMEDOUT) fprintf( stderr, "[WARNING]: recv_loop: ETIMEDOUT\n");
++	      if (errno == EFSM) fprintf( stderr, "[WARNING]: recv_loop: EFSM\n");
++	   }
++	   return;  /*  No more messages possible  */
+         } else {
+             nn_assert_errno (rc >= 0, "Can't recv");
+         }
+@@ -587,48 +591,120 @@ void nn_rw_loop (nn_options_t *options, int sock)
+     void *buf;
+     uint64_t start_time;
+     int64_t time_to_sleep, interval, recv_timeout;
+-
+-    interval = (int)(options->send_interval*1000);
++    char *string_to_send = malloc( 1024 );
++    int send_count=0;
++    int matched = 1;
++    int retransmit_count;
++    int retransmit_total_count;
++
++    /* interval = (int)(options->send_interval*1000); */
++    /* we want the interval to be millisends, regardless of what the help
++       text says */
++    interval = (int)(options->send_interval);
+     recv_timeout = (int)(options->recv_timeout*1000);
++    retransmit_total_count = 0;
+ 
+     for (;;) {
+         start_time = nn_clock_ms();
+-        rc = nn_send (sock,
+-            options->data_to_send.data, options->data_to_send.length,
+-            0);
+-        if (rc < 0 && errno == EAGAIN) {
+-            fprintf (stderr, "Message not sent (EAGAIN)\n");
+-        } else {
+-            nn_assert_errno (rc >= 0, "Can't send");
+-        }
+-        if (options->send_interval < 0) {  /*  Never send any more  */
+-            nn_recv_loop (options, sock);
+-            return;
+-        }
++
++	if( matched ) {
++	   send_count++;
++	   matched = 0;
++	   retransmit_count = 0;
++	   /* debug code: kept on purpose */
++	   /* sprintf( string_to_send, "ping%d", send_count ); */
++	   /* rc = nn_send (sock, */
++	   /* 		 string_to_send, strlen(string_to_send), */
++	   /* 		 0); */
++	   rc = nn_send (sock,
++			 options->data_to_send.data, options->data_to_send.length,
++			 0);
++	   if (rc < 0 && errno == EAGAIN) {
++	      fprintf (stderr, "Message not sent (EAGAIN)\n");
++	   } else {
++	      nn_assert_errno (rc >= 0, "Can't send");
++	   }
++	   if (options->send_interval < 0) {  /*  Never send any more  */
++	      nn_recv_loop (options, sock);
++	      return;
++	   }
++	}
+ 
+         for (;;) {
+             time_to_sleep = (start_time + interval) - nn_clock_ms();
+             if (time_to_sleep <= 0) {
+-                break;
++	       retransmit_count++;
++	       if( retransmit_total_count > 5 ) {
++		  fprintf( stderr, "[WARNING]: exiting. too many sleeps\n");
++		  /* exit .. this isn't going to work! */
++		  return;
++	       }
++	       if( retransmit_count == 20 ) {
++		  retransmit_total_count++;
++		  if ( options->verbose > 0 ) {
++		     fprintf( stderr,
++			      "[WARNING]: max wait count exceeded (%d:%d). forcing retransmit\n",
++			      retransmit_count, retransmit_total_count);
++		  }
++		  matched = 1;
++		  /* This fixes FSM errors. Reconnect so we won't spin forever */
++		  nn_connect_socket (options, sock);
++	       }
++	       break; /* we will send again. */
+             }
+-            if (recv_timeout >= 0 && time_to_sleep > recv_timeout)
+-            {
++            if (recv_timeout >= 0 && time_to_sleep > recv_timeout) {
+                 time_to_sleep = recv_timeout;
+             }
+             nn_set_recv_timeout (sock, (int) time_to_sleep);
+             rc = nn_recv (sock, &buf, NN_MSG, 0);
+             if (rc < 0) {
+                 if (errno == EAGAIN) {
+-                    continue;
++		   if ( options->verbose > 0 ) {
++		      fprintf(stderr, "[WARNING]: EAGAIN on rx. continuing\n" );
++		   }
++		   continue;
+                 } else if (errno == ETIMEDOUT || errno == EFSM) {
+-                    time_to_sleep = (start_time + interval) - nn_clock_ms();
+-                    if (time_to_sleep > 0)
+-                        nn_sleep ((int) time_to_sleep);
+-                    continue;
++		   if ( options->verbose > 0 ) {
++		      if (errno == ETIMEDOUT) fprintf( stderr, "[WARNING]: rw_loop: ETIMEDOUT\n");
++		      if (errno == EFSM) fprintf( stderr, "[WARNING]: rw_loop: EFSM\n");
++		   }
++
++		   time_to_sleep = (start_time + interval) - nn_clock_ms();
++		   if (time_to_sleep > 0)
++		      nn_sleep ((int) time_to_sleep);
++
++		   continue;
+                 }
+             }
+             nn_assert_errno (rc >= 0, "Can't recv");
+             nn_print_message (options, buf, rc);
++
++	    if ( options->oneshot > 0 ) {
++	       /* if --oneshot was passed, we tag this as a match, and exit */
++	       matched = 1;
++	       nn_freemsg(buf);
++	       free( string_to_send );
++	       return;
++	    } else {
++	       strncpy( string_to_send, buf, options->data_to_send.length );
++	       string_to_send[options->data_to_send.length + 1] = '\0';
++
++	       if( strncmp( buf, options->data_to_send.data, options->data_to_send.length) == 0 ) {
++		  if ( options->verbose > 0 ) {
++		     fprintf( stderr, "[INFO]: read passed [r:%s s:%s]\n", string_to_send, options->data_to_send.data);
++		  }
++		  matched = 1;
++		  /* needed if we do an early exit here: nn_freemsg(buf); return; */
++	       } else {
++		  if ( options->verbose > 0 ) {
++		     fprintf(stderr, "[ERROR]: exiting. failed match. [r:%s s:%s]\n", string_to_send, options->data_to_send.data);
++		  }
++		  nn_freemsg (buf);
++		  free( string_to_send );
++		  exit(1);
++	       }
++	    }
++
+             nn_freemsg (buf);
+         }
+     }
+@@ -727,8 +803,15 @@ void nn_resp_loop (nn_options_t *options, int sock)
+             nn_assert_errno (rc >= 0, "Can't send");
+         }
+ 
+-	if ( options->oneshot > 0 )
++	if ( options->oneshot > 0 ) {
++	   /* according to the docs, this is the right thing to do ..  we
++	      need the data to go, before closing up, or it may never arrive
++	      on the other side.  Note: this could be an option/variable
++	      value, but the churn of adding it isn't justified at the
++	      moment */
++	   nn_sleep( 3 );
+ 	   break;
++	}
+     }
+ }
+ 
+-- 
+2.4.0.53.g8440f74
+
