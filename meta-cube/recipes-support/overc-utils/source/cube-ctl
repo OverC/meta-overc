@@ -28,6 +28,12 @@ cat << EOF
        -f -i  Start interactive container console in foreground on current tty.
        -f     Start container in foreground on current tty.
        -a     Attach container console just prior to start on current tty.
+
+    Note: containers start with the config.json as generated from the settings
+          in the container directory. If you change container configuration
+          (via c3-cfg), you must regenerate the full configuration before
+          starting (see 'c3-ctl gen' for information)
+
 EOF
 }
 
