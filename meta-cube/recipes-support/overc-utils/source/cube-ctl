@@ -266,9 +266,6 @@ while [ $# -gt 0 ]; do
 	    auto=${2}
 	    shift
 	    ;;
-	--track)
-	    track_containers=t
-	    ;;
 	-u)
 	    # This is an unprivileged container. We need to config subuid/subgid.
 	    if [ "${2}" -eq "${2}" ] 2>/dev/null; then
@@ -1022,9 +1019,7 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	# if [ -n "${track_containers}" ]; then
-	#     ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-	# fi
+	${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*)
@@ -1098,10 +1093,6 @@ IFS=$OLDIFS
 
 		rm -rf ${out_dir}/${container_name}/docker
 		rm -rf ${out_dir}/${container_name}/oci-runtime
-
-		if [ -n "${track_containers}" ]; then
-		    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-		fi
 
 		exit 0
 		;;
@@ -1676,13 +1667,7 @@ EOF
 	    if [ $? -ne 0 ]; then
 		echo "[INFO] deleting container ${container_name}"
 		cube-cmd ${mgr} delete ${container_name} 2> /dev/null
-		if [ -n "${track_containers}" ]; then
-		    ${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
-		else
-		    if [ -d "${out_dir}/${container_name}" ]; then
-			rm -rf ${out_dir}/${container_name}
-		    fi
-		fi
+		${SBINDIR}/overc-ctl untrack ${container_name} -f -o ${out_dir}
 		cube-cfg set overc/$(cube-cfg id)/oci/${container_name}/:
 	    else
 		echo "[INFO] container ${container_name} is running, it must be stopped before deleting"
