@@ -6,12 +6,18 @@ EXTRA_USERS_PARAMS ?= "usermod -p '\$6\$itWJK/a95NGi5AVs\$0zlkWdhpXg5CWtEC0YxIH8
 
 ROOTFS_POSTPROCESS_COMMAND += "builder_configure_host ; "
 ROOTFS_POSTPROCESS_COMMAND += "systemd_autostart_fixups ; "
+ROOTFS_POSTPROCESS_COMMAND += "systemd_mask_tasks ; "
 
 builder_configure_host() {
 #    bbnote "builder: configuring host"
 
     echo "${TARGETNAME}" > ${IMAGE_ROOTFS}/etc/hostname
 
+}
+
+systemd_mask_tasks() {
+    # Turn off named
+    ln -sf /dev/null "${IMAGE_ROOTFS}/etc/systemd/system/named.service"
 }
 
 systemd_autostart_fixups() {
