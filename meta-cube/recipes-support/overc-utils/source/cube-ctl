@@ -1234,6 +1234,10 @@ IFS=$OLDIFS
 	    echo "[INFO] Performing lxc configuration ..."
 	    generate_lxc_config ${container_name} ${out_dir}
 	fi
+
+	if [ -n "${track_containers}" ]; then
+	    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
+	fi
 	;;
     rename|mv)
 	orig_name=${cmd_options_non_dashed[1]}
