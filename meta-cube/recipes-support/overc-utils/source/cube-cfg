@@ -1177,7 +1177,7 @@ etcd_inject()
     local key_name=$(basename ${key})
     local etcdctl=etcdctl
 
-    redir="2> /dev/null"
+    redir="> /dev/null 2>&1"
     if [ -n "${dryrun}" ]; then
 	etcdctl="echo etcdctl"
 	redir=""
