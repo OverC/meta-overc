@@ -258,6 +258,11 @@ fi
 # this corresponds to the lxc.id_map items within the container's config file
 DEFAULT_SUBUID=800000
 
+# check to see if there's a rc file to set defaults
+if [ -e "/etc/c3-ctl.rc" ]; then
+    source /etc/c3-ctl.rc
+fi
+
 while [ $# -gt 0 ]; do
     case "$1" in
 	-v|--verbose) verbose=t
