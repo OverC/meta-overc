@@ -1746,7 +1746,7 @@ case "${cmd}" in
 			    ;;
 			-)
 			    if [ -n "${alreadyset}" ]; then
-				sed "/^${essential_device}:${container_device}$/d" -i ${out_dir}/.cube.device.network
+				sed "\#^${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.network
 			    fi
 			    ;;
 		    esac
@@ -1764,13 +1764,28 @@ case "${cmd}" in
 			    ;;
 			-)
 			    if [ -n "${alreadyset}" ]; then
-				sed "/^veth:${essential_device}:${container_device}$/d" -i ${out_dir}/.cube.device.network
+				sed "\#^veth:${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.network
 			    fi
 			    ;;
 		    esac
 		    ;;
 		vt)
-		    echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.vt
+		    check_isset ${out_dir}/.cube.device.vt "$essential_device:$container_device"
+		    if [ $? -eq 1 ]; then
+			alreadyset=t
+		    fi
+		    case ${op} in
+			+)
+			    if [ -z "${alreadyset}" ]; then
+				echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.vt
+			    fi
+			    ;;
+			-)
+			    if [ -n "${alreadyset}" ]; then
+				sed "\#^${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.vt
+			    fi
+			    ;;
+		    esac
 		    ;;
 	    esac
 	else
