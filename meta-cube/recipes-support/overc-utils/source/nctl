@@ -140,7 +140,7 @@ NANOCAT=$(which nanocat)
 if [ -z "${NANOCAT}" ]; then
     NANOCAT="./nanocat"
 fi
-timeout=1000
+timeout=200000
 client=t
 server=
 FUNCTIONS_DIR="/var/lib/cube-cmd-server/functions.d"
