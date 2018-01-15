@@ -291,6 +291,7 @@ function output_and_log_msg()
 {
     local msg="$1"
     local output_file=$2
+    local outfile
 
     redir="> /dev/null"
     if [ -n "${verbose}" ]; then
@@ -386,7 +387,7 @@ server_client_control() {
     while [ -z "${done}" ]; do
 	request=$(${NANOCAT} --recv-timeout 10 --oneshot --rep --bind ipc://${ipc_chan} --format raw)
 	if [ -z "${request}" ]; then
-	    output_and_log_msg "[WARNING]: failed to read client command, no data recv'd (${ipc_chan})"
+	    output_and_log_msg "[INFO]: failed to read client command, no data recv'd (${ipc_chan})"
 	    done=t
 	fi
 
@@ -517,7 +518,7 @@ server_client_control() {
 
 			if [ -n "${allowed}" ]; then
 			    if [ "${type}" == "FILE" ]; then
-				server_action_and_response ${ID}.ipc ${file}
+				server_action_and_response ${ipc_chan} ${file}
 				acl_add ${owner} $(basename "${file}")
 			    elif [ "${type}" == "CMD" ]; then
 				acl_add ${owner} $(basename "${file}")
@@ -525,6 +526,7 @@ server_client_control() {
 			fi
 			;;
 		    DEL)
+			echo type: $type
 			if [ -n "${verbose}" ]; then
 			    output_and_log_msg "[INFO]: CAP: [${ipc_id}] request to remove commands/file called: ${file}"
 			fi
@@ -547,7 +549,7 @@ server_client_control() {
 
 			if [ -n "${allowed}" ]; then
 			    if [ "${type}" == "FILE" ]; then
-				if [ -e "${FUNCTIONS_DIR}/${outfile}" ]; then
+				if [ -e "${FUNCTIONS_DIR}/${file}" ]; then
 				    rm -f "${FUNCTIONS_DIR}/${file}"
 				fi
 			    fi
@@ -1018,22 +1020,26 @@ capabilities_get() {
 }
 
 acl_add() {
-    requestor=$1
-    cmd=$2
+    local requestor=$1
+    local cmd=$2
     if [ -n "${verbose}" ]; then
 	output_and_log_msg "[INFO]: ACL: adding ${cmd} to ${requestor}"
     fi
-    eval acl=\${${requestor}_dyn_commands[@]}
+
+    requestor=$(echo "${requestor}" | sed 's/-/_/g')
+    dyn_array="${requestor}_dyn_commands"
+    eval acl=\${${dyn_array[@]}}
     if [ -z "${acl}" ]; then
-	dyn_array="${requestor}_dyn_commands"
 	eval $dyn_array=\(\)
     fi
-    eval $dyn_array+=\(${cmd}\)
+    eval $dyn_array+=\("${cmd}"\)
 }
 
 acl_remove() {
-    requestor=$1
-    cmd=$2
+    local requestor=$1
+    local cmd=$2
+
+    requestor=$(echo "${requestor}" | sed 's/-/_/g')
     if [ -n "${verbose}" ]; then
 	output_and_log_msg "[INFO]: ACL: removing ${cmd} from ${requestor}"
     fi
@@ -1402,7 +1408,11 @@ if [ -n "${client}" ]; then
 		fi
 	    fi
 	else
-	    clientcmd ${ipc_chan} acknack CAP DEL ${client_id} CMD $(basename ${opval})
+	    cap_type="CMD"
+	    if [ -e "${opval}" ]; then
+		cap_type="FILE"
+	    fi
+	    clientcmd ${ipc_chan} acknack CAP DEL ${client_id} ${cap_type} $(basename ${opval})
 	    if [ $? -eq 0 ]; then
 		echo "[ERROR]: capability add was nack'd"
 		exit 1

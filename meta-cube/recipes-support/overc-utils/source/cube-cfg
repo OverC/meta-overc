@@ -905,7 +905,7 @@ if [ -d /sys/fs/cgroup/unified ]; then
     # This creates a new cgroup for the container we are launching. runc is pointed at it
     # via its json config and will reparent to that new cgroup and escape systemd tracking
     mkdir -p /sys/fs/cgroup/unified/runc/${container_name}
-    echo \$\$ > /sys/fs/cgroup/unified/runc/${container_name}/cgroup.procs
+    echo -n \$\$ > /sys/fs/cgroup/unified/runc/${container_name}/cgroup.procs
 fi
 if [ -e "/opt/container/${container_name}/cube.console.mgr.runonce" ]; then
     console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr.runonce)

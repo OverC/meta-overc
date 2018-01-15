@@ -6,6 +6,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 
 SRC_URI = " \
     file://source/cube-cmd \
+    file://source/c3-cap \
     file://source/cube-ctl \
     file://source/cube-cfg \
     file://source/nctl \
@@ -29,6 +30,7 @@ do_install() {
     install -m755 ${WORKDIR}/source/cube-console ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-ctl ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-cmd ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/c3-cap ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube-cfg ${D}${sbindir}
     install -m755 ${WORKDIR}/source/cube ${D}${sbindir}
     install -m755 ${WORKDIR}/source/nctl ${D}${sbindir}

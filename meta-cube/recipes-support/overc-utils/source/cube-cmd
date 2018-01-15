@@ -42,6 +42,10 @@ function do_essential_cmd()
 	if [ -n "${raw_mode}" ]; then
 	    ${cmd_options}
 	else
+	    # because we don't pass a control ipc channel, this will run in
+	    # loopback mode, i.e. exec directly. The two calls to nctl could
+	    # be unified (via a variable that evaluates to the empty string),
+	    # but we keep them separate for now.
 	    nctl ${cube_cmd_options} ${cmd_options}
 	fi
 	exit $?

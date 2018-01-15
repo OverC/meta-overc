@@ -405,7 +405,7 @@ if [ $? -eq 1 ]; then
 fi
 
 if [ -z "${we_are_dom0}" ] && [ -n "${we_are_a_container}" ]; then
-    cube-cmd cube-ctl ${raw_command}
+    cube-cmd cube-ctl ${raw_command[@]}
     exit $?
 fi
 
@@ -1008,6 +1008,7 @@ case "${cmd}" in
 	    if [ -n "${path}" ]; then
 		# the path, minus any tags
 		container_name=$(echo $path | awk -F':' '{print $1}')
+		container_name=$(basename ${container_name})
 	    fi
 	fi
 
@@ -1047,7 +1048,7 @@ case "${cmd}" in
 	# fi
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
-	    *.tar*)
+	    *.tar*|*.tgz)
 		echo "[INFO] Installing container ${container_name} to ${out_dir}/${container_name}"
 		echo "[INFO] Extracting rootfs....."
 		tar --numeric-owner --warning=no-timestamp \
