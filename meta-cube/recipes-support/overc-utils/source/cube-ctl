@@ -1801,9 +1801,6 @@ EOF
 			    else
 				echo "container ${container} is already running ..."
 			    fi
-			else
-			    # TODO: use cube-cmd to talk to a remote container manager
-			    true
 			fi
 		fi
 	    fi
