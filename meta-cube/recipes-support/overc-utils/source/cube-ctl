@@ -1078,8 +1078,14 @@ case "${cmd}" in
 		    fi
 		fi
 
+		#In case the track option was passed from command line, thus it was needed
+		#to pass this option to the recursive call where the track action was done there.
+		track_opt=""
+		if [ -n "${track_containers}" ]; then
+			track_opt="--track"
+		fi
 		# recursive call!! This may mean we need an import tool front end, instead of doing this here
-		cube-ctl add -n ${container_name} ${out_dir}/${container_name}/oci-runtime
+		cube-ctl add ${track_opt}  -n ${container_name} ${out_dir}/${container_name}/oci-runtime
 
 OLDIFS=$IFS
 IFS='
@@ -1103,10 +1109,6 @@ IFS=$OLDIFS
 
 		rm -rf ${out_dir}/${container_name}/docker
 		rm -rf ${out_dir}/${container_name}/oci-runtime
-
-		if [ -n "${track_containers}" ]; then
-		    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-		fi
 
 		exit 0
 		;;
