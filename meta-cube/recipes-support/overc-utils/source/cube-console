@@ -104,6 +104,10 @@ function do_console()
 	    cmd="script -q -c '/sbin/agetty -J -' /dev/null"
 	else
 	    mgr=$(cube-cfg -o /opt/container/${target}/ get cube.container.mgr)
+	    if [ -z "${mgr}" ]; then
+		echo "[ERROR]: container \"${target}\" not found"
+		exit 1
+	    fi
 	    echo ${mgr} | grep -q runc
 	    if [ $? -eq 0 ]; then
 		cmd="${mgr} exec -- ${target} script -q -c '/sbin/agetty -J -' /dev/null"
@@ -150,7 +154,7 @@ function enter_console
 	    fi
 	    echo "$x"
 	    ;;
-	*essential*)
+	essential)
 	    if [ -n "${we_are_dom0}" ]; then
 		do_console essential
 	    else
@@ -158,7 +162,7 @@ function enter_console
 		exit 1
 	    fi
 	    ;;
-	*dom0*)
+	dom0)
 	    do_console dom0 login
 	    ;;
 	*)
