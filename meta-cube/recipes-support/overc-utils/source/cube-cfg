@@ -234,6 +234,7 @@ CONFIG_MAP[cube.network.mac]="cube.network.mac;noop;single;The mac address to as
 CONFIG_MAP[cube.network.gateway]="cube.network.gateway;noop;single;The gateway to use for the container"
 CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;single;The nameserver to use for the container"
 CONFIG_MAP[cube.env]="cube.env;noop;multi;Set an environment variable for the container startup. cube.env:<var>=<value>"
+CONFIG_MAP[cube.dir]="cube.dir;noop;single;Set the starting directory for the the application"
 
 if [ -z "$1" ]; then
     usage_global
@@ -824,6 +825,10 @@ IFS='
     fi
     IFS=$OLDIFS
 
+    if [ -e "cube.dir" ]; then
+	cwd_arg="--process-cwd $(cat cube.dir)"
+    fi
+
     console_mgr=$(cube-cfg ${get_flag} cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
 	tty_flag="--process-tty"
@@ -836,6 +841,7 @@ IFS='
 		     ${env_args} \
 	             ${hooks} \
 		     ${app_args} \
+		     ${cwd_arg} \
                      --linux-cgroups-path=/runc/${container_name} \
                      --linux-seccomp-remove-all \
                      --hostname=${container_name} \
@@ -844,7 +850,7 @@ IFS='
                      ${mount_args} \
                      > config.json.tmp
     if [ ! -s config.json.tmp ] ; then
-	echo "ERROR: config.jason generation failed"
+	echo "ERROR: config.json generation failed"
 	exit 1
     fi
 
