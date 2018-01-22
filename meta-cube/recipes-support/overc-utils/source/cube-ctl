@@ -690,7 +690,7 @@ service_disable()
     fi
 
     if [ -z "${slinks}" ]; then
-        debugmsg ${DEBUG_INFO} ${debug_msg}
+        debug_msg ${DEBUG_INFO} ${debug_msg}
         return 1
     fi
 
@@ -1012,9 +1012,9 @@ case "${cmd}" in
 	if [ -n "${subuid}" ]; then
 	    if [ -n "${we_are_a_container}" ]; then
 		privilege_param="-u ${subuid}"
-		cube-cmd cmd "touch /etc/subuid /etc/subgid"
-		cube-cmd cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
-		cube-cmd cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
+		cube-cmd "touch /etc/subuid /etc/subgid"
+		cube-cmd "usermod --add-subuids ${subuid}-$(( subuid+65536 )) root"
+		cube-cmd "usermod --add-subgids ${subuid}-$(( subuid+65536 )) root"
 	    else
 		touch /etc/subuid /etc/subgid
 		usermod --add-subuids ${subuid}-$(( subuid+65536 )) root
@@ -1140,7 +1140,7 @@ IFS=$OLDIFS
 
 	if [ -n "${subuid}" ]; then
 	    if [ -n "${we_are_a_container}" ]; then
-		cube-cmd cmd "chown -R ${subuid}:${subuid} ${out_dir}/${container_name}/rootfs"
+		cube-cmd "chown -R ${subuid}:${subuid} ${out_dir}/${container_name}/rootfs"
 	    else
 		chown -R ${subuid}:${subuid} ${out_dir}/${container_name}/rootfs
 	    fi
@@ -2133,7 +2133,7 @@ EOF
 		echo "running: cube-cmd ${cmd_to_exec[@]}"
 	    fi
 
-	    cube-cmd cmd ${cmd_to_exec[@]}
+	    cube-cmd ${cmd_to_exec[@]}
 	else
 	    mgr=$(cube-cfg -o /opt/container/${container_name}/ get cube.container.mgr)
 	    echo ${mgr} | grep -q runc
