@@ -690,7 +690,7 @@ service_disable()
     fi
 
     if [ -z "${slinks}" ]; then
-        debugmsg ${DEBUG_INFO} ${debug_msg}
+        debug_msg ${DEBUG_INFO} ${debug_msg}
         return 1
     fi
 
