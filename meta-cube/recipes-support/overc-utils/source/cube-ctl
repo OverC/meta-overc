@@ -1963,9 +1963,8 @@ EOF
 	    exit 1
 	fi
 
-	attributes=$(${SBINDIR}/cube-cfg -n ${container_name} attribute)
-	echo ${attributes} | grep -q netprime
-	if [ $? -eq 0 ]; then
+	np=$(container_by_attribute netprime)
+	if [ "${np}" = "${container_name}" ]; then
 	    echo "[INFO]: container \"${container_name}\" is already the netprime"
 	    exit 0
 	fi
@@ -1975,14 +1974,8 @@ EOF
 	fi
 
 	# TODO: this could be an etcd lookup, not this ...
-        containers_available=$(ls ${out_dir})
-	for c in ${containers_available}; do
-	    attributes=$(${SBINDIR}/cube-cfg -n ${c} attribute)
-	    echo ${attributes} | grep -q netprime
-	    if [ $? -eq 0 ]; then
-		network_prime_old=${c}
-	    fi
-	done
+	# TODO: respect $out_dir?
+	network_prime_old=$(container_by_attribute netprime)
 	network_prime=${container_name}
 
 	# step 1: stop the old network prime (if it exists)
