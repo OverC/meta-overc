@@ -1085,6 +1085,37 @@ IFS='
     echo "pflask" > cube.container.mgr
 }
 
+container_mark_regen()
+{
+    local container=$1
+
+    if [ -d "/opt/container/${container}" ]; then
+	touch /opt/container/${container}/.cube.regen.flag
+    fi
+}
+
+container_clear_regen()
+{
+    local container=$1
+
+    if [ -d "/opt/container/${container}" ]; then
+	rm -f /opt/container/${container}/.cube.regen.flag
+    fi
+}
+
+container_check_for_regen()
+{
+    local container=$1
+
+    if [ -d "/opt/container/${container}" ]; then
+	if [ -e "/opt/container/${container}/.cube.regen.flag" ]; then
+	    return 1
+	fi
+    fi
+
+    return 0
+}
+
 etcd_fetch()
 {
     local key=$1
@@ -1354,6 +1385,8 @@ case "${cmd}" in
 	if [ "${container_type}" == "cube" ]; then
 	    convert_base_config_to_cube ${container_name}
 	fi
+
+	container_clear_regen ${container_name}
 	;;
     mount)
 	name_temp=${cmd_options_non_dashed[1]}
@@ -1441,6 +1474,7 @@ case "${cmd}" in
 
 	    check_isset ${outfile} "${source}:${dest}"
 	    if [ $? -eq 0 ]; then
+		container_mark_regen ${container_name}
 		echo "${source}:${dest}" >> ${outfile}
 	    fi
 	else
@@ -1448,6 +1482,7 @@ case "${cmd}" in
 		echo "[INFO]: removing mount ${source} -> ${dest}"
 	    fi
 	    if [ -f "${outfile}" ]; then
+		container_mark_regen ${container_name}
 		sed "\|^${source}:${dest}$|d" -i ${outfile}
 	    fi
 	fi
@@ -1535,6 +1570,7 @@ case "${cmd}" in
 	    # TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
 	    check_isset ${out_dir}/cube.network.stack "$cmd_1"
 	    if [ $? -eq 0 ]; then
+		container_mark_regen ${container_name}
 		echo "${cmd_1}" >> ${out_dir}/cube.network.stack
 		echo "${cmd_2}" >> ${out_dir}/cube.network.stack
 	    fi
@@ -1543,6 +1579,7 @@ case "${cmd}" in
 		echo "[INFO]: removing link from $container_a $container_a_port to $container_b $container_b_port"
 	    fi
 	    if [ -f "cube.network.stack" ]; then
+		container_mark_regen ${container_name}
 		sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
 		sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
 	    fi
@@ -1552,6 +1589,7 @@ case "${cmd}" in
 	container=${cmd_options_non_dashed[1]}
 	command=${cmd_options_non_dashed[@]:2}
 	if [ -d "${out_dir}/${container}" ]; then
+	    container_mark_regen ${container_name}
 	    eval echo ${command} >> ${out_dir}/${container}/cube.network.stack
 	fi
 	;;
@@ -1562,6 +1600,7 @@ case "${cmd}" in
 		EDITOR=vim
 	    fi
 	    ${EDITOR} ${out_dir}/${container}/cube.network.stack
+	    container_mark_regen ${container_name}
 	fi
 	;;
     attribute)
@@ -1589,7 +1628,17 @@ case "${cmd}" in
 	if [ -z "${op}" ] && [ -z "${attribute}" ]; then
 	    # we should output the attributes if they exist
 	    if [ -e ${out_dir}/cube.attributes ]; then
-		cat ${out_dir}/cube.attributes | sed 's/^[ \t]*//;s/[ \t]*$//'
+		a=$(cat ${out_dir}/cube.attributes | sed 's/^[ \t]*//;s/[ \t]*$//;s/ /,/g')
+	    fi
+	    container_check_for_regen ${container_name}
+	    if [ $? -eq 1 ]; then
+		if [ -n "${a}" ]; then
+		    echo "$a,dirty"
+		else
+		    echo "dirty"
+		fi
+	    else
+		echo "$a"
 	    fi
 	    exit 0
 	fi
@@ -1615,11 +1664,13 @@ case "${cmd}" in
 	case ${op} in
 	    +)
 		if [ -z "${alreadyset}" ]; then
+		    container_mark_regen ${container_name}
 		    echo -n "${attribute} " >> ${out_dir}/cube.attributes
 		fi
 		;;
 	    -)
 		if [ -n "${alreadyset}" ]; then
+		    container_mark_regen ${container_name}
 		    sed "s/${attribute}//g" -i ${out_dir}/cube.attributes
 		fi
 		;;
@@ -1685,10 +1736,12 @@ case "${cmd}" in
 		check_isset ${outfile} ${hookname}
 		if [ $? -eq 0 ]; then
 		    # it isn't already set
+		    container_mark_regen ${container_name}
 		    echo "${hookname}" >> ${outfile}
 		fi
 	    else
 		if [ -f "${outfile}" ]; then
+		    container_mark_regen ${container_name}
 		    sed "\|^${hookname}$|d" -i ${outfile}
 		fi
 	    fi
@@ -1747,11 +1800,13 @@ case "${cmd}" in
 		    case ${op} in
 			+)
 			    if [ -z "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.network
 			    fi
 			    ;;
 			-)
 			    if [ -n "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				sed "\#^${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.network
 			    fi
 			    ;;
@@ -1765,11 +1820,13 @@ case "${cmd}" in
 		    case ${op} in
 			+)
 			    if [ -z "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				echo "veth:$essential_device:$container_device"  >> ${out_dir}/.cube.device.network
 			    fi
 			    ;;
 			-)
 			    if [ -n "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				sed "\#^veth:${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.network
 			    fi
 			    ;;
@@ -1783,11 +1840,13 @@ case "${cmd}" in
 		    case ${op} in
 			+)
 			    if [ -z "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.vt
 			    fi
 			    ;;
 			-)
 			    if [ -n "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
 				sed "\#^${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.vt
 			    fi
 			    ;;
@@ -1907,20 +1966,24 @@ case "${cmd}" in
 		fi
 		if [ "${op}" == "+" ]; then
 		    if [ -n "${prepend}" ]; then
+			container_mark_regen ${container_name}
 			echo "${value} ${previous}" > ${outvar}
-
 		    elif [ -n "${append}" ]; then
+			container_mark_regen ${container_name}
 			echo "${previous} ${value}" > ${outvar}
 		    elif [ -n "${append_multi}" ]; then
 			check_isset ${outvar} "${value}"
 			if [ $? -eq 0 ]; then
+			    container_mark_regen ${container_name}
 			    echo "${value}" >> ${outvar}
 			fi
 		    else
+			container_mark_regen ${container_name}
 			echo "${value}" > ${outvar}
 		    fi
 		else
 		    if [ -f ${outvar} ]; then
+			container_mark_regen ${container_name}
 			sed "s%${value} *%%g" -i ${outvar}
 		    fi
 		fi
