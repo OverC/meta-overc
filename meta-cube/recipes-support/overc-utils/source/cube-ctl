@@ -1745,8 +1745,16 @@ EOF
 	for container in ${container_names}; do
 	    if [ -n "${single_launch}" ]; then
 		if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
-		    ${container_dir}/${container}/pflask.cmd
-		    cube-cfg set overc/$machine/cube/${container}/:active
+		    build_container_lists
+
+		    oc=$(echo ${cubes_running} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+		    echo "${oc}" | grep -q "#${container}#"
+		    if [ $? -ne 0 ]; then
+			nsenter -P -t 1 -p -n -u -m -C /bin/bash ${container_dir}/${container}/pflask.cmd
+			cube-cfg set overc/$machine/cube/${container}/:active
+		    else
+			echo "container ${container} is already running ..."
+		    fi
 		elif [ -e "${container_dir}/${container}/config.json" ]; then
 			if [ -n "${we_are_dom0}" ]; then
 			    # This escapes our namespace and launches the containers in our parents (essential)
