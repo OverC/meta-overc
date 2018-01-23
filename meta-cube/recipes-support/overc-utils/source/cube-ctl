@@ -556,7 +556,7 @@ container_by_attribute() {
     build_container_lists
     for c in ${open_containers} ${cubes}; do
 	attributes=$(cube-cfg -n ${c} attribute)
-	for a in $attributes; do
+	for a in $(echo ${attributes} | sed 's/,/ /g'); do
 	    if [ "${a}" = "${attribute}" ]; then
 		matches="${matches} ${c}"
 	    fi
