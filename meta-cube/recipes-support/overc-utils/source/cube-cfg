@@ -365,10 +365,19 @@ determine_outdir()
 	if [ -n "${container_name}" ]; then
 	    if [ -d "/opt/container/${container_name}" ]; then
 		# but only if we have a config.json, should this actually become
-		# our outdir
-		if [ -f "/opt/container/${container_name}/config.json" ]; then
+		# our outdir.
+
+		# Jan 2018: Temporarily disabling this extra check, since we
+		# are now erroring if the container isn't in /opt/container
+		# .. but there used to be errors if we didn't have this
+		# check, so keeping this around to see if they pop back out.
+
+		#if [ -f "/opt/container/${container_name}/config.json" ]; then
 		    out_dir="/opt/container/${container_name}"
-		fi
+		#fi
+	    else
+		echo "[ERROR]: container \"${container_name}\" has no valid directory"
+		exit 1
 	    fi
 	fi
     fi
@@ -1938,7 +1947,6 @@ case "${cmd}" in
 		etcd_fetch ${var}
 	    fi
 	else
-
 	    if [ "${cmd}" = "set" ]; then
 		outvar=${out_dir}/${db_var}
 		if [ -n "${runonce}" ]; then

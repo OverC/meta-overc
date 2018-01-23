@@ -880,6 +880,11 @@ get_container_state() {
 		    # this is OCI output, but the container is not active
 		    echo "available"
 		fi
+		echo "${state}" | grep -q "ailed to execute"
+		if [ $? -eq 0 ]; then
+		    # the container manager wasn't found, mark as invalid
+		    echo "invalid"
+		fi
 	    fi
 	fi
     fi
