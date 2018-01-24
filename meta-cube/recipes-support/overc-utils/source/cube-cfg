@@ -11,6 +11,7 @@
 
 mydir=`dirname $0`
 PATH=$mydir:$PATH
+PWD=$(pwd)
 
 if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
     set -x
@@ -363,6 +364,12 @@ determine_outdir()
     # the out_dir explicitly
     if [ "${out_dir}" == "./" ]; then
 	if [ -n "${container_name}" ]; then
+	    echo "${PWD}" | grep -q -w ${container_name}
+	    if [ $? -eq 0 ]; then
+		# we are in a directory that contains the container name, leave
+		# outdir alone
+		return
+	    fi
 	    if [ -d "/opt/container/${container_name}" ]; then
 		# but only if we have a config.json, should this actually become
 		# our outdir.
