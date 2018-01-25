@@ -10,6 +10,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 CUBE_DOM0_EXTRA_INSTALL ?= " "
 
+OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-runv','',d)}"
+
 PACKAGE_EXCLUDE = "busybox* "
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
@@ -34,6 +36,7 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
                   packagegroup-service-discovery \
                   cube-cmd-server \
                   overc-device-utils \
+                  ${OVERC_VMSEP_PACKAGES} \
                   ${CUBE_DOM0_EXTRA_INSTALL} \
                  "
 

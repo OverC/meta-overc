@@ -1,0 +1,59 @@
+Enablement:
+----------
+
+runv support is availble in the yocto ecosystem layers, and can be enabled
+in OverC by adding a distro feature:
+
+  DISTRO_FEATURES_append = " vm-sep"
+
+Rebuild, deploy and essential + dom0 are now ready for vm-separation container
+managers.
+
+Known issues:
+------------
+
+ - Networking must be manually configured
+ - Interactive commands exec'd against a runv container won't display a prompt
+   and may throw a warning.
+
+Example:
+--------
+
+root@cube-dom0:~# c3 add docker://httpd:alpine
+Getting image source signatures
+Copying blob sha256:605ce1bd3f3164f2949a30501cc596f52a72de05da1306ab360055f0d7130c32
+1.90 MB / 1.90 MB [========================================================] 0s
+Copying blob sha256:6e4ededbced2205702d8b05d0304ce76d27e0c71988fbceb45edee484b1cf241
+1.22 KB / 1.22 KB [========================================================] 0s
+Copying blob sha256:03b3c72c99621924fbdc789d9209352fb791ee0983e06fafcfbafd0baea332d6
+146 B / 146 B [============================================================] 0s
+Copying blob sha256:5e8ab6804c5f0c46c1921046f7df1edc76c12965b6fcd6a4245aeed955770280
+24.71 MB / 24.71 MB [======================================================] 6s
+Copying blob sha256:e0eaac7d57c6e5b7e6fba5ef69a883a0432028e5523c4a032045759c932831b0
+288 B / 288 B [============================================================] 0s
+Copying config sha256:057dd2b0e2dffdba18122ae5859f7eba317e1746b747a16518a37e55441672c6
+5.41 KB / 5.41 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+[INFO] Adding /opt/container//httpd/oci-runtime to httpd
+[INFO] Succeeded
+[INFO] Performing OCI configuration ...
+
+root@cube-dom0:~# c3-cfg -n httpd set cube.container.mgr:runv
+
+root@cube-dom0:~# c3 list
+name         type    status   attributes    addresses
+----         ----    ------   ----------    ---------
+cube-server  runc    running  --            192.168.42.179
+dom0         pflask  running  vrf,netprime  192.168.42.1,128.224.56.212
+httpd        runv    running  --            --
+
+root@cube-essential:~# ps -ef |grep runv
+root      5424     1  0 23:02 ?        00:00:00 runv --root /run/runv --log_dir /var/log/hyper proxy --vmid vm-KfGXxJeplB --hyperstart-ctl-sock unix:///var/run/hyper/vm-KfGXxJeplB/hyper.sock --hyperstart-stream-sock unix:///var/run/hyper/vm-KfGXxJeplB/tty.sock --proxy-hyperstart /var/run/hyper/vm-KfGXxJeplB/hyperstartgrpc.sock --watch-vm-console /var/run/hyper/vm-KfGXxJeplB/console.sock --watch-hyperstart
+root      5444     1  0 23:02 pts/5    00:00:00 runv --root /run/runv --log_dir /var/log/hyper/shim-httpd shim --container httpd --process init --proxy-stdio --proxy-exit-code --proxy-signal --proxy-winsize
+
+root@cube-dom0:~# uname -a
+Linux cube-dom0 4.12.18-yocto-standard #1 SMP PREEMPT Wed Jan 24 15:55:04 EST 2018 x86_64 x86_64 x86_64 GNU/Linux
+
+root@cube-dom0:~# c3 httpd:uname -a
+Linux httpd 4.12.4-hyper #18 SMP Mon Sep 4 15:10:13 CST 2017 x86_64 Linux

@@ -538,7 +538,15 @@ check_is_known_container()
 	if [ $? -eq 0 ]; then
 	    container_is_a_oci=t
 	fi
-	if [ -z "${container_is_a_cube}" ] && [ -z "${container_is_a_oci}" ]; then
+
+	containers=$(echo ${others} | sed 's/^/#/' | sed 's/$/#/' | sed 's/ /#/g')
+	echo ${containers} | grep -q "#${container_name}#"
+	if [ $? -eq 0 ]; then
+	    container_is_other=t
+	fi
+
+	if [ -z "${container_is_a_cube}" ] && [ -z "${container_is_a_oci}" ] &&
+	   [ -z "${container_is_other}" ]; then
 	    return 1
 	fi
     else
@@ -2144,13 +2152,18 @@ EOF
 	    cube-cmd ${cmd_to_exec[@]}
 	else
 	    mgr=$(cube-cfg -o /opt/container/${container_name}/ get cube.container.mgr)
-	    echo ${mgr} | grep -q runc
-	    if [ $? -eq 0 ]; then
-		cmd="cube-cmd ${mgr} exec -- ${container_name} ${cmd_to_exec}"
-	    else
-		echo "[ERROR]: container '${container_name} has no container manager identified, not executing command"
-		exit 1
-	    fi
+	    case ${mgr} in
+		*/runc)
+		    cmd="cube-cmd ${mgr} exec -- ${container_name} ${cmd_to_exec}"
+		    ;;
+		*/runv)
+		    cmd="cube-cmd ${mgr} exec -- ${container_name} ${cmd_to_exec}"
+		    ;;
+		*)
+		    echo "[ERROR]: container '${container_name} has no container manager identified, not executing command"
+		    exit 1
+		    ;;
+	    esac
 
 	    # if the command is interactive, we need to ensure that a terminal is allocated
 	    # or it won't work / look like it is hung
