@@ -1,0 +1,53 @@
+c3-app-container
+-------------------------
+
+The meta-cube layer comes with a single 'flexible' image called
+'c3-app-container'. This image allows you to build a single
+application container where you select the application which the image
+will contain. Application selection is made via local.conf, by setting
+'C3_APP_CONTAINER_APP' to the name of the application.
+
+
+Building
+-------------------------
+
+The image is built using the normal bitbake commands:
+%> bitbake c3-app-container
+
+The output will be found in the tmp/deploy/images/* directory
+alongside the other images.
+
+
+Usage
+-------------------------
+
+You can use the c3-app-container as an artifact to the cubeit
+installer but more likely you will install the image on a running
+system. This would be done by copying the image tarball to the target
+running OverC and then running the following commands on dom0 or in a
+container with bindings to dom0:
+
+# c3 add -n app-container c3-app-container-genericx86-64.tar.bz2
+# c3 cfg -o /opt/container/app-container set app:/usr/bin/<your_app> [options]
+# c3 start [options] app-container
+
+
+Image size
+-------------------------
+
+The image size will depend on your selected application. As with any
+image, bitbake will include any dependencies in the image and as such
+the size can easily grow. A small application with no/few dependencies
+will result in a image of only a few MB.
+
+
+Creating more than one app container
+-------------------------
+
+The use of the 'c3-app-container' and 'C3_APP_CONTAINER_APP' is
+restricted to one application. However, you may use the
+c3-app-container.inc in your own image recipe in a similar way
+c3-app-container_*.bb does. This will allow you to write your own
+application container images in only a few lines, and, any
+improvements made to the c3-app-container.inc will immediately be
+available in your image.
