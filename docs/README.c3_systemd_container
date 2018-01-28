@@ -1,0 +1,85 @@
+c3-app-container
+-------------------------
+
+The meta-cube layer comes with a single 'flexible' systemd system
+image called 'c3-systemd-container'. This image allows you to build a
+single systemd system container where you select the application(s)
+which the image will contain. Application selection(s) is made via
+local.conf, by setting 'C3_SYSTEMD_CONTAINER_APPS' to the name of the
+application.
+
+
+Configuration
+-------------------------
+
+How c3-systemd-container is configured is controlled by 3 variables
+which are intended to be defined in local.conf:
+
+* C3_SYSTEMD_CONTAINER_APPS - required - a space separated list of
+  application(s) to included in the image. Usually this is one
+  application such as 'apached2'.
+
+* C3_SYSTEMD_CONTAINER_ENABLE_SERVICES - optional - a space separated
+  list of systemd services to enable. This is performed during
+  do_rootfs(). This may not always be needed but some recipes default
+  disabled (via 'SYSTEMD_AUTO_ENABLE_${PN} = "disable"') such as
+  apache2. You can use other methods to overwrite this default, this
+  variable just makes it easy.
+
+* C3_SYSTEMD_CONTAINER_DISABLE_SERVICES - optional - additional
+  systemd services to disable, c3-systemd-container.inc defines a
+  minimal set of services that shouldn't be run in a container. Like
+  C3_SYSTEMD_CONTAINER_ENABLE_SERVICES this is performed during
+  do_rootfs(). If you want to overwrite the minimal list you can
+  assign 'SERVICES_TO_DISABLE_pn-c3-systemd-container' in local.conf.
+
+So for example you might define the following in your local.conf to
+build a systemd system container for apache2:
+
+C3_SYSTEMD_CONTAINER_APPS = "apache2"
+C3_SYSTEMD_CONTAINER_ENABLE_SERVICES = "apache2.service"
+
+
+Building
+-------------------------
+
+The image is built using the normal bitbake commands:
+%> bitbake c3-systemd-container
+
+The output will be found in the tmp/deploy/images/* directory
+alongside the other images.
+
+
+Usage
+-------------------------
+
+You can use the c3-systemd-container as an artifact to the cubeit
+installer but more likely you will install the image on a running
+system. This would be done by copying the image tarball to the target
+running OverC and then running the following commands on dom0 or in a
+container with bindings to dom0:
+
+# c3 add -n systemd-container c3-systemd-container-genericx86-64.tar.bz2
+# c3 start [options] systemd-container
+
+
+Image size
+-------------------------
+
+The image size will depend on your selected application. As with any
+image, bitbake will include any dependencies in the image (including
+those of systemd itself) and as such the size can easily grow. A small
+application with no/few dependencies will result in a image of about
+15 MB.
+
+
+Creating more than one app container
+-------------------------
+
+The use of the 'c3-systemd-container' and 'C3_SYSTEMD_CONTAINER_*' is
+restricted to one image/configuration. However, you may use the
+c3-systemd-container.inc in your own image recipe in a similar same
+way as c3-systemd-container_*.bb does. This will allow you to write
+your own systemd system container images in only a few lines, and, any
+improvements made to the c3-systemd-container.inc will immediately be
+available in your image.
