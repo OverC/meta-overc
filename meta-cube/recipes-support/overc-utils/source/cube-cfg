@@ -1689,7 +1689,7 @@ case "${cmd}" in
 	    -)
 		if [ -n "${alreadyset}" ]; then
 		    container_mark_regen ${container_name}
-		    sed "s/${attribute}//g" -i ${out_dir}/cube.attributes
+		    sed "s/\b${attribute}\b\ *//g" -i ${out_dir}/cube.attributes
 		fi
 		;;
 	esac
