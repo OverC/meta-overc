@@ -325,13 +325,13 @@ while [ $# -gt 0 ]; do
 	    fi
 	    exit
 	    ;;
-	--*)
+	--*|-*)
 	    # if the next argument is dashed, we just add $1 to our collection
 	    # of dashed arguments. If $2 is NOT dashed, we assume it is a parameter
 	    # to the --dashed option, and we grab it as well. Don't try and mix
 	    # dashed and non-dashed, since we'll grab them!
 	    case $2 in
-		--*)
+		--*|-*)
 		    dashed="${dashed} $1"
 		    ;;
 		*)
