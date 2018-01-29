@@ -1527,9 +1527,6 @@ case "${cmd}" in
 	container_a=$(echo ${container_a} | cut -f1 -d:)
 	container_b=$(echo ${container_b} | cut -f1 -d:)
 
-	container_name=${container_a}
-	determine_outdir
-
 	if [ -n "${container_a}" ]; then
 	    # was there a + or - as part of the container_a ?
 	    case ${container_a} in
@@ -1547,6 +1544,11 @@ case "${cmd}" in
 		    ;;
 	    esac
 	fi
+
+	# Ensure we do this after the 'op' is stripped from
+	# $container_a but before any uses of outdir.
+	container_name=${container_a}
+	determine_outdir
 
 	if [ -n "${from}" ]; then
 	    if [ -z "${from_ip}" ]; then
