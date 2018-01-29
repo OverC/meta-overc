@@ -21,13 +21,12 @@ PACKAGES = "\
      packagegroup-dom0-fs \
      packagegroup-dom0-extended \
      packagegroup-dom0-networking \
-     packagegroup-dom0-perl \
      packagegroup-dom0-python \
      packagegroup-dom0-tools \
      packagegroup-dom0-only \
     "
 
-RDEPENDS_packagegroup-dom0 = "\
+RDEPENDS_packagegroup-dom0-debug = "\
      packagegroup-dom0-doc \
      packagegroup-dom0-fs \
      packagegroup-dom0-extended \
@@ -38,9 +37,17 @@ RDEPENDS_packagegroup-dom0 = "\
      packagegroup-dom0-only \
     "
 
+RDEPENDS_packagegroup-dom0 = "\
+     packagegroup-dom0-fs \
+     packagegroup-dom0-extended \
+     packagegroup-dom0-networking \
+     packagegroup-dom0-tools \
+     packagegroup-dom0-only \
+    "
+
 RDEPENDS_packagegroup-dom0-fs = " \
-     ${OVERC_COMMON_DISK} \
-     ${OVERC_COMMON_FS} \
+     ${OVERC_DOM0_DISK} \
+     ${OVERC_DOM0_FS} \
     "
 
 RDEPENDS_packagegroup-dom0-doc = " \
@@ -56,17 +63,25 @@ RDEPENDS_packagegroup-dom0-python = " \
     "
 
 RDEPENDS_packagegroup-dom0-extended = "\
-     ${OVERC_COMMON_EXTENDED} \
-     ${OVERC_EXTRA_EXTENDED} \
+     ${OVERC_DOM0_EXTENDED} \
     "
 
 RDEPENDS_packagegroup-dom0-networking = "\
-     ${OVERC_COMMON_NETWORKING} \
-     ${OVERC_EXTRA_NETWORKING} \
+     ${OVERC_DOM0_NETWORKING} \
+     ${OVERC_DOM0_EXTRA_NETWORKING} \
     "
 
 RDEPENDS_packagegroup-dom0-tools = "\
-     ${OVERC_COMMON_TOOLS} \
+     killall \
+     lsof \
+     setserial \
+     socat \
+     nanomsg \
+     sudo \
+     time \
+     overc-utils \
+     nanoio \
+     ca-certificates \
      container-shutdown-notifier \
     "
 

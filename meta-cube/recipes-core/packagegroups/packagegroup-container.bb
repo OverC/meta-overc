@@ -8,19 +8,22 @@ inherit packagegroup
 
 PACKAGES = "\
     packagegroup-container \
+    packagegroup-lxc \
     packagegroup-container-setup \
     packagegroup-docker \
     packagegroup-oci \
     "
 
 RDEPENDS_${PN} = " \
+    qemu-x86_64 \
+"
+
+RDEPENDS_packagegroup-lxc = " \
     libvirt \
     libvirt-python \
     lxc \
-    qemu \
 "
-
-RDEPENDS_${PN}-setup = " \
+RDEPENDS_packagegroup-lxc-setup = " \
     lxc-setup \
 "
 
@@ -34,6 +37,5 @@ RDEPENDS_packagegroup-oci = " \
     oci-systemd-hook \
     oci-runtime-tools \
     oci-image-tools \
-    netns \
     riddler \
 "

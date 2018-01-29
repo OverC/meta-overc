@@ -31,16 +31,50 @@ RDEPENDS_packagegroup-essential = "\
     "
 
 RDEPENDS_packagegroup-essential-disk = " \
-     ${OVERC_COMMON_DISK} \
+     btrfs-tools \
+     e2fsprogs-tune2fs \
+     dosfstools \
+     mdadm \
     "
 
 RDEPENDS_packagegroup-essential-extended = "\
-     ${OVERC_COMMON_EXTENDED} \
+     cpio \
+     dmidecode \
+     dtach \
+     ed \
+     fbset \
+     findutils \
+     grep \
+     gzip \
+     kernel-modules \
+     less \
+     ncurses-terminfo \
+     pciutils \
+     screen \
+     tar \
+     which \
+     zip \
+     gawk \
+     bzip2 \
+     procps \
+     util-linux \
+     kmod \
+     sed \
+     coreutils \
+     e2fsprogs \
+     ${OVERC_COMMON_EXTENDED_ARCH} \
     "
 
 RDEPENDS_packagegroup-essential-networking = "\
-     dnsmasq \
-     ${OVERC_COMMON_NETWORKING} \
+     ifupdown \
+     inetutils \
+     iproute2 \
+     iputils \
+     iptables \
+     net-tools \
+     netcat \
+     openvswitch \
+     dhcp-client \
     "
 
 RDEPENDS_packagegroup-essential-only = "\

@@ -14,6 +14,7 @@ PACKAGES = "\
 RDEPENDS_${PN} = " \
     libvirt \
     qemu \
+    qemu-x86_64 \
     hyperstart \
 "
 
