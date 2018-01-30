@@ -1596,7 +1596,7 @@ case "${cmd}" in
 	    if [ -n "${verbose}" ]; then
 		echo "[INFO]: removing link from $container_a $container_a_port to $container_b $container_b_port"
 	    fi
-	    if [ -f "cube.network.stack" ]; then
+	    if [ -f "${out_dir}/cube.network.stack" ]; then
 		container_mark_regen ${container_name}
 		sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
 		sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
