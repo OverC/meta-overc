@@ -1683,16 +1683,23 @@ case "${cmd}" in
 	    +)
 		if [ -z "${alreadyset}" ]; then
 		    container_mark_regen ${container_name}
-		    echo -n "${attribute} " >> ${out_dir}/cube.attributes
+		    echo -n " ${attribute}" >> ${out_dir}/cube.attributes
 		fi
 		;;
 	    -)
 		if [ -n "${alreadyset}" ]; then
 		    container_mark_regen ${container_name}
-		    sed "s/\b${attribute}\b\ *//g" -i ${out_dir}/cube.attributes
+		    sed "s/${attribute}//g" -i ${out_dir}/cube.attributes
 		fi
 		;;
 	esac
+
+	# ensure that no leading/trailing spaces are present, or that there
+	# are no double+ spaces. Any of those could lead to display errors.
+	if [ -f "${out_dir}/cube.attributes" ]; then
+	    sed -e 's/^[ \t]*//;s/[ \t]*$//' -i ${out_dir}/cube.attributes
+	    sed -e 's/\ +/\ /g' -i ${out_dir}/cube.attributes
+	fi
 	;;
     hook|hook-script)
 	# drop "hook" from the command options, and then output everything
