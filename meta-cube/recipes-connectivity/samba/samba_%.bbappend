@@ -1,3 +1,3 @@
 DEPENDS += " quota"
 
-DEPENDS := "${@oe_filter_out('ctdb','${DEPENDS}',d)}"
+DEPENDS := "${@oe.utils.str_filter_out('ctdb','${DEPENDS}',d)}"
