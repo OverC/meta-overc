@@ -1,0 +1,89 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+usage()
+{
+cat << EOF
+
+ ${0##*/} --cap [add|del] <file|command>
+
+  Add a capability to the authenticated container in the monitoring
+  domain. A capability can be a file (transferred to the monitoring
+  domain) or a command name (already in the monitoring domain).
+
+  Note that this command does no sanity checking or other processing. It is
+  the responsibility of the caller to ensure that the commands are valid in
+  the monitoring layer.
+
+EOF
+}
+
+
+# take the command into an array
+raw_command=($@)
+
+if [ ${#raw_command[*]} -lt 1 ]; then
+    usage
+    exit
+fi
+
+dashdash=
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	--cap)
+	    cap_type=$2
+	    shift
+	    ;;
+        *)
+	    if [ -n "${cap_type}" ]; then
+		cap_value="${cap_value} $1"
+	    else
+		echo "[ERROR]: unrecognized option ($1)"
+		usage
+		exit
+	    fi
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${cap_type}" ]; then
+    usage
+    exit 1
+fi
+
+case ${cap_type} in
+    add)
+	cube_cmd_options="--cap add"
+	;;
+    del)
+	cube_cmd_options="--cap del"
+	;;
+    *)
+	echo "[ERROR]: unrecognized capability mode (${cap_type})"
+	usage
+	exit 1
+	;;
+esac
+
+if [ -z "${cap_value}" ]; then
+    echo "[ERROR]: no capability name provided"
+    usage
+    exit 1
+fi
+
+cube-cmd ${cube_cmd_options} ${cap_value}
