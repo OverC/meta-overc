@@ -17,8 +17,6 @@ RDEPENDS_${PN}-bash-completion = "bash-completion"
 
 RDEPENDS_${PN} = "\
 	btrfs-tools \
-	python3-argparse \
-	python3-subprocess \
 	python3-flask \
 	python3-itsdangerous \
 	python3-jinja2 \
