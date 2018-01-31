@@ -82,6 +82,7 @@ RDEPENDS_packagegroup-dom0-tools = "\
      overc-utils \
      nanoio \
      ca-certificates \
+     udocker \
      container-shutdown-notifier \
     "
 

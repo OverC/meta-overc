@@ -61,6 +61,13 @@ case ${command} in
 	shift
 	c3-cfg ${verbose_flag} $@
 	;;
+    search)
+	shift
+	for d in bin containers layers lib repos; do
+	    mkdir -p ~/.udocker/${d}
+	done
+	udocker --allow-root search "$@"
+	;;
     *)
 	# front cube-ctl by default
 	c3-ctl ${verbose_flag} $@
