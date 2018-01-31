@@ -1,0 +1,68 @@
+From b0847199b3f3b63961d3659333cdfbec9cd0506d Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Wed, 31 Jan 2018 13:55:04 -0500
+Subject: [PATCH] commands: prevent autoinstall by default
+
+We are primarly using udocker to search a repository, as such we
+don't want the tools to install by default and we don't want a
+warning if they aren't available.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ udocker.py | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/udocker.py b/udocker.py
+index 54267dbe2bfe..5babe5bf11c3 100755
+--- a/udocker.py
++++ b/udocker.py
+@@ -160,7 +160,7 @@ class Config(object):
+         "/indigo/2/centos7/x86_64/tgz/udocker-1.1.1.tar.gz"
+     )
+ 
+-    autoinstall = True
++    autoinstall = False
+ 
+     config = "udocker.conf"
+     keystore = "keystore"
+@@ -1250,8 +1250,8 @@ class UdockerTools(object):
+         if self.is_available() and not force:
+             return True
+         elif not self._autoinstall and not force:
+-            Msg().err("Warning: no engine available and autoinstall disabled",
+-                      l=Msg.WAR)
++            # Msg().err("Warning: no engine available and autoinstall disabled",
++            #           l=Msg.WAR)
+             return None
+         elif not self._tarball:
+             Msg().err("Error: UDOCKER_TARBALL not defined")
+@@ -6287,19 +6287,23 @@ class Udocker(object):
+         install [options]
+         --force                    :force reinstall
+         --purge                    :remove files (be careful)
++        --skip                     :skip install of the tools
+         """
+         if cmdp is not None:
+             force = cmdp.get("--force")
+             purge = cmdp.get("--purge")
++            skip  = cmdp.get("--skip")
+         else:
++            skip  = False
+             force = False
+             purge = False
+         utools = UdockerTools(self.localrepo)
+         if purge:
+             utools.purge()
+-        status = utools.install(force)
+-        if status is not None and not status:
+-            Msg().err("Error: install of udockertools failed")
++        if not skip:
++            status = utools.install(force)
++            if status is not None and not status:
++                Msg().err("Error: install of udockertools failed")
+ 
+     def do_help(self, cmdp):
+         """
+-- 
+2.4.0.53.g8440f74
+
