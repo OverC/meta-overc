@@ -2073,10 +2073,14 @@ EOF
 		done
 
 		# remove the old hook and etcd port forward
-		${SBINDIR}/cube-cfg hook-script -poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
+		type=$(get_container_type ${network_prime_old})
+		if [ "${type}" == "oci" ]; then
+		    ${SBINDIR}/cube-cfg hook-script -poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime \$\(cat\)
+		else
+		    ${SBINDIR}/cube-cfg hook-script -poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime
+		fi
 		${SBINDIR}/cube-cfg link -${network_prime_old}:2379 dom0:2379
 
-		type=$(get_container_type ${network_prime_old})
 		${SBINDIR}/cube-cfg gen ${network_prime_old}:$type
 	    )
 	fi
