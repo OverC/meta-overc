@@ -2060,7 +2060,10 @@ EOF
 		#       needs to vary and we can't stop the container
 		cd ${out_dir}/${network_prime_old}
 		${SBINDIR}/cube-cfg attribute -netprime
-		${SBINDIR}/cube-cfg set cube.network.type:dynamic
+		# The vrf and netprime need to be static, so leave static if we are the vrf
+		if [ "${network_prime_old}" != "$(container_by_attribute vrf)" ]; then
+		    ${SBINDIR}/cube-cfg set cube.network.type:dynamic
+		fi
 		${SBINDIR}/cube-cfg set -cube.network.ip:192.168.42.1/24
 
 		devs=$(${SBINDIR}/cube-cfg -o ${out_dir}/${network_prime_old} device network)
