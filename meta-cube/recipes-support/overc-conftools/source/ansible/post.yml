@@ -1,9 +1,13 @@
 ---
   - name: restart dnsmasq
-    service: name=dnsmasq state=restarted
+    systemd:
+      name: dnsmasq
+      state: restarted
 
   - name: restart networking
-    service: name=systemd-networkd state=restarted
+    systemd:
+      name: systemd-networkd
+      state: restarted
     when: configure_network_prime is defined
 
   - name: set system id

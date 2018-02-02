@@ -14,7 +14,11 @@ SRC_URI[sha256sum] = "cd4b8f53720fcd0c351156b840fdd15ecfbec22c951b5406ec503de49d
 
 S = "${WORKDIR}/${SRCNAME}-${PV}"
 
+ANSIBLE_WHITELIST_MODULES ?= "commands files system network/ovs __pycache__ service"
+
 do_install_append() {
+    set +e
+
     # install hosts and conf
     install -d ${D}/${sysconfdir}/ansible
 
@@ -26,6 +30,47 @@ do_install_append() {
     # do not gather machine's information, which could reduce setup time
     sed -i "s|^#gathering = implicit|gathering = explicit|g" \
         ${D}/${sysconfdir}/ansible/ansible.cfg
+
+    for d in $(ls ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules); do
+	if [ -d ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules/$d ]; then
+	    match=
+	    rm_target=
+	    for w in ${ANSIBLE_WHITELIST_MODULES}; do
+		m=$(echo $w | grep $d)
+		if [ $? -eq 0 ]; then
+		    match=t
+		    match_word=$m
+		fi
+	    done
+	    if [ -n "$match" ]; then
+		echo $match_word | grep -q "/"
+		if [ $? -eq 0 ]; then
+		    for d2 in $(ls ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules/$d); do
+			if [ -d ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules/$d/$d2 ]; then
+			    sub_remove=t
+			    for w in ${ANSIBLE_WHITELIST_MODULES}; do
+				m=$(echo $w | grep $d2)
+				if [ $? -eq 0 ]; then
+				    sub_remove=
+				fi
+			    done
+			    if [ -n "$sub_remove" ]; then
+				echo "[info]: removing $d/$d2"
+				rm -rf ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules/$d/$d2
+			    else
+				echo "[info]: whitlisting $d/$d2"
+			    fi
+			fi
+		    done
+		else
+		    echo "[info]: whitlisting $d"
+		fi
+	    else
+		echo "[info]: removing $d"
+		rm -rf ${D}/${libdir}/python${PYTHON_BASEVERSION}/site-packages/ansible/modules/$d
+	    fi
+	fi
+    done
 }
 
 CLEANBROKEN = "1"
