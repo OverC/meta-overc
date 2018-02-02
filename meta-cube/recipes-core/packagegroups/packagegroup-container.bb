@@ -15,12 +15,15 @@ PACKAGES = "\
     "
 
 RDEPENDS_${PN} = " \
-    qemu-x86_64 \
+    libvirt \
+    libvirt-python \
+    packagegroup-lxc \
+    packagegroup-docker \
+    packagegroup-oci \
+    riddler \
 "
 
 RDEPENDS_packagegroup-lxc = " \
-    libvirt \
-    libvirt-python \
     lxc \
 "
 RDEPENDS_packagegroup-lxc-setup = " \
@@ -29,13 +32,11 @@ RDEPENDS_packagegroup-lxc-setup = " \
 
 RDEPENDS_packagegroup-docker = " \
     docker \
-    libvirt \
-    libvirt-python \
 "
+
 RDEPENDS_packagegroup-oci = " \
     virtual/runc \
     oci-systemd-hook \
     oci-runtime-tools \
     oci-image-tools \
-    riddler \
 "
