@@ -19,7 +19,7 @@ PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 # do not install recommendations
 NO_RECOMMENDATIONS = "1"
 
-PV = "0.5"
+PV = "0.6"
 
 FEATURE_PACKAGES_package-management_append = " cube-update"
 
@@ -31,7 +31,6 @@ DOM0_MAIN_PKGS = " packagegroup-core-boot \
                  "
 
 IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
-                  packagegroup-container \
                   packagegroup-oci \
                   packagegroup-service-discovery \
                   cube-cmd-server \
