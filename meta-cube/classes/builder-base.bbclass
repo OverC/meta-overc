@@ -6,6 +6,44 @@ EXTRA_USERS_PARAMS ?= "usermod -p '\$6\$itWJK/a95NGi5AVs\$0zlkWdhpXg5CWtEC0YxIH8
 
 ROOTFS_POSTPROCESS_COMMAND += "builder_configure_host ; "
 ROOTFS_POSTPROCESS_COMMAND += "systemd_autostart_fixups ; "
+ROOTFS_POSTPROCESS_COMMAND += "tests_cleanup ; "
+
+# nuke any python tests that may have snuck through the build, these just
+# waste space
+tests_cleanup() {
+    set +e
+    # anything blacklisted already knows how to clean up after itself
+    CLEANUP_BLACKLIST="ansible"
+    rm_list=""
+    for d in $(find "${IMAGE_ROOTFS}" -name 'test' -type d); do
+	echo $d | grep -q python
+	if [ $? -eq 0 ]; then
+	    rm_list="$rm_list $d"
+	fi
+    done
+    for d in $(find "${IMAGE_ROOTFS}" -name 'tests' -type d); do
+	echo $d | grep -q python
+	if [ $? -eq 0 ]; then
+	    rm_list="$rm_list $d"
+	fi
+    done
+    for d in $rm_list; do
+	echo ${CLEANUP_BLACKLIST} | grep -q $d
+	do_rm=t
+	for b in ${CLEANUP_BLACKLIST}; do
+	    echo "${d}" | grep -q "${b}"
+	    if [ $? -eq 0 ]; then
+		do_rm=
+	    fi
+	done
+	if [ -n "${do_rm}" ]; then
+	    bbwarn "rm -rf ${d}"
+	    rm -rf ${d}
+	else
+	    bbwarn "skipping rm of $d"
+	fi
+    done
+}
 
 builder_configure_host() {
 #    bbnote "builder: configuring host"
