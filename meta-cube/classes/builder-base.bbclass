@@ -37,10 +37,7 @@ tests_cleanup() {
 	    fi
 	done
 	if [ -n "${do_rm}" ]; then
-	    bbwarn "rm -rf ${d}"
 	    rm -rf ${d}
-	else
-	    bbwarn "skipping rm of $d"
 	fi
     done
 }
