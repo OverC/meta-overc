@@ -24,6 +24,11 @@ refresh_cube_essential_firmware()
 	mkdir -p "/var/lib/cube/essential/lib/firmware/"
     fi
 
+    # new firmware updates should clear this flag
+    if [ -f /var/lib/cube/essential/lib/firmware/.sync.done ]; then
+	return
+    fi
+
     # Ensure copy matches dom0 /lib/firmware, avoiding unnecessary
     # copying. This may or may not save time but will avoid
     # possible wear on the media and avoids having rsync available.
@@ -41,6 +46,8 @@ refresh_cube_essential_firmware()
 	    $(exec $cmd)
 	fi
     done <<< "$(/usr/bin/diff -qr ${dom0_rootfs}/lib/firmware/ /var/lib/cube/essential/lib/firmware/)"
+
+    touch /var/lib/cube/essential/lib/firmware/.sync.done
 }
 
 refresh_cube_essential_firmware
