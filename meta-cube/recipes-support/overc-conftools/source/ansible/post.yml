@@ -1,15 +1,4 @@
 ---
-  - name: restart dnsmasq
-    systemd:
-      name: dnsmasq
-      state: restarted
-
-  - name: restart networking
-    systemd:
-      name: systemd-networkd
-      state: restarted
-    when: configure_network_prime is defined
-
   - name: set system id
     command: /etc/overc-conf/system/systemid-set.sh
 
