@@ -621,6 +621,10 @@ tweak_container_fstab()
 	sed -i '/^usbdevfs/d' ${rootfs}/etc/fstab
 	sed -i '/^securityfs/d' ${rootfs}/etc/fstab
     fi
+
+    if [ -d ${rootfs}/tmp ]; then
+	chmod ugo+rw ${rootfs}/tmp
+    fi
 }
 
 #
