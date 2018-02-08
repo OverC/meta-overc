@@ -108,7 +108,6 @@ OVERC_EXTRA_EXTENDED = "\
 OVERC_COMMON_NETWORKING = "\
      dhcp-client \
      ifupdown \
-     inetutils \
      iproute2 \
      iputils \
      iptables \
@@ -120,7 +119,6 @@ OVERC_COMMON_NETWORKING = "\
 
 OVERC_DOM0_NETWORKING = "\
      dnsmasq \
-     inetutils \
      iproute2 \
      iputils \
      iptables \

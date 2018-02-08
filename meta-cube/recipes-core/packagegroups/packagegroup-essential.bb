@@ -67,7 +67,6 @@ RDEPENDS_packagegroup-essential-extended = "\
 
 RDEPENDS_packagegroup-essential-networking = "\
      ifupdown \
-     inetutils \
      iproute2 \
      iputils \
      iptables \
