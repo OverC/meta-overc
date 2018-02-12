@@ -1710,7 +1710,7 @@ EOF
 
 	mgr=$(cube-cfg -n ${container_name} get cube.container.mgr:)
 	if [ -n "${container_is_a_oci}" ]; then
-	    echo ${open_containers_running} | grep -q ${container_name}
+	    echo ${open_containers_running} | tr ' ' '\n' | grep -qw ${container_name}
 	    if [ $? -ne 0 ]; then
 		echo "[INFO] deleting container ${container_name}"
 		cube-cmd ${mgr} delete ${container_name} 2> /dev/null
@@ -2116,7 +2116,7 @@ EOF
 	mgr=$(cube-cfg -n ${container_name} get cube.container.mgr:)
 	if [ -n "${container_is_a_oci}" ]; then
 	    build_container_lists
-	    echo ${open_containers_running} | grep -q ${container_name}
+	    echo ${open_containers_running} | tr ' ' '\n' | grep -qw ${container_name}
 	    if [ $? -eq 0 ]; then
 		echo "[INFO]: stopping container ${container_name}"
 		cube-cmd ${mgr} kill ${container_name} KILL
