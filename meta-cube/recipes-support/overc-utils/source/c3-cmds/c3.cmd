@@ -12,3 +12,8 @@
 #define nsenter
 #define rm
 #define tr
+#define ln
+#define skopeo
+#define oci-image-tool
+#define oci-runtime-tool
+#define cube-ctl
