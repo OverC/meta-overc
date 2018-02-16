@@ -10,3 +10,5 @@
 #define nctl
 #define nanocat
 #define nsenter
+#define rm
+#define tr
