@@ -1842,14 +1842,15 @@ EOF
 	    fi
 	done
 
+	# conditionally wait on any backgounded processes
+	wait
+
 	# once everything has started, look for stacked network commands
 	# dom0 isn't started via c3, so we need to add it here explicitly in case
 	# it is the netprime or has otherwise been linked to other containers
 	for container in dom0 ${container_names}; do
 	    cube-ctl stack ${container}
 	done
-	# conditionally wait on any backgounded processes
-	wait
 	;;
     status|list)
 	if [ -n "${verbose}" ]; then
