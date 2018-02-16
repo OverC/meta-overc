@@ -776,6 +776,7 @@ generate_base_config()
                   --process-cap-add CAP_NET_ADMIN \
                   --process-cap-add CAP_NET_BROADCAST \
                   --process-cap-add CAP_SYSLOG \
+                  --process-cap-add CAP_SYS_PTRACE \
                   --process-cap-add CAP_SYS_TTY_CONFIG"
 
     app=$(cat cube.app${var_extension})
