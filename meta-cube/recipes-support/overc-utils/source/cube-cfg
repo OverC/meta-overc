@@ -715,6 +715,9 @@ IFS=$OLDIFS
 generate_base_config()
 {
     local container_name=$1
+    # TODO: replace with a better test for a system container, but for now,
+    #       we give all base configs this treatment
+    local system_container=t
 
     # if runonce is set, check for any runonce values, if found, we do
     # a regen. Otherwise, we do not
@@ -765,6 +768,20 @@ generate_base_config()
 	done
     fi
 
+    app=$(cat cube.app${var_extension})
+    app_args=""
+    for a in ${app}; do
+	app_args="$app_args --args $a"
+    done
+
+
+    if [ -n "${system_container}" ]; then
+	if [ -n "${verbose}" ]; then
+	    echo "[INFO]: system container detected, adjusting capbilities"
+	fi
+	system_container_caps="--process-cap-add CAP_SYS_PTRACE"
+    fi
+
     # TODO: these can also be cube-cfg values, but right now are
     #       restricted for compatibility reasons
     capabilities="--process-cap-add CAP_KILL \
@@ -776,14 +793,8 @@ generate_base_config()
                   --process-cap-add CAP_NET_ADMIN \
                   --process-cap-add CAP_NET_BROADCAST \
                   --process-cap-add CAP_SYSLOG \
-                  --process-cap-add CAP_SYS_PTRACE \
-                  --process-cap-add CAP_SYS_TTY_CONFIG"
-
-    app=$(cat cube.app${var_extension})
-    app_args=""
-    for a in ${app}; do
-	app_args="$app_args --args $a"
-    done
+                  --process-cap-add CAP_SYS_TTY_CONFIG \
+                  ${system_container_caps}"
 
     OLDIFS=$IFS
 IFS='
@@ -897,6 +908,14 @@ IFS='
 	jq -r  '.process.terminal = false' config.json > config.json.terminal
     fi
     mv config.json.terminal config.json
+
+    # for a system container, clear the ambient and inheritable options
+    if [ -n "${system_container}" ]; then
+	jq '.process.capabilities.ambient = []' config.json > config.json.system
+	jq '.process.capabilities.inheritable = []' config.json.system > config.json.system.final
+	rm config.json.system
+	mv config.json.system.final config.json
+    fi
 
     # Generate an oci.cmd that can be used to launch this container via runc
 cat > oci.cmd <<EOF
