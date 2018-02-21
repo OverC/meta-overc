@@ -165,12 +165,14 @@ cube-ctl:
 
 commands (and options):
 
- cube-ctl start [--peer] [--nested] <name>
+ cube-ctl start [-f] [-i] [-a] [auto=<name>] [<name>]
 
     start (launch) a container (dom0 only):
 
-       --peer (default)
-       --nested
+       -f: Start container in foreground on current tty
+       -i: Start interactive container console in foreground on current tty.
+       -a: attach container console just prior to start on current tty.
+       --auto=<name>: start containers with autostart set to <name>
        <name>: name of the container to be launched
 
  cube-ctl stop <name>
@@ -193,10 +195,10 @@ commands (and options):
 
     display detailed information about container <name>
 
- cube-ctl restart <name> # (dom0 only):
+ cube-ctl rename <name> <new_name> # (dom0 only):
+ cube-ctl mv <name> <new_name> # (dom0 only):
 
-    restart container <name>. A graceful shutdown and relaunch will be
-    performed.
+    rename container <name> to <new_name>.
 
 Examples:
 
