@@ -135,14 +135,16 @@ _c3_ctl_module()
         COMPREPLY=( $(compgen -W '$(_c3_containers)' -S ':' -- $cur) )
         return 0
         ;;
-    'info'|'show'|'prep'|'netprime'|'stop')
+    'info'|'show'|'prep'|'netprime'|'stop'|'rename'|'mv')
         COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
         return 0
         ;;
     esac
 
     # Handle the multipart commands
-    if _c3_contains COMP_WORDS "del"; then
+    if _c3_contains COMP_WORDS "del" ||
+       _c3_contains COMP_WORDS "delete" ||
+       _c3_contains COMP_WORDS "remove"; then
         if _c3_contains COMP_WORDS "-F"; then
             COMPREPLY=( $(compgen -W '$(_c3_containers)' -- $cur) )
         else
@@ -151,9 +153,9 @@ _c3_ctl_module()
         return 0
     elif _c3_contains COMP_WORDS "start"; then
         if [[ "$COMP_LINE" =~ "--auto" ]]; then
-            COMPREPLY=( $(compgen -W '--peer --nested' -- $cur) )
+            COMPREPLY=( $(compgen -W '-f -i -a' -- $cur) )
         else
-            COMPREPLY=( $(compgen -W '--peer --nested --auto= $(_c3_containers)' -- $cur) )
+            COMPREPLY=( $(compgen -W '-f -i -a --auto= $(_c3_containers)' -- $cur) )
         fi
         return 0
     elif _c3_contains COMP_WORDS "stack"; then
@@ -198,8 +200,8 @@ _c3_ctl_module()
         ;;
     esac
 
-    COMPREPLY=( $(compgen -W 'start stop netprime stack store prep \
-                              add del status list -i info show \
+    COMPREPLY=( $(compgen -W 'start stop netprime stack store prep add del \
+                              delete remove rename mv status list -i info show \
                               ' -- $cur) )
 
     return 0
@@ -239,7 +241,8 @@ _c3_module()
 
     # Include the cube-ctl "level 0" matches since we default to cube-ctl cmds
     COMPREPLY=( $(compgen -W 'ctl cmd cfg start stop netprime stack store prep \
-                              add del status list -i info show' -- $cur) )
+                              add del delete remove rename mv status list -i \
+			      info show' -- $cur) )
 
     return
 } &&
