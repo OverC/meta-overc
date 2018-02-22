@@ -17,3 +17,5 @@
 #define oci-image-tool
 #define oci-runtime-tool
 #define cube-ctl
+#define runc
+#define readlink
