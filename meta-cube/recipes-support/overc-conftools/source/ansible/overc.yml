@@ -6,6 +6,6 @@
 
   tasks:
   - include: essential.yml
-    when: configure_network_prime is defined
+    when: first_boot is defined
 
   - include: post.yml
