@@ -600,6 +600,8 @@ graft_binaries_to_essential()
 		echo "ERROR: binary ${b} not found"
 		continue
 	    fi
+
+	    bin=$(readlink -f ${bin})
 	    # Copy it in archive mode to include extend attributes used for IMA
 	    cp -af ${bin} /var/lib/cube/essential/sbin/
 	fi
