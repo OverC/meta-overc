@@ -686,6 +686,7 @@ do_construct()
 	echo "[ERROR]: processing of file $in failed"
 
 	cat ${c3_output_file}
+	cat ${c3_good_output}
 
 	# look for common errors so we can point to the right input file
 
