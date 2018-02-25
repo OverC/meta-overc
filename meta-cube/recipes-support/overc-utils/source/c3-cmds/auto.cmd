@@ -10,6 +10,7 @@
 #define wc
 #define cut
 #define cat
+#define tee
 
 # commands that are safe, and that are automatically loaded.
 basename() {

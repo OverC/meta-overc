@@ -19,3 +19,4 @@
 #define cube-ctl
 #define runc
 #define readlink
+#define etcdctl
