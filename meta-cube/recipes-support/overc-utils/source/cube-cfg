@@ -1719,6 +1719,8 @@ case "${cmd}" in
 	if [ -f "${out_dir}/cube.attributes" ]; then
 	    sed -e 's/^[ \t]*//;s/[ \t]*$//' -i ${out_dir}/cube.attributes
 	    sed -e 's/\ +/\ /g' -i ${out_dir}/cube.attributes
+	    # replace any newlines with spaces ..
+	    sed -e ':a;N;$!ba;s/\n/ /g' -i ${out_dir}/cube.attributes
 	fi
 	;;
     hook|hook-script)
