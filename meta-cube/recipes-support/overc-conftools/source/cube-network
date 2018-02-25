@@ -14,13 +14,9 @@ if [ $? -eq 0 ]; then
 
     # yank what we need out of the json
     pid=$(echo "$@" | jq .pid)
-    veth_essential_name=$(eval echo veth${pid})
-    # oci containers always get veth-br-int as their internal veth pair name
-    # veth_name="veth-br-int"
 else
     cubedir=$1
     cubename=$(basename $cubedir)
-    count=0
     pid=$2
 fi
 
@@ -32,11 +28,72 @@ if [ -z "${pid}" ]; then
     fi
 fi
 
-if [ -f .cube.veth ]; then
-    veth_name=$(cat .cube.veth)
+# build an interface hash
+declare -A IFACEMAP
+OLDIFS="$IFS"
+IFS=$'\n'
+for p in $(cat /proc/net/dev); do
+    if=$(echo $p | sed -n 's/^\(.*\):.*$/#\1#/p' | sed 's/ //g')
+    if [ -n "${if}" ]; then
+	IFACEMAP[$if]=t
+    fi
+done
+IFS=$OLDIFS
+
+# returns 1 on match, 0 otherwise
+interface_exists() {
+    tgt="$1"
+    if [[ ${IFACEMAP[#$tgt#]} ]]; then
+	return 1
+    fi
+
+    return 0
+}
+
+if [ "${action}" = "down" ]; then
+    if [ -f .cube.veth ]; then
+	veth_name=$(cat .cube.veth)
+    fi
 fi
+
 if [ -z "${veth_name}" ]; then
+    # if the veth is already present, then we have to roll with whatever
+    # the name is!
     veth_name=$(eval echo veth-${cubename})
+
+    interface_exists ${veth_name}
+    if [ $? -eq 1 ]; then
+	pflask=t
+	veth_pflask="${veth_name}"
+    fi
+
+    # The veth name can only be 15 characters, so we limit ourselves to 13 from the
+    # container name. That leaves us two characters to cycle for a unique name
+    cname=$(echo ${cubename} | cut -c1-13)
+    interface_exists ${cname}
+    if [ $? -eq 0 ]; then
+	# not present, so we are good to go
+	veth_name=${cname}
+    else
+	# the interface was found, we need to try and be uniqu
+	count=0
+	done=
+	while [ -z "${done}" ]; do
+	    cname_test="${cname}${count}"
+	    interface_exits ${cname_test}
+	    if [ $? -eq 0 ]; then
+		# not present, so we are good
+		veth_name=${cname_test}
+		done=t
+	    else
+		let count=$count+1
+		if [ $count -gt 99 ]; then
+		    echo "[ERROR]: unable to find a unique interface name for veth pairing"
+		    exit 1
+		fi
+	    fi
+	done
+    fi
 fi
 
 if [ "${action}" = "up" ]; then
@@ -51,37 +108,41 @@ if [ "${action}" = "up" ]; then
 
     # This creates a veth pair.
     #
-    #    veth<container namespace> -> veth-br-int
+    #    <container name>[digit.digit] -> veth-br-int
     #
-    # veth<container namespace> remains in essential, and we use the container
-    # namespace so we can always locate the container ns later, and so that it
-    # is unique within essential.
+    #       which then transforms to:
     #
-    # veth-br-int is inserted into the container, and will be consistent across
-    # containers.
+    #    <container name>[digit.digit] -> <container name>[digit.digit]
     #
-    cat /proc/net/dev | grep -q ${veth_name}
-    if [ $? -eq 0 ]; then
-	pflask=t
-    fi
+    # One end remains in essential and the other in the container
+    # namespace. We can find the container ns pid via the name of the
+    # interface.
+    #
     if [ -z "${pflask}" ]; then
 	ip link add dev ${veth_name} type veth peer name veth-br-int
     fi
     
     # Add the veth that stays in essential to the ovs-bridge. This gets us
     # connectivity to the network prime, and hence the outside world
-    ovs-vsctl add-port br-int ${veth_name}
+    ovs-vsctl --may-exist add-port br-int ${veth_name}
+
+    # push the container veth endpoint into the container network namespace
+    # NOTE: also done by pflask
+    if [ -n "${pflask}" ]; then
+	# if we are pflask, rename the veth to the one we generated above
+	ip link set ${veth_pflask} name ${veth_name}
+	ip link set ${veth_name} up
+	nsenter -t ${pid} -n ip link set ${veth_pflask} name ${veth_name}
+    else
+	# if we are NOT pflask, then we have to push the veth into the namespace
+	# and then rename it.
+	ip link set veth-br-int netns ${pid}
+	nsenter -t ${pid} -n ip link set veth-br-int name ${veth_name}
+    fi
 
     # Bring up the interface we just added to the bridge. It must be up so dhcp
     # can get an ip address.
     ip link set dev ${veth_name} up
-
-    # push the container veth endpoint into the container network namespace
-    # NOTE: also done by pflask
-    if [ -z "${pflask}" ]; then
-	ip link set veth-br-int netns ${pid}
-	nsenter -t ${pid} -n ip link set veth-br-int name ${veth_name}
-    fi
 
     # TODO: we should have a third networking mode "self", which means that
     #       we'd make the veth available and let the container itself set up
@@ -196,10 +257,13 @@ fi
 
 if [ "${action}" = "down" ]; then
     ovs-vsctl --if-exists del-port br-int ${veth_name}
-    cat /proc/net/dev | grep -q -w "${veth_name}"
-    if [ $? -eq 0 ]; then
+
+    interface_exists ${veth_name}
+    if [ $? -eq 1 ]; then
 	ip link del dev ${veth_name}
     fi
+
+    cname=$(basename ${cubedir})
 
     if [ -z "${pid}" ]; then
 	if [ -f ${cubedir}/.cube.pid ]; then
@@ -233,6 +297,10 @@ if [ "${action}" = "down" ]; then
 	for p in $(cat "${cubedir}/.netns.oci.pids"); do
 	    kill -9 $p
 	done
+    fi
+
+    if [ -f "${cubedir}/.cube.veth" ]; then
+	rm -f ${cubedir}/.cube.veth
     fi
 
     ip netns delete ${cname} 2> /dev/null

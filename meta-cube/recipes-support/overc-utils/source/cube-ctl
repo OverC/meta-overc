@@ -13,6 +13,10 @@ if [ "$CUBE_DEBUG_SET_X_IF_SET" = 1 ] ; then
     set -x
 fi
 
+if [ -n "$PRIV_PATH" ]; then
+    PATH="$PATH:$PRIV_PATH"
+fi
+
 usage_start()
 {
 cat << EOF
@@ -706,7 +710,7 @@ service_disable()
     fi
 
     if [ -z "${slinks}" ]; then
-        echo ${debug_msg}
+        # echo ${debug_msg}
         return 1
     fi
 
@@ -837,10 +841,33 @@ get_container_ips() {
 	    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
 	    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f5)
 
+	    # get the internal device
+	    dev_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f3)
+	    if [ -n "${dev_int}" ]; then
+		# look for secondary IPs
+		secondary_int_ip_list=$(cube-cmd nsenter -t ${dpid} -n ip a s ${dev_int} | grep inet | grep secondary | tr -s ' ')
+		OLDIFS="$IFS"
+		IFS=$'\n'
+		for p in ${secondary_int_ip_list}; do
+		    sips=$(echo ${p} | cut -d' ' -f3 | sed 's%/.*$%%')
+		    if [ -n "$sips" ]; then
+			if [ -z "${secondary_int_ips}" ]; then
+			    secondary_int_ips="${sips}"
+			else
+			    secondary_int_ips="${secondary_int_ips},${sips}"
+			fi
+		    fi
+		done
+		IFS=$OLDIFS
+	    fi
 	    if [ "${ip_ext}" == "${ip_int}" ]; then
 		echo ${ip_ext}
 	    else
-		echo "${ip_int},${ip_ext}"
+		if [ -z "${secondary_int_ips}" ]; then
+		    echo "${ip_int},${ip_ext}"
+		else
+		    echo "${ip_int},${secondary_int_ips},${ip_ext}"
+		fi
 	    fi
 	fi
     fi
@@ -1224,9 +1251,9 @@ IFS=$OLDIFS
 		app="/sbin/init"
 		${SBINDIR}/cube-cfg set app:${app}
 
-		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-network up \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-network up \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/oci/hooks.d/oci-device up \$\(cat\)
-		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-network down \$\(cat\)
+		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/cube/hooks.d/cube-network down \$\(cat\)
 		${SBINDIR}/cube-cfg hook-script poststop:/usr/libexec/oci/hooks.d/oci-device down \$\(cat\)
 
 		# this will trigger the disabling of systemd udev services, and allow us to control
@@ -1647,7 +1674,7 @@ EOF
 			    # something besides the external route for the IP, this can be
 			    # tweaked.
 			    dpid=$(cat ${container_dir}/${cname}/.cube.pid)
-			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
+			    ip=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 |& tr -s ' ' | cut -d' ' -f7)
 			    # TODO: we could error/warn if the ip comes back empty. avoids a bad rule later
 			    if [ -z "${ip}" ]; then
 				sed "s#\${$v}#donotrun#g" -i cube.network.stack.runonce
@@ -2008,15 +2035,29 @@ EOF
 	network_prime=${container_name}
 
 	# step 1: stop the old network prime (if it exists)
-	if [ -n "${network_prime_old}" ] && [ "${network_prime_old}" != "dom0" ]; then
-	    (
-		if [ -n "${verbose}" ]; then
-		    echo "[INFO]: stopping current netprime (${network_prime_old})"
-		fi
-		cd ${out_dir}/${network_prime_old}
-		# TODO: how to detect if we are the installer and not run this ?
-		${SBINDIR}/cube-ctl stop ${network_prime_old}
-	    )
+	if [ -n "${network_prime_old}" ]; then
+	    # run the network down hook, even if we are dom0
+
+	    if [ -n "${verbose}" ]; then
+		echo "[INFO]: shutting network down for ${network_prime}"
+	    fi
+	    cube-cmd /usr/libexec/cube/hooks.d/cube-network down /opt/container/${network_prime}
+	    if [ -n "${verbose}" ]; then
+		echo "[INFO]: shutting network down ${network_prime_old}"
+	    fi
+	    cube-cmd /usr/libexec/cube/hooks.d/cube-network down /opt/container/${network_prime_old}
+
+	    # if we aren't dom0 as the old prime, stop the container
+	    if [ "${network_prime_old}" != "dom0" ]; then
+		(
+		    if [ -n "${verbose}" ]; then
+			echo "[INFO]: stopping current netprime (${network_prime_old})"
+		    fi
+		    cd ${out_dir}/${network_prime_old}
+		    # TODO: how to detect if we are the installer and not run this ?
+		    ${SBINDIR}/cube-ctl stop ${network_prime_old}
+		)
+	    fi
 	fi
 
 	# step 2: configure the new network prime
@@ -2054,6 +2095,16 @@ EOF
 	    fi
 
 	    ${SBINDIR}/cube-cfg gen ${network_prime}:$type
+
+	    # run the hook right now, to make this effective immediately
+	    state=$(get_container_state ${network_prime})
+	    if [ "${state}" != "running" ]; then
+		c3-ctl start ${network_prime}
+	    else
+		type=$(get_container_type ${network_prime})
+		cube-cmd /usr/libexec/cube/hooks.d/cube-network up /opt/container/${network_prime}
+		cube-cmd /usr/libexec/cube/hooks.d/cube-netconfig netprime /opt/container/${network_prime}
+	    fi
 	)
 
 	# step 3: reconfigure the old network prime (if it exists)
@@ -2062,7 +2113,7 @@ EOF
 	if [ -n "${network_prime_old}" ]; then
 	    (
 		if [ -n "${verbose}" ]; then
-		    echo "[INFO]: reconfiging previous netprime"
+		    echo "[INFO]: reconfiguring previous netprime"
 		fi
 		# TODO: this won't work if called from the installer, the dir for containers
 		#       needs to vary and we can't stop the container
@@ -2093,6 +2144,12 @@ EOF
 		${SBINDIR}/cube-cfg link -${network_prime_old}:2379 dom0:2379
 
 		${SBINDIR}/cube-cfg gen ${network_prime_old}:$type
+
+		state=$(get_container_state ${network_prime_old})
+		if [ "${state}" = "running" ]; then
+		    # start the networking if the container is still running
+		    cube-cmd /usr/libexec/cube/hooks.d/cube-network up /opt/container/${network_prime_old}
+		fi
 	    )
 	fi
 	;;
