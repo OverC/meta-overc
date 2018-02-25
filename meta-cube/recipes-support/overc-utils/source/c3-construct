@@ -674,11 +674,14 @@ do_construct()
 	    override_function $(basename "$z" .cmd)
 	done
 
+	PRIV_PATH=$PATH
 	unset PATH
 	(
 	    set -e
 	    export PATH="${c3_tmpdir}/bin"
-	    eval . $in 2> ${c3_output_file} 1> ${c3_good_output}
+	    export PRIV_PATH=$PRIV_PATH
+
+	    (eval . $in 1>&2) 2> >(tee ${c3_output_file}) > >(tee ${c3_good_output})
 	)
     )
 
