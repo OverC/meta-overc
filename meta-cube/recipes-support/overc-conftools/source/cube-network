@@ -3,16 +3,41 @@
 # we ge an action + cube name
 action=$1
 shift
-cubedir=$1
+
+# if we have json, there will be { in the next input, otherwise, it
+# is a directory
+echo "$@" | grep -q {
+if [ $? -eq 0 ]; then
+    # json
+    cubedir=$(pwd)
+    cubename=$(basename $cubedir)
+
+    # yank what we need out of the json
+    pid=$(echo "$@" | jq .pid)
+    veth_essential_name=$(eval echo veth${pid})
+    # oci containers always get veth-br-int as their internal veth pair name
+    # veth_name="veth-br-int"
+else
+    cubedir=$1
+    cubename=$(basename $cubedir)
+    count=0
+    pid=$2
+fi
 
 cd $cubedir
 
-cubename=$(basename $cubedir)
+if [ -z "${pid}" ]; then
+    if [ -f .cube.pid ]; then
+	pid=$(cat .cube.pid)
+    fi
+fi
 
-count=0
-pid=$2
-
-veth_name=$(eval echo veth-${cubename})
+if [ -f .cube.veth ]; then
+    veth_name=$(cat .cube.veth)
+fi
+if [ -z "${veth_name}" ]; then
+    veth_name=$(eval echo veth-${cubename})
+fi
 
 if [ "${action}" = "up" ]; then
     echo "${pid}" > .cube.pid
@@ -35,8 +60,13 @@ if [ "${action}" = "up" ]; then
     # veth-br-int is inserted into the container, and will be consistent across
     # containers.
     #
-    # This is done by pflask, so we can skip it for now
-    # ip link add dev ${veth_name} type veth peer name veth-br-int
+    cat /proc/net/dev | grep -q ${veth_name}
+    if [ $? -eq 0 ]; then
+	pflask=t
+    fi
+    if [ -z "${pflask}" ]; then
+	ip link add dev ${veth_name} type veth peer name veth-br-int
+    fi
     
     # Add the veth that stays in essential to the ovs-bridge. This gets us
     # connectivity to the network prime, and hence the outside world
@@ -48,7 +78,10 @@ if [ "${action}" = "up" ]; then
 
     # push the container veth endpoint into the container network namespace
     # NOTE: also done by pflask
-    # ip link set veth-br-int netns ${pid}
+    if [ -z "${pflask}" ]; then
+	ip link set veth-br-int netns ${pid}
+	nsenter -t ${pid} -n ip link set veth-br-int name ${veth_name}
+    fi
 
     # TODO: we should have a third networking mode "self", which means that
     #       we'd make the veth available and let the container itself set up
@@ -63,7 +96,7 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up
     if [ "${network}" == "dynamic" ]; then
-	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid veth-br-int >> /dev/null 2>&1"
+	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid ${veth_name} >> /dev/null 2>&1"
 	eval nsenter -t ${pid} -n -- ${command}
 	if [ -e "/etc/resolv.conf.${cname}" ]; then
 	    mv /etc/resolv.conf.${cname} /opt/container/${cname}/rootfs/etc/resolv.conf
@@ -125,7 +158,9 @@ if [ "${action}" = "up" ]; then
 
 		# push the device into the namespace
 		# Note: done by pflask
-		# ip link set ${device} netns ${pid}
+		if [ -z "${pflask}" ]; then
+		    ip link set ${device} netns ${pid}
+		fi
 
 		# setup nat and forwarding. this is what systemd-networkd does as well
 		nsenter -t ${pid} -n --preserve-credentials iptables -t nat -A POSTROUTING -o ${device} -j MASQUERADE
@@ -160,21 +195,45 @@ if [ "${action}" = "up" ]; then
 fi
 
 if [ "${action}" = "down" ]; then
-    ovs-vsctl del-port br-int ${veth_name}
-    ip link del dev ${veth_name}
+    ovs-vsctl --if-exists del-port br-int ${veth_name}
+    cat /proc/net/dev | grep -q -w "${veth_name}"
+    if [ $? -eq 0 ]; then
+	ip link del dev ${veth_name}
+    fi
+
+    if [ -z "${pid}" ]; then
+	if [ -f ${cubedir}/.cube.pid ]; then
+	    pid=$(cat ${cubedir}/.cube.pid)
+	fi
+    fi
 
     # physical device passthrough
-    if [ -n "${path}/.cube.device.network" ]; then
+    if [ -f "${cubedir}/.cube.device.network" ]; then
 	# any non virtual ethernet devices ?
-	netdevs=$(cat ${path}/.cube.device.network)
+	netdevs=$(cat ${cubedir}/.cube.device.network)
 	for n in ${netdevs}; do
 	    echo ${n} | grep -q veth
 	    if [ $? -ne 0 ]; then
 		# we have a real device
 		device=$(echo ${n} | cut -f1 -d:)
-		# TODO: return the device to the root ns. this is not working
-		ip link set ${device} netns 1
+		nsenter -t ${pid} -n ip link set ${device} netns 1
 	    fi
 	done
     fi
+
+    # if pids are being tracked in our net namespace, make sure we kill them
+    # before deleting it. Otherwise, the exit is not clean
+    if [ -f "${cubedir}/.netns.pids" ]; then
+	for p in $(cat "${cubedir}/.netns.pids"); do
+	    kill -9 $p
+	done
+    fi
+
+    if [ -f "${cubedir}/.netns.oci.pids" ]; then
+	for p in $(cat "${cubedir}/.netns.oci.pids"); do
+	    kill -9 $p
+	done
+    fi
+
+    ip netns delete ${cname} 2> /dev/null
 fi
