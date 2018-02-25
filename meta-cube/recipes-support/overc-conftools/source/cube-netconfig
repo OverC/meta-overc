@@ -28,6 +28,12 @@ fi
 
 cd $cubedir
 
+if [ -z "${pid}" ]; then
+    if [ -f ".cube.pid" ]; then
+	pid=$(cat .cube.pid)
+    fi
+fi
+
 if [ "${action}" = "netprime" ]; then
     echo "[INFO]: netprime setup"
 
