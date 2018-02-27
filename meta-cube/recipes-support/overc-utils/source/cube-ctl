@@ -838,11 +838,30 @@ get_container_ips() {
 	type=$(cube-cmd file /proc/${dpid} 2> /dev/null)
 	echo "$type" | grep -q "cannot"
 	if [ $? -ne 0 ]; then
-	    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 | tr -s ' ' | cut -d' ' -f7)
-	    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f5)
+	    ip_ext=$(cube-cmd nsenter -t ${dpid} -n ip route get 8.8.8.8 2>&1)
+	    ip_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 2>&1)
+
+	    echo ${ip_ext} | grep -q "Network is unreachable"
+	    if [ $? -eq 0 ]; then
+		ip_ext="--"
+	    else
+		ip_ext=$(echo ${ip_ext} | tr -s ' ' | cut -d' ' -f7)
+	    fi
+	    echo ${ip_int} | grep -q "Network is unreachable"
+	    if [ $? -eq 0 ]; then
+		ip_int="--"
+	    else
+		ip_int=$(echo ${ip_int}| tr -s ' ' | cut -d' ' -f5)
+	    fi
 
 	    # get the internal device
-	    dev_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 | tr -s ' ' | cut -d' ' -f3)
+	    dev_int=$(cube-cmd nsenter -t ${dpid} -n ip route get 192.168.42.254 2>&1)
+	    echo ${dev_int} | grep -q "Network is unreachable"
+	    if [ $? -eq 0 ]; then
+		dev_int=""
+	    else
+		dev_int=$(echo ${dev_int} | tr -s ' ' | cut -d' ' -f3)
+	    fi
 	    if [ -n "${dev_int}" ]; then
 		# look for secondary IPs
 		secondary_int_ip_list=$(cube-cmd nsenter -t ${dpid} -n ip a s ${dev_int} | grep inet | grep secondary | tr -s ' ')
@@ -2090,7 +2109,7 @@ EOF
 		service_disable systemd-resolved.service ${network_prime} ${out_dir}
 		# Q: do we make a DNS manager ? and then execute on it during the container start via the hooks ?
 	    else
-		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime /opt/container/${network_prime}
+		${SBINDIR}/cube-cfg hook-script poststart:/usr/libexec/cube/hooks.d/cube-netconfig netprime
 		service_disable systemd-resolved.service ${network_prime} ${out_dir}
 	    fi
 
