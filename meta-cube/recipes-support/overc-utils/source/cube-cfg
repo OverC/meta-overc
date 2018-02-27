@@ -1416,13 +1416,13 @@ case "${cmd}" in
 	(
 	    cd ${out_dir}
 	    generate_base_config ${container_name}
+
+	    if [ "${container_type}" == "cube" ]; then
+		convert_base_config_to_cube ${container_name}
+	    fi
+
+	    container_clear_regen ${container_name}
 	)
-
-	if [ "${container_type}" == "cube" ]; then
-	    convert_base_config_to_cube ${container_name}
-	fi
-
-	container_clear_regen ${container_name}
 	;;
     mount)
 	name_temp=${cmd_options_non_dashed[1]}
