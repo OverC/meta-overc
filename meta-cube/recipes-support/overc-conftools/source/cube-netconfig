@@ -14,16 +14,13 @@ if [ $? -eq 0 ]; then
 
     # yank what we need out of the json
     pid=$(echo "$@" | jq .pid)
-    veth_essential_name=$(eval echo veth${pid})
-    # oci containers always get veth-br-int as their internal veth pair name
-    veth_name="veth-br-int"
+    veth_name=$(cat ${cubedir}/.cube.veth)
 else
     # directory
     cubedir=$1
     cubename=$(basename $cubedir)
-    count=0
     pid=$2
-    veth_name=$(eval echo veth-${cubename})
+    veth_name=$(cat ${cubedir}/.cube.veth)
 fi
 
 cd $cubedir
@@ -35,8 +32,6 @@ if [ -z "${pid}" ]; then
 fi
 
 if [ "${action}" = "netprime" ]; then
-    echo "[INFO]: netprime setup"
-
     netdevs=$(cat .cube.device.network)
     for n in ${netdevs}; do
 	echo ${n} | grep -q veth
@@ -105,6 +100,7 @@ if [ "${action}" = "netprime" ]; then
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.3:53
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.3:53
 
+		    # TODO. this shouldn't be run over and over and over ...
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -I POSTROUTING -d 192.168.42.0/24 -j MASQUERADE
 		fi
 
