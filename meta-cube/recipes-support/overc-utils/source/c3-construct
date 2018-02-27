@@ -24,7 +24,7 @@ cat << EOF
       -D:          define <var> to <value> which will be available to sub scripts
       -I:          include path <path> will be searched for files
       -i:          leave intermediate files on failure
-      -w:          only warn on missing files
+      -w:          only warn on missing files or errors, do not stop processing
       -v:          verbose output
       -o:          outfile file for processed results. stdout is used if not passed
 
@@ -571,8 +571,8 @@ do_construct()
     local in=$1
     local ret=0
     local done=""
-    local c3_output_file="$(mktemp)"
-    local c3_good_output="$(mktemp)"
+    local c3_stderr="$(mktemp)"
+    local c3_stdout="$(mktemp)"
     local c3_tmpdir=$(mktemp -d -t c3-construct.XXXXXX)
 
     mkdir "${c3_tmpdir}/bin"
@@ -677,26 +677,27 @@ do_construct()
 	PRIV_PATH=$PATH
 	unset PATH
 	(
-	    set -e
+	    if [ -z "${warn_on_missing}" ]; then
+		set -e
+	    fi
+	    if [ -n "${verbose}" ]; then
+		set -x
+	    fi
 	    export PATH="${c3_tmpdir}/bin"
 	    export PRIV_PATH=$PRIV_PATH
 
-	    (eval . $in 1>&2) 2> >(tee ${c3_output_file}) > >(tee ${c3_good_output})
+	    (. $in) 1> >(tee ${c3_stdout}) 2> >(tee ${c3_stderr} >&2)
 	)
     )
 
     if [ $? -ne 0 ]; then
 	echo "[ERROR]: processing of file $in failed"
-
-	cat ${c3_output_file}
-	cat ${c3_good_output}
-
 	# look for common errors so we can point to the right input file
 
 	# 1) /tmp/tmp.gfN6WsbDHN: line 403: cat: No such file or directory
 	#     "grep -oh" will only output what matches, which gets us "line 404: .."
 	#     cut gets us the second field, which is the line number
-	line=$(cat ${c3_output_file} | grep -oh "line.*:" | cut -f2 -d' ' | sed 's/://g')
+	line=$(cat ${c3_stderr} | grep -oh "line.*:" | cut -f2 -d' ' | sed 's/://g')
 	if [ -n "$line" ]; then
 	    let start_line=$line-20
 	    let end_line=$line+10
@@ -710,17 +711,12 @@ do_construct()
 	    echo ""
 	    echo "See pre-processed file $in for more details"
 	fi
-	rm -f ${c3_output_file}
+	rm -f ${c3_stderr}
 	exit 1
-    elif [ -n "${verbose}" ]; then
-        cat ${c3_output_file}
-	cat ${c3_good_output}
-    else
-	cat ${c3_good_output}
     fi
 
-    rm -f ${c3_output_file}
-    rm -f ${c3_good_output}
+    rm -f ${c3_stderr}
+    rm -f ${c3_stdout}
     rm -rf ${c3_tmpdir}
     return 0
 }
