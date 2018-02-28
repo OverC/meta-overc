@@ -1410,7 +1410,13 @@ case "${cmd}" in
 	determine_outdir
 
 	if [ "${container_name}" == "${container_type}" ]; then
-	    container_type="oci"
+	    # no type was passed on the command line, let's see if there's
+	    # an existing type, and use that
+	    if [ -f "${out_dir}/pflask.cmd" ]; then
+		container_type="cube"
+	    else
+		container_type="oci"
+	    fi
 	fi
 
 	(
