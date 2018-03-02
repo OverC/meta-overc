@@ -1576,56 +1576,127 @@ case "${cmd}" in
 	container_name=${container_a}
 	determine_outdir
 
-	if [ -n "${from}" ]; then
-	    if [ -z "${from_ip}" ]; then
-		echo "[ERROR]: 'from' requires a source IP address"
-		usage_link
-		exit 1
-	    fi
+	echo ${container_a_port} | grep -q /
+	if [ $? -eq 0 ]; then
+	    # this is a directory link, not a port link
 
-	    if [ "${from_ip}" == "localhost" ]; then
-		from_ip="127.0.0.1"
-		localhost=t
+	    container_a_dir_minus_one=$(dirname ${container_a_port})
+	    container_a_tgt_dir=$(basename ${container_a_port})
+
+	    if [ "${op}" == "+" ]; then
+
+		if [ ! -e "/opt/container/${container_a}/rootfs/${container_a_port}" ]; then
+		    echo "[ERROR]: /opt/container/${container_a}/rootfs/${container_a_port} does not exist"
+		    exit 1
+		fi
+
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: linking ${container_a}:${container_a_port} to ${container_b}:${container_b_port}"
+		fi
+
+		mkdir -p /opt/container/data/${container_a}/${container_a_dir_minus_one}
+		(
+		    cd /opt/container/data/${container_a}/${container_a_dir_minus_one}
+		    ln -sf /opt/container/${container_a}/rootfs/${container_a_port} . 2> /dev/null
+		    if [ $? -ne 0 ]; then
+			echo "[ERROR]: unable to link ${container_a_port} into data export"
+			echo "           % cd /opt/container/data/${container_a}/${container_a_dir_minus_one}"
+			echo "           % ln -sf /opt/container/${container_a}/rootfs/${container_a_port} ."
+			exit 1
+		    fi
+		)
+
+		if [ $? -eq 0 ]; then
+		    c3-cfg -n ${container_b} mount bind:/opt/container/data/${container_a}/${container_a_dir_minus_one}/${container_a_tgt_dir}:${container_b_port}
+		fi
 	    else
-		source_args="-s ${from_ip}"
-	    fi
-	fi
+		# dropping a mount
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: unlinking ${container_a}:${container_a_port} from ${container_b}:${container_b_port}"
+		fi
 
-	if [ -n "${localhost}" ]; then
-	    cmd_1="sysctl -w net.ipv4.conf.all.route_localnet=1"
-	    cmd_2="iptables -A OUTPUT -t nat -p tcp --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
+		(
+		    cd /opt/container/data/${container_a}/${container_a_dir_minus_one}
+
+		    # TODO. this would be a lot nicer as a chroot or mount namespace 
+		    echo ${container_a_tgt_dir} | grep -q "\.\./"
+		    if [ $? -eq 0 ]; then
+			echo "[ERROR]: target path includes ../, refusing to unlink"
+			exit 1
+		    fi
+
+		    if [ -n "${verbose}" ]; then
+			echo "[INFO]: rm -rf /opt/container/data/${container_a}/${container_a_dir_minus_one}/${container_a_tgt_dir}"
+		    fi
+		    rm -rf ${container_a_tgt_dir}
+		    if [ $? -ne 0 ]; then
+			echo "[ERROR]: unable to unlink ${container_a_port} from data export"
+			echo "           % cd /opt/container/data/${container_a}/${container_a_dir_minus_one}"
+			echo "           % rm -rf ${container_a_tgt_dir}"
+			exit 1
+		    fi
+		)
+
+		if [ $? -eq 0 ]; then
+		    c3-cfg -n ${container_b} mount -bind:/opt/container/data/${container_a}/${container_a_dir_minus_one}/${container_a_tgt_dir}:${container_b_port}
+		fi
+	    fi
+
+	    # activate the mount
+	    c3-cfg gen ${container_b}
 	else
-	    cmd_1="iptables -A PREROUTING -t nat -i \${device} -p tcp ${source_args} --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
-	    cmd_2="iptables -A FORWARD -p tcp -d \${${container_b}_ip}  ${source_args} --dport ${container_b_port} -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT"
-	fi
 
-	if [ "${op}" == "+" ]; then
-	    if [ -n "${verbose}" ]; then
-		echo "[INFO]: linking $container_a $container_a_port to $container_b $container_b_port"
+	    if [ -n "${from}" ]; then
+		if [ -z "${from_ip}" ]; then
+		    echo "[ERROR]: 'from' requires a source IP address"
+		    usage_link
+		    exit 1
+		fi
+
+		if [ "${from_ip}" == "localhost" ]; then
+		    from_ip="127.0.0.1"
+		    localhost=t
+		else
+		    source_args="-s ${from_ip}"
+		fi
 	    fi
 
-	    # If we are linking containerA and B, they need to be autostarted or
-	    # we'll get bad rules on reboot
-	    start=$(cube-cfg get -n ${container_b} autostart:)
-	    if [ "${start}" != "essential" ]; then
-		cube-cfg set -n ${container_b} autostart:dom0
+	    if [ -n "${localhost}" ]; then
+		cmd_1="sysctl -w net.ipv4.conf.all.route_localnet=1"
+		cmd_2="iptables -A OUTPUT -t nat -p tcp --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
+	    else
+		cmd_1="iptables -A PREROUTING -t nat -i \${device} -p tcp ${source_args} --dport ${container_a_port} -j DNAT --to \${${container_b}_ip}:${container_b_port}"
+		cmd_2="iptables -A FORWARD -p tcp -d \${${container_b}_ip}  ${source_args} --dport ${container_b_port} -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT"
 	    fi
 
-	    # TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
-	    check_isset ${out_dir}/cube.network.stack "$cmd_1"
-	    if [ $? -eq 0 ]; then
-		container_mark_regen ${container_name}
-		echo "${cmd_1}" >> ${out_dir}/cube.network.stack
-		echo "${cmd_2}" >> ${out_dir}/cube.network.stack
-	    fi
-	else
-	    if [ -n "${verbose}" ]; then
-		echo "[INFO]: removing link from $container_a $container_a_port to $container_b $container_b_port"
-	    fi
-	    if [ -f "${out_dir}/cube.network.stack" ]; then
-		container_mark_regen ${container_name}
-		sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
-		sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
+	    if [ "${op}" == "+" ]; then
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: linking $container_a $container_a_port to $container_b $container_b_port"
+		fi
+
+		# If we are linking containerA and B, they need to be autostarted or
+		# we'll get bad rules on reboot
+		start=$(cube-cfg get -n ${container_b} autostart:)
+		if [ "${start}" != "essential" ]; then
+		    cube-cfg set -n ${container_b} autostart:dom0
+		fi
+
+		# TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
+		check_isset ${out_dir}/cube.network.stack "$cmd_1"
+		if [ $? -eq 0 ]; then
+		    container_mark_regen ${container_name}
+		    echo "${cmd_1}" >> ${out_dir}/cube.network.stack
+		    echo "${cmd_2}" >> ${out_dir}/cube.network.stack
+		fi
+	    else
+		if [ -n "${verbose}" ]; then
+		    echo "[INFO]: removing link from $container_a $container_a_port to $container_b $container_b_port"
+		fi
+		if [ -f "${out_dir}/cube.network.stack" ]; then
+		    container_mark_regen ${container_name}
+		    sed "\|${cmd_1}|d" -i ${out_dir}/cube.network.stack
+		    sed "\|${cmd_2}|d" -i ${out_dir}/cube.network.stack
+		fi
 	    fi
 	fi
 	;;
