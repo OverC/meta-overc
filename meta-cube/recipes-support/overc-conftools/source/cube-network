@@ -57,8 +57,8 @@ if [ "${action}" = "down" ]; then
 fi
 
 if [ -z "${veth_name}" ]; then
-    # if the veth is already present, then we have to roll with whatever
-    # the name is!
+    # if the veth is already present, then we have to roll with whatever the
+    # name is!
     veth_name=$(eval echo veth-${cubename})
 
     interface_exists ${veth_name}
@@ -75,7 +75,7 @@ if [ -z "${veth_name}" ]; then
 	# not present, so we are good to go
 	veth_name=${cname}
     else
-	# the interface was found, we need to try and be uniqu
+	# the interface was found, we need to try and be unique
 	count=0
 	done=
 	while [ -z "${done}" ]; do
@@ -207,21 +207,49 @@ if [ "${action}" = "up" ]; then
     if [ -f ".cube.device.network" ]; then
 	# any non virtual ethernet devices ?
 	netdevs=$(cat .cube.device.network)
+
+	# Expand any network+ args
+	netdevsexp=""
 	for n in ${netdevs}; do
+            if [ "${n}" = "${n/+/}" ] ; then
+                netdevsexp="$n $netdevsexp"
+            else
+                device=$(echo ${n} | cut -f1 -d+)
+                for nd in `ip -o link  |awk -F: '{print $2}'`; do
+                    if [ "$nd" != "${nd#$device}" ] ; then
+                        netdevsexp="$nd:$nd $netdevsexp"
+                    fi
+                done
+            fi
+	done
+
+	for n in ${netdevsexp}; do
 	    echo ${n} | grep -q veth
 	    if [ $? -ne 0 ]; then
 		# clear the default route flag, whatever ups the interface will
 		# take care of this.
-
 		need_default_route=
+
 		# we have a real device
 		device=$(echo ${n} | cut -f1 -d:)
+		# push the device into the namespace If we are asked to move
+		# a wireless interface, then we must actually move its phyN
+		# device using iw command.
+		phyname=""
+		if [ -f "/sys/class/net/$device/phy80211/name" ]; then
+                    phyname=`cat /sys/class/net/$device/phy80211/name`
+		fi
 
 		# push the device into the namespace
 		# Note: done by pflask
 		if [ -z "${pflask}" ]; then
-		    ip link set ${device} netns ${pid}
+		    if [ -n "$phyname" ]; then
+			iw phy $phyname set netns ${pid}
+		    else
+			ip link set ${device} netns ${pid}
+		    fi
 		fi
+		nsenter -t ${pid} -n --preserve-credentials ip link set dev ${device} up
 
 		# setup nat and forwarding. this is what systemd-networkd does as well
 		nsenter -t ${pid} -n --preserve-credentials iptables -t nat -A POSTROUTING -o ${device} -j MASQUERADE
@@ -275,12 +303,41 @@ if [ "${action}" = "down" ]; then
     if [ -f "${cubedir}/.cube.device.network" ]; then
 	# any non virtual ethernet devices ?
 	netdevs=$(cat ${cubedir}/.cube.device.network)
+
+	# Expand any network+ args
+	netdevsexp=""
 	for n in ${netdevs}; do
+	    if [ "${n}" = "${n/+/}" ] ; then
+		netdevsexp="$n $netdevsexp"
+	    else
+		device=$(echo ${n} | cut -f1 -d+)
+		for nd in $(nsenter -t ${pid} -n ip -o link  |awk -F: '{print $2}'); do
+		    if [ "$nd" != "${nd#$device}" ] ; then
+			netdevsexp="$nd:$nd $netdevsexp"
+		    fi
+		done
+	    fi
+	done
+
+	for n in ${netdevsexp}; do
 	    echo ${n} | grep -q veth
 	    if [ $? -ne 0 ]; then
 		# we have a real device
 		device=$(echo ${n} | cut -f1 -d:)
-		nsenter -t ${pid} -n ip link set ${device} netns 1
+
+		# push the device into the root namespace If we are asked to
+		# move a wireless interface, then we must actually move its
+		# phyN device using iw command.
+		phyname=""
+		if [ -f "/sys/class/net/$device/phy80211/name" ]; then
+                    phyname=`cat /sys/class/net/$device/phy80211/name`
+		fi
+
+		if [ -n "$phyname" ]; then
+		    nsenter -t ${pid} -n iw phy $phyname set netns 1
+		else
+		    nsenter -t ${pid} -n ip link set ${device} netns 1
+		fi
 	    fi
 	done
     fi
