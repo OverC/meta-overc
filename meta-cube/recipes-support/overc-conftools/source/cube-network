@@ -121,6 +121,32 @@ if [ "${action}" = "up" ]; then
     if [ -z "${pflask}" ]; then
 	ip link add dev ${veth_name} type veth peer name veth-br-int
     fi
+
+    # we are managing this device, so check for networkmanager and disable the
+    # interface as managed
+    nm=$(nsenter -t ${pid} -m sh -c "if [ -f /etc/NetworkManager/NetworkManager.conf ]; then echo \"nm\"; fi")
+    if [ -n "${nm}" ]; then
+	nm_unmanaged=$(nsenter -t ${pid} -m sh -c "grep unmanaged-devices /etc/NetworkManager/NetworkManager.conf | tail -1")
+	if [ -n "${nm_unmanaged}" ]; then
+	    echo "${nm_unmanaged}" | grep -q ${veth_name}
+	    if [ $? -ne 0 ]; then
+		# delete the old lines
+		nsenter -t ${pid} -m sed -i "/[keyfile]/d" /etc/NetworkManager/NetworkManager.conf
+		nsenter -t ${pid} -m sed -i "/${nm_unmanaged}/d" /etc/NetworkManager/NetworkManager.conf
+
+		# and now the new line with the old + new interface
+		nm_unmanaged="${nm_unmanaged};interface-name:${veth_name}"
+	    else
+		nm_unmanaged=""
+	    fi
+	else
+	    nm_unmanaged="unmanaged-devices=interface-name:${veth_name}"
+	fi
+	if [ -n "${nm_unmanaged}" ]; then
+	    nsenter -t ${pid} -m sh -c "echo \"[keyfile]\" >> /etc/NetworkManager/NetworkManager.conf"
+	    nsenter -t ${pid} -m sh -c "echo \"${nm_unmanaged}\" >> /etc/NetworkManager/NetworkManager.conf"
+	fi
+    fi
     
     # Add the veth that stays in essential to the ovs-bridge. This gets us
     # connectivity to the network prime, and hence the outside world
