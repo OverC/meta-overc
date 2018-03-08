@@ -368,6 +368,7 @@ determine_outdir()
 	    if [ $? -eq 0 ]; then
 		# we are in a directory that contains the container name, leave
 		# outdir alone
+		out_dir=$(pwd)
 		return
 	    fi
 	    if [ -d "/opt/container/${container_name}" ]; then
@@ -1574,6 +1575,7 @@ case "${cmd}" in
 	# Ensure we do this after the 'op' is stripped from
 	# $container_a but before any uses of outdir.
 	container_name=${container_a}
+
 	determine_outdir
 
 	echo ${container_a_port} | grep -q /
@@ -1645,7 +1647,6 @@ case "${cmd}" in
 	    # activate the mount
 	    c3-cfg gen ${container_b}
 	else
-
 	    if [ -n "${from}" ]; then
 		if [ -z "${from_ip}" ]; then
 		    echo "[ERROR]: 'from' requires a source IP address"
@@ -1676,9 +1677,9 @@ case "${cmd}" in
 
 		# If we are linking containerA and B, they need to be autostarted or
 		# we'll get bad rules on reboot
-		start=$(cube-cfg get -n ${container_b} autostart:)
+		start=$(cube-cfg get -o ${out_dir}/../${container_b} -n ${container_b} autostart:)
 		if [ "${start}" != "essential" ]; then
-		    cube-cfg set -n ${container_b} autostart:dom0
+		    cube-cfg set -o ${out_dir}/../${container_b} -n ${container_b} autostart:dom0
 		fi
 
 		# TODO. The number of commands needs to be dynamic ..but for now, we'll keep it simple
