@@ -30,6 +30,9 @@ fi
 
 function do_essential_cmd()
 {
+    local auth_db="~/.overc/cube-cmd.auth"
+    local auth_db_global="/etc/cube-cmd.auth"
+
     # When in dom0 we use the direct route and just exec the command
     # with no checking
     if [ -n "${we_are_dom0}" ]; then
@@ -50,11 +53,21 @@ function do_essential_cmd()
 	fi
 	exit $?
     else
-	if [ -f "/etc/cube-cmd.auth" ]; then
+	# expands "~"
+	eval auth_db=${auth_db}
+
+	if [ -f "${auth_db}" ]; then
+	    auth_file="${auth_db}"
+	else
+	    if [ -f "${auth_db_global}" ]; then
+		auth_file="${auth_db_global}"
+	    fi
+	fi
+	if [ -n "${auth_file}" ]; then
 	    echo "${cube_cmd_options}" | grep -q -w "auth"
 	    if [ $? -ne 0 ]; then
 		# we have an auth file, and no --auth on the command line
-		auth_file="--auth /etc/cube-cmd.auth"
+		auth_file="--auth ${auth_file}"
 	    fi
 	fi
 	nctl --ctrl-ipc /var/lib/cube/common/control.ipc ${auth_file} ${cube_cmd_options} ${cmd_options}
