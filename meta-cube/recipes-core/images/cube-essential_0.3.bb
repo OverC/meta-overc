@@ -31,6 +31,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   jq \
                   ${CUBE_ESSENTIAL_EXTRA_INSTALL} \
                   ${OVERC_VMSEP_PACKAGES} \
+		  parted \
 		  kernel-image \
                  "
 
