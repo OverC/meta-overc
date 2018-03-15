@@ -244,6 +244,7 @@ CONFIG_MAP[cube.network.gateway]="cube.network.gateway;noop;single;The gateway t
 CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;single;The nameserver to use for the container"
 CONFIG_MAP[cube.env]="cube.env;noop;multi;Set an environment variable for the container startup. cube.env:<var>=<value>"
 CONFIG_MAP[cube.dir]="cube.dir;noop;single;Set the starting directory for the the application"
+CONFIG_MAP[cube.container.system]="cube.container.type;noop;single;Set to 'true' if the container is a system (privileged) container"
 
 if [ -z "$1" ]; then
     usage_global
@@ -795,19 +796,23 @@ generate_base_config()
 	system_container_caps="--process-cap-add CAP_SYS_PTRACE"
     fi
 
-    # TODO: these can also be cube-cfg values, but right now are
-    #       restricted for compatibility reasons
-    capabilities="--process-cap-add CAP_KILL \
-		  --process-cap-add CAP_LINUX_IMMUTABLE \
-                  --process-cap-add CAP_SYS_RAWIO \
-                  --process-cap-add CAP_SYS_ADMIN \
-		  --process-cap-add CAP_SYS_MODULE \
-                  --process-cap-add CAP_SYS_RESOURCE \
-                  --process-cap-add CAP_NET_ADMIN \
-                  --process-cap-add CAP_NET_BROADCAST \
-                  --process-cap-add CAP_SYSLOG \
-                  --process-cap-add CAP_SYS_TTY_CONFIG \
-                  ${system_container_caps}"
+    if [ -e "cube.container.system" ]; then
+	capabilities="--privileged"
+    else
+	# TODO: these can also be cube-cfg values, but right now are
+	#       restricted for compatibility reasons
+	capabilities="--process-cap-add CAP_KILL \
+		      --process-cap-add CAP_LINUX_IMMUTABLE \
+                      --process-cap-add CAP_SYS_RAWIO \
+                      --process-cap-add CAP_SYS_ADMIN \
+		      --process-cap-add CAP_SYS_MODULE \
+                      --process-cap-add CAP_SYS_RESOURCE \
+                      --process-cap-add CAP_NET_ADMIN \
+                      --process-cap-add CAP_NET_BROADCAST \
+                      --process-cap-add CAP_SYSLOG \
+                      --process-cap-add CAP_SYS_TTY_CONFIG \
+                      ${system_container_caps}"
+    fi
 
     OLDIFS=$IFS
 IFS='
