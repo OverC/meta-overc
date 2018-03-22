@@ -24,7 +24,6 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                   packagegroup-core-ssh-openssh \
                   packagegroup-core-full-cmdline \
                   packagegroup-util-linux \
-                  packagegroup-builder \
                   packagegroup-dom0 \
                   packagegroup-container \
                   ${CUBE_SERVER_EXTRA_INSTALL} \
