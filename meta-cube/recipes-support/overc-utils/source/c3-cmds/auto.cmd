@@ -11,6 +11,7 @@
 #define cut
 #define cat
 #define tee
+#define chown
 
 # commands that are safe, and that are automatically loaded.
 basename() {

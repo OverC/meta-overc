@@ -1,6 +1,7 @@
 #define cube-cfg
 #define c3-cfg
 #define c3-ctl
+#define c3
 #define systemd-detect-virt
 #define mv
 #define jq
