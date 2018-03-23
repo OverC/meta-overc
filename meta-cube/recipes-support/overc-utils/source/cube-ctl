@@ -1095,9 +1095,9 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	# if [ -n "${track_containers}" ]; then
-	#     ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-	# fi
+	if [ -n "${track_containers}" -a ! -e ${out_dir} ]; then
+	    ${SBINDIR}/overc-ctl subvol ${container_name} -o ${out_dir}
+	fi
 	mkdir -p "${out_dir}/${container_name}/rootfs"
 	case ${container_source} in
 	    *.tar*|*.tgz)
@@ -1154,7 +1154,7 @@ case "${cmd}" in
 			track_opt="--track"
 		fi
 		# recursive call!! This may mean we need an import tool front end, instead of doing this here
-		cube-ctl add ${track_opt}  -n ${container_name} ${out_dir}/${container_name}/oci-runtime
+		cube-ctl add ${track_opt}  -n ${container_name} move://${out_dir}/${container_name}/oci-runtime
 
 OLDIFS=$IFS
 IFS='
@@ -1186,6 +1186,24 @@ IFS=$OLDIFS
 		rm -rf ${out_dir}/${container_name}/oci-runtime
 
 		exit 0
+		;;
+	    move://*)
+		container_source=${container_source#move://}
+		if [ -d ${container_source} ]; then
+		    echo "[INFO] Adding ${container_source} to ${container_name}"
+
+		    # could be further refined to pick up a config.json and do an
+		    # oci maniplation, but for now, we just cp -ar
+		    if [ -d ${container_source}/rootfs ]; then
+			rm -rf ${out_dir}/${container_name}/rootfs
+			mv ${container_source}/rootfs ${out_dir}/${container_name}
+		    else
+			mv ${container_source}/* ${out_dir}/${container_name}/rootfs
+		    fi
+		else
+		    echo "[ERROR]: unknown container source"
+		    exit 1
+		fi
 		;;
 	    *)
 		if [ -d ${container_source} ]; then
@@ -1317,9 +1335,6 @@ IFS=$OLDIFS
 	    generate_lxc_config ${container_name} ${out_dir}
 	fi
 
-	if [ -n "${track_containers}" ]; then
-	    ${SBINDIR}/overc-ctl track ${container_name} -o ${out_dir}
-	fi
 	;;
     rename|mv)
 	orig_name=${cmd_options_non_dashed[1]}
