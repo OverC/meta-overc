@@ -177,13 +177,24 @@ if [ "${action}" = "up" ]; then
     #
     # Configure the container networking:
     #   1) loopback interface
-    #   2) dhcp address for the veth-br-int
+    #   2) dhcp address for the ${veth_name}
     #   3) default route configuration
     #
     nsenter -t ${pid} -n --preserve-credentials ip link set dev lo up
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up
+    if [ -f "cube.network.mac" ]; then
+       mac_address=$(cat cube.network.mac)
+    else
+        # Use a hashed MAC address based on the container name
+        mac_address=$(hashmac $(cat /etc/machine-id) ${cname})
+    fi
+    nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up address ${mac_address}
+
     if [ "${network}" == "dynamic" ]; then
-	command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid ${veth_name} >> /dev/null 2>&1"
+	command="dhclient -lf /opt/container/${cname}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid ${veth_name} >> /dev/null 2>&1"
+	if [ ! -d /opt/container/${cname}/rootfs/var/lib/dhcp ] ; then
+	    mkdir -p /opt/container/${cname}/rootfs/var/lib/dhcp
+	fi
 	eval nsenter -t ${pid} -n -- ${command}
 	if [ -e "/etc/resolv.conf.${cname}" ]; then
 	    mv /etc/resolv.conf.${cname} /opt/container/${cname}/rootfs/etc/resolv.conf
@@ -210,15 +221,6 @@ if [ "${action}" = "up" ]; then
 	    let count=${count}+1
 	done
     fi
-
-    if [ -f "cube.network.mac" ]; then
-	mac_address=$(cat cube.network.mac)
-    else
-	# cube's use the internal mac range: x6-xx-xx-xx-xx-xx
-	last_ip_range=$(echo $primary_ip | cut -f4 -d.)
-	mac_address=$(printf "06:00:00:00:00:%02x" ${last_ip_range})
-    fi
-    nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up address ${mac_address}
 
     gateway="192.168.42.1"
     if [ -f "cube.network.gateway" ]; then
