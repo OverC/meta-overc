@@ -21,21 +21,18 @@ This actually closes STDOUT_FILEN which is connected to the filehandle where the
 The attached patch disables make_null_stdio() for systemd when run in a container, which makes it useable again in docker.
 Now journald  works with /dev/console output and  docker logs -f <containername> shows the output.
 ---
- src/core/main.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ src/core/main.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -1522,6 +1522,8 @@ int main(int argc, char *argv[]) {
+@@ -2421,14 +2421,21 @@ int main(int argc, char *argv[]) {
          }
  
          if (arg_system) {
 +                const char *c;
-+
-                 if (fixup_environment() < 0) {
-                         error_message = "Failed to fix up PID1 environment";
-                         goto finish;
-@@ -1531,9 +1533,15 @@ int main(int argc, char *argv[]) {
+ 
+                 /* Try to figure out if we can use colors with the console. No
                   * need to do that for user instances since they never log
                   * into the console. */
                  log_show_color(colors_enabled());
@@ -53,4 +50,4 @@ Now journald  works with /dev/console output and  docker logs -f <containername>
 +                }
          }
  
-         r = initialize_join_controllers();
+         /* Mount /proc, /sys and friends, so that /proc/cmdline and
