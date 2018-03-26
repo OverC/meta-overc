@@ -105,7 +105,7 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 +        struct udev *udev = udev_device_get_udev(dev);
          struct udev_list_entry *list_entry;
 +        struct udev_device *dev_check;
-         char filename[sizeof("/dev/block/:") + 2*DECIMAL_STR_MAX(unsigned)];
+         char filename[DEV_NUM_PATH_MAX];
 +        const char *devnode;
 +        struct stat stats;
 +        int err = 0;
