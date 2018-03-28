@@ -191,7 +191,7 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up address ${mac_address}
 
     if [ "${network}" == "dynamic" ]; then
-	command="dhclient -lf /opt/container/${cname}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --no-pid ${veth_name} >> /dev/null 2>&1"
+	command="dhclient -lf /opt/container/${cname}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --psig --no-pid ${veth_name} >> /dev/null 2>&1"
 	if [ ! -d /opt/container/${cname}/rootfs/var/lib/dhcp ] ; then
 	    mkdir -p /opt/container/${cname}/rootfs/var/lib/dhcp
 	fi
