@@ -1,0 +1,70 @@
+From 7893e1ce0c7b3ca0f2d23d024eee5af01e95c187 Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Tue, 27 Mar 2018 22:10:15 -0700
+Subject: [PATCH] dhclient: Add option to die when the parent process exits
+
+When using dhclient in a hook function a runc monitor process waits to
+execute the hooks and clean up.  As a part of the clean up when this
+function exits any dhclient processes should also die so that all the
+network name spaces are released immediately.
+
+This patch adds the --psig to send a SIGKILL when the parent process
+terminates.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ client/dhclient.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/client/dhclient.c b/client/dhclient.c
+index dcf3f1a..48cf752 100644
+--- a/client/dhclient.c
++++ b/client/dhclient.c
+@@ -39,6 +39,7 @@
+ #include <limits.h>
+ #include <isc/file.h>
+ #include <dns/result.h>
++#include <sys/prctl.h>
+ 
+ TIME default_lease_time = 43200; /* 12 hours... */
+ TIME max_lease_time = 86400; /* 24 hours... */
+@@ -57,6 +58,8 @@ int dhcp_max_agent_option_packet_length = 0;
+ 
+ int interfaces_requested = 0;
+ 
++int psig = 0; /* Die when the parent process dies */
++
+ struct iaddr iaddr_broadcast = { 4, { 255, 255, 255, 255 } };
+ struct iaddr iaddr_any = { 4, { 0, 0, 0, 0 } };
+ struct in_addr inaddr_any;
+@@ -179,6 +182,7 @@ usage(const char *sfmt, const char *sarg)
+ 		  "                [-s server-addr] [-cf config-file]\n"
+ 		  "                [-df duid-file] [-lf lease-file]\n"
+ 		  "                [-pf pid-file] [--no-pid] [-e VAR=val]\n"
++		  "                [--psig] [--no-pid] [-e VAR=val]\n"
+ 		  "                [-sf script-file] [interface]*",
+ 		  isc_file_basename(progname));
+ }
+@@ -308,6 +312,8 @@ main(int argc, char **argv) {
+ 			no_dhclient_pid = 1;
+ 		} else if (!strcmp(argv[i], "--no-pid")) {
+ 			no_pid_file = ISC_TRUE;
++		} else if (!strcmp(argv[i], "--psig")) {
++			psig = 1;
+ 		} else if (!strcmp(argv[i], "-cf")) {
+ 			if (++i == argc)
+ 				usage(use_noarg, argv[i-1]);
+@@ -4301,6 +4307,10 @@ void go_daemon ()
+ 	/* Become session leader and get pid... */
+ 	(void) setsid ();
+ 
++    /* Optionally die if the parent process dies */
++    if (psig)
++        prctl(PR_SET_PDEATHSIG, SIGKILL);
++
+ 	/* Close standard I/O descriptors. */
+ 	(void) close(0);
+ 	(void) close(1);
+-- 
+2.11.0
+

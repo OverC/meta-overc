@@ -5,3 +5,6 @@
 # get ip address and cause the network cannot reach out.
 
 SYSTEMD_AUTO_ENABLE_${PN}-client_forcevariable = "disable"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+SRC_URI += "file://dhclient-Add-option-to-die-when-the-parent-process-e.patch"
