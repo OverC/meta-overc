@@ -309,6 +309,21 @@ if [ "${action}" = "up" ]; then
     fi
     nsenter -t ${pid} -m sh -c "rm -f /etc/resolv.conf"
     nsenter -t ${pid} -m sh -c "echo nameserver ${nameserver} > /etc/resolv.conf"
+
+    # and now some network namespace accounting
+    mkdir -p /var/run/netns
+    ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
+
+    # We need to track the pids of dhclient so it can be killed later if the
+    # container dies. Since dhclient isn't in that pid namespace, it will live
+    # on and keep the network device from returning to the root namespace
+    rm -f /opt/container/${cname}/.netns.oci.pids
+    for i in $(pidof dhclient); do
+	ns=$(ip netns identify $i)
+	if [ "${ns}" == "${cname}" ]; then
+	    echo $i >> /opt/container/${cname}/.netns.oci.pids
+	fi
+    done
 fi
 
 if [ "${action}" = "down" ]; then
@@ -388,5 +403,6 @@ if [ "${action}" = "down" ]; then
 	rm -f ${cubedir}/.cube.veth
     fi
 
+    # cleans up the netns symlink made in the "up" path
     ip netns delete ${cname} 2> /dev/null
 fi
