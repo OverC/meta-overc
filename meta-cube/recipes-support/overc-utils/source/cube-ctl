@@ -1165,6 +1165,12 @@ IFS='
 		    done
 		fi
 IFS=$OLDIFS
+		# Initialize container UUID if not already set
+		cube-cfg -n ${container_name} get cube.env |grep ^container_uuid=
+		if [ $? != 0 ] ; then
+		    uuid=`uuidgen | sed 's/-//g'`
+		    cube-cfg -n ${container_name} set cube.env:container_uuid=${uuid}
+		fi
 
 		if [ -n "${cwd}" ]; then
 		    cube-cfg -n ${container_name} set cube.dir:${cwd}
@@ -1306,6 +1312,13 @@ IFS=$OLDIFS
 		# update the container manager
 		graft_binaries_to_essential runc
 		${SBINDIR}/cube-cfg set cube.container.mgr:/var/lib/cube/essential/sbin/runc
+
+		# Initialize container UUID if not already set
+		${SBINDIR}/cube-cfg -n ${container_name} get cube.env |grep ^container_uuid=
+		if [ $? != 0 ] ; then
+		    uuid=`uuidgen | sed 's/-//g'`
+		    ${SBINDIR}/cube-cfg -n ${container_name} set cube.env:container_uuid=${uuid}
+		fi
 
 		${SBINDIR}/cube-cfg gen ${container_name}:oci
 
