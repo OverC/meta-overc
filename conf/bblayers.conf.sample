@@ -7,7 +7,6 @@ BBFILES ?= ""
 
 BBLAYERS ?= " \
   $HOME/poky/meta \
-  $HOME/poky/meta-yocto \
   $HOME/poky/meta-yocto-bsp \
   $HOME/poky/meta-overc \
   $HOME/poky/meta-overc/meta-cube \
