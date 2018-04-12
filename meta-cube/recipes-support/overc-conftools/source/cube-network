@@ -191,6 +191,15 @@ if [ "${action}" = "up" ]; then
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up address ${mac_address}
 
     if [ "${network}" == "dynamic" ]; then
+	ip=$(c3-ipcfg alloc mac ${mac_address})
+	if [ -n "${ip}" ]; then
+	    nsenter -t ${pid} -n --preserve-credentials ip addr add "$ip/24" dev ${veth_name}
+	    primary_ip=$ip
+	else
+	    echo "[ERROR]: unable to set ip by mac"
+	    exit 1
+	fi
+    elif [ "${network}" == "dynamic-dhcp" ]; then
 	command="dhclient -lf /opt/container/${cname}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cname} --psig --no-pid ${veth_name} >> /dev/null 2>&1"
 	if [ ! -d /opt/container/${cname}/rootfs/var/lib/dhcp ] ; then
 	    mkdir -p /opt/container/${cname}/rootfs/var/lib/dhcp

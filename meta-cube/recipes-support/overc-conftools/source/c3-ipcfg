@@ -1,0 +1,118 @@
+#!/bin/bash
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+usage()
+{
+cat << EOF
+
+ ${0##*/} [--etcd <address>] [--tag <tag>] <action> <action options>
+
+   Manage ip allocation for the internal network.
+
+   <action>: init, alloc, free
+
+     init: initialize the ip pool
+       parameters: <ip>/<mask>
+
+     alloc: allocate an ip address
+       options: mac <mac address>
+
+       Returns an IP address for a container. By default, etcd is used
+       to manage the free ip addresses. Mac addressed based allocation
+       is also possible, and is used if "mac <mac address>" are passed
+       as options.
+
+     free: return an ip address
+        parameters: ip address to return
+
+   Global options:
+
+      --etcd: address of the etcd server to use for ip tracking
+      --tag: tag to associate with the operation
+
+EOF
+}
+
+
+# take the command into an array
+raw_command=($@)
+
+if [ ${#raw_command[*]} -lt 1 ]; then
+    usage
+    exit
+fi
+
+dashdash=
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-v) verbose=t
+            ;;
+	-h|--help)
+	    usage
+	    exit
+	    ;;
+	--tag)
+	    tag=$2
+	    shift
+	    ;;
+	--etcd)
+	    etcd_addr=$2
+	    shift
+	    ;;
+        *)
+	    non_dashed="${non_dashed} $1"
+            ;;
+    esac
+    shift
+done
+
+# make an array from whatever was non-dashed
+cmd_options_non_dashed=(${non_dashed})
+
+action=${cmd_options_non_dashed[0]}
+if [ -z "${action}" ]; then
+    echo "[ERROR]: no action was passed"
+    usage
+    exit 1
+fi
+
+case ${action} in
+    alloc|allocate)
+	mac_or_etcd=${cmd_options_non_dashed[1]}
+	if [ "${mac_or_etcd}" = "mac" ]; then
+	    mac_addr=${cmd_options_non_dashed[2]}
+	    if [ -z "${mac_addr}" ]; then
+		echo "[ERROR]: mac address allocation detected, but no mac passed"
+		exit 1
+	    fi
+
+	    IP1="192.168.42"
+
+	    # convert MAC to IP
+	    set -- $(echo $mac_addr|awk -F: '{print $4,$5,$6}')
+	    IPADDR=${IP1}.$((0x$3))
+	    #IPADDR=${IP1}.$((0x$1)).$((0x$2)).$((0x$3))
+	    echo $IPADDR
+	fi
+	;;
+    init)
+	true
+	;;
+    free|return)
+	true
+	;;
+    *)
+	echo "[ERROR]: unrecognized action (${action})"
+	usage
+	exit 1
+	;;
+esac
+

@@ -33,6 +33,7 @@ SRC_URI = " \
     file://source/ansible/setup_offset.yml \
     file://source/cube-network \
     file://source/cube-netconfig \
+    file://source/c3-ipcfg \
     file://source/oci-device \
     file://source/dhclient-script.container \
 "
@@ -74,6 +75,7 @@ do_install() {
 
     install -d ${D}${sbindir}
     install -m755 ${WORKDIR}/source/dhclient-script.container ${D}${sbindir}
+    install -m755 ${WORKDIR}/source/c3-ipcfg ${D}${sbindir}
 }
 
 RDEPENDS_${PN} += " \
