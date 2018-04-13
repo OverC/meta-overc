@@ -170,18 +170,12 @@ OVERC_COMMON_PYTHON = " \
 OVERC_COMMON_TOOLS = "\
      killall \
      lsof \
-     lttng-ust \
      patch \
-     pax \
-     pseudo \
      pstree \
      setserial \
      socat \
-     nanomsg \
      strace \
      sudo \
-     tcl \
      time \
      overc-utils \
-     nanoio \
     "

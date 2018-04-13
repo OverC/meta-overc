@@ -13,6 +13,8 @@ IMAGE_FEATURES += "package-management doc-pkgs x11-base"
 IMAGE_FSTYPES ?= "tar.bz2"
 IMAGE_FSTYPES_remove = "live"
 
+require recipes-core/packagegroups/overc-common-pkgdefs.inc
+
 PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
@@ -30,6 +32,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-container \
                         packagegroup-networkmanager \
                         packagegroup-audio \
+                        ${OVERC_COMMON_TOOLS} \
                         ntp \
                         ntpdate \
                         ntp-utils \
