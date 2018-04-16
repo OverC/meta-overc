@@ -21,13 +21,10 @@ PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 CUBE_DESKTOP_EXTRA_INSTALL ?= ""
 
-RDEPENDS_packagegroup-dom0_remove = "linux-firmware"
-
 IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-util-linux \
                         packagegroup-core-ssh-openssh \
                         packagegroup-core-full-cmdline \
-                        packagegroup-builder \
                         packagegroup-xfce \
                         packagegroup-container \
                         packagegroup-networkmanager \
