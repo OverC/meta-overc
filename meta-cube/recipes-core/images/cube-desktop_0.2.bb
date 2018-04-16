@@ -32,6 +32,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-networkmanager \
                         packagegroup-audio \
                         ${OVERC_COMMON_TOOLS} \
+                        ${OVERC_COMMON_EXTENDED} \
                         ntp \
                         ntpdate \
                         ntp-utils \
