@@ -27,7 +27,6 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-util-linux \
                         packagegroup-core-ssh-openssh \
                         packagegroup-core-full-cmdline \
-                        packagegroup-builder \
                         packagegroup-xfce \
                         packagegroup-container \
                         packagegroup-networkmanager \
