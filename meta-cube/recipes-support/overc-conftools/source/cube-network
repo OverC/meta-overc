@@ -1,6 +1,6 @@
 #/bin/bash
 
-# we ge an action + cube name
+# we get an action + cube name
 action=$1
 shift
 
