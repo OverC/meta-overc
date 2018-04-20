@@ -1095,7 +1095,7 @@ case "${cmd}" in
 	    out_dir="${container_dir}/"
 	fi
 
-	if [ -n "${track_containers}" -a ! -e ${out_dir} ]; then
+	if [ -n "${track_containers}" -a ! -e ${out_dir}${container_name} ]; then
 	    ${SBINDIR}/overc-ctl subvol ${container_name} -o ${out_dir}
 	fi
 	mkdir -p "${out_dir}/${container_name}/rootfs"
