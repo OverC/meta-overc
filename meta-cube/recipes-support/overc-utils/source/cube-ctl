@@ -378,8 +378,9 @@ function am_i_a_container()
 {
     local virt_bin=$(which systemd-detect-virt 2> /dev/null)
 
-    # if we can't run detection, just say we aren't a container
     if [ -z "${virt_bin}" ]; then
+	# fall back option
+	cat /proc/1/environ |grep -q container= && return 1
 	return 0
     fi
 
