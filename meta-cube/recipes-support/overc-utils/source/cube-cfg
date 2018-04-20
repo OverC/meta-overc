@@ -19,6 +19,13 @@ fi
 
 usage_global()
 {
+    pager=$(which less 2>/dev/null)
+    if [ -z "${pager}" ] ; then
+	pager=$(which more 2>/dev/null)
+	if [ -z "${pager}" ] ; then
+	    pager=cat
+	fi
+    fi
     output=$(mktemp)
 cat << EOF > ${output}
 
@@ -45,7 +52,7 @@ EOF
     usage_attribute >> ${output}
     usage_get_set >> ${output}
 
-    cat ${output} | less
+    cat ${output} | $pager
 
     rm -f ${output}
 }
@@ -418,8 +425,9 @@ function am_i_a_container()
 {
     local virt_bin=$(which systemd-detect-virt 2> /dev/null)
 
-    # if we can't run detection, just say we aren't a container
     if [ -z "${virt_bin}" ]; then
+	# fall back option
+	cat /proc/1/environ |grep -q container= && return 1
 	return 0
     fi
 
@@ -483,32 +491,6 @@ graft_binaries_to_essential()
 	    cp -af ${bin} /var/lib/cube/essential/sbin/
 	fi
     done
-}
-
-# returns 1 if we are container, 0 otherwise
-function am_i_a_container()
-{
-    local virt_bin=$(which systemd-detect-virt)
-
-    # if we can't run detection, just say we aren't a container
-    if [ -z "${virt_bin}" ]; then
-	return 0
-    fi
-
-    local virt=`systemd-detect-virt`
-    case $virt in
-	lxc*)
-	    return 1
-	    ;;
-	container*)
-	    return 1
-	    ;;
-	docker*)
-	    return 1
-	    ;;
-    esac
-
-    return 0
 }
 
 am_i_a_container
