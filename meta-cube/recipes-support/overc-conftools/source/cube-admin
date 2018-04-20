@@ -1,0 +1,68 @@
+#!/bin/bash
+# This hook copies the adminstration command from dom0 to a container
+# that has been granted the rights to perform cube adminstration
+
+# we get an action + cube name
+action=$1
+shift
+
+# if we have json, there will be { in the next input, otherwise, it
+# is a directory
+echo "$@" | grep -q {
+if [ $? -eq 0 ]; then
+    # json
+    cubedir=$(pwd)
+    cubename=$(basename $cubedir)
+
+    # yank what we need out of the json
+    pid=$(echo "$@" | jq .pid)
+else
+    cubedir=$1
+    cubename=$(basename $cubedir)
+    pid=$2
+fi
+
+from=/opt/container/dom0/rootfs
+to=$cubedir/rootfs
+
+files="usr/sbin \
+ usr/sbin/c3 \
+ usr/sbin/c3-cap \
+ usr/sbin/c3-cfg \
+ usr/sbin/c3-cmd \
+ usr/sbin/c3-cmds \
+ usr/sbin/c3-cmds/auto.cmd \
+ usr/sbin/c3-cmds/c3.cmd \
+ usr/sbin/c3-console \
+ usr/sbin/c3-construct \
+ usr/sbin/c3-ctl \
+ usr/sbin/cube \
+ usr/sbin/cube-cfg \
+ usr/sbin/cube-cmd \
+ usr/sbin/cube-console \
+ usr/sbin/cube-ctl \
+ usr/sbin/nctl \
+ usr/bin/nanocat \
+"
+
+# copy binaries required for administration commands
+for file in $files; do
+    if [ -e $from/$file ] ; then
+	if [ $from/$file -nt $to/$file ] ; then
+	    cp -a $from/$file $to/$file
+	fi
+    fi
+done
+
+# Special case for libraries to copy to correct multilib directory
+files=`(cd $from && ls usr/lib*/libnanomsg* 2>/dev/null)`
+
+tolib=`ls $to/usr/lib*/libc.so.6 $to/lib*/*/libc.so.6 $to/lib*/libc.so.6 2> /dev/null`
+tolib=$(dirname $tolib)
+
+for file in $files; do
+    base_file=$(basename $file)
+    if [ $from/$file -nt $tolib/$base_file ] ; then
+	cp -a $from/$file $tolib/$base_file
+    fi
+done
