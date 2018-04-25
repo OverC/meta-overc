@@ -96,9 +96,6 @@ ExecStart=/bin/sh -c "/usr/bin/ansible-playbook /etc/overc-conf/ansible/overc.ym
         sed -i '/^ *file.*20-wired.network.essential/,/}/d' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml
         sed -i 's/\/etc\/resolv.conf/\/run\/systemd\/resolve\/resolv.conf/g' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml
     fi
-    if [ -e ${IMAGE_ROOTFS}/etc/overc-conf/ansible/post.yml ]; then
-        sed -i '/name: disable configure_network_prime/,/replace:.*configure_network_prime/d' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/post.yml
-    fi
     if [ -e ${IMAGE_ROOTFS}/etc/ansible/ansible.cfg ]; then
 	sed -i '/^\[defaults\]/a\\ \
 remote_tmp     = /var/lib/misc \
