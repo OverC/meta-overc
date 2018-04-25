@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Ensure br-int is up. This also acts as a synchronization
+# point such that we don't end up in weird situations where
+# we expect networking components to be up when they are
+# still being initialized.
+
+end=$((SECONDS+10))
+
+while true; do
+    /usr/bin/ovs-vsctl show | grep -q "Bridge br-int"
+    if [ $? -eq 0 ] || [ $SECONDS -gt $end ]; then
+	break
+    fi
+done
+
+if [ $SECONDS -gt $end ]; then
+    exit 1
+fi
+
+/usr/bin/ovs-vsctl --may-exist add-port br-int $1
+/sbin/ip link set $1 up

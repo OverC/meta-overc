@@ -1,0 +1,28 @@
+SUMMARY = "cube-vrf / minimal initialization service"
+DESCRIPTION = "A tool for the initial cube-vrf setup"
+
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+
+RDEPENDS_${PN} = "bash"
+
+SRC_URI = " \
+    file://vrf-init \
+    file://vrf-iface-add \
+    file://vrf-iface-del \
+"
+
+do_install() {
+    install -d ${D}/sbin
+    install -m 0755 ${WORKDIR}/vrf-init ${D}/sbin/init
+
+    install -d ${D}/${prefix}
+    install -d ${D}/${bindir}
+    install -m 0755 ${WORKDIR}/vrf-iface-add ${D}/${bindir}/
+    install -m 0755 ${WORKDIR}/vrf-iface-del ${D}/${bindir}/
+}
+
+FILES_${PN} += " \
+    ${sbin} \
+    ${bindir} \
+"

@@ -50,6 +50,36 @@ interface_exists() {
     return 0
 }
 
+# Get the cube-vrf 'init' PID
+get_cube_vrf_pid() {
+    cube_vrf_ppid=$(ps -ef|grep "pflask.*cube-vrf"|grep -v grep|awk '{print $2}')
+    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +"|grep -v grep|awk '{print $2}')
+}
+
+#
+# Useful for containers with no interfaces but which still have
+# a netns created which we want to access with 'ip netns'
+#
+# Create the netns link in /var/run/netns
+#
+if [ "${action}" = "nslinkup" ]; then
+    cname=$(echo ${cubename} | cut -c1-13)
+    # create the netns symlink
+    mkdir -p /var/run/netns
+    ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
+    exit 0
+fi
+
+#
+# Delete the link from /var/run/netns
+#
+if [ "${action}" = "nslinkdown" ]; then
+    cname=$(echo ${cubename} | cut -c1-13)
+    # cleans up the netns symlink
+    ip netns delete ${cname} 2> /dev/null
+    exit 0
+fi
+
 if [ "${action}" = "down" ]; then
     if [ -f .cube.veth ]; then
 	veth_name=$(cat .cube.veth)
@@ -147,21 +177,26 @@ if [ "${action}" = "up" ]; then
 	    nsenter -t ${pid} -m sh -c "echo \"${nm_unmanaged}\" >> /etc/NetworkManager/NetworkManager.conf"
 	fi
     fi
-    
+
+    #
     # Add the veth that stays in essential to the ovs-bridge. This gets us
     # connectivity to the network prime, and hence the outside world
-    ovs-vsctl --may-exist add-port br-int ${veth_name}
+    #
+    cube_vrf_pid=$(get_cube_vrf_pid)
 
     # push the container veth endpoint into the container network namespace
     # NOTE: also done by pflask
     if [ -n "${pflask}" ]; then
 	# if we are pflask, rename the veth to the one we generated above
 	ip link set ${veth_pflask} name ${veth_name}
-	ip link set ${veth_name} up
+	ip link set ${veth_name} netns cube-vrf
+	nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-add ${veth_name}
 	nsenter -t ${pid} -n ip link set ${veth_pflask} name ${veth_name}
     else
 	# if we are NOT pflask, then we have to push the veth into the namespace
 	# and then rename it.
+	ip link set ${veth_name} netns cube-vrf
+	nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-add ${veth_name}
 	ip link set veth-br-int netns ${pid}
 	nsenter -t ${pid} -n ip link set veth-br-int name ${veth_name}
     fi
@@ -336,12 +371,8 @@ if [ "${action}" = "up" ]; then
 fi
 
 if [ "${action}" = "down" ]; then
-    ovs-vsctl --if-exists del-port br-int ${veth_name}
-
-    interface_exists ${veth_name}
-    if [ $? -eq 1 ]; then
-	ip link del dev ${veth_name}
-    fi
+    cube_vrf_pid=$(get_cube_vrf_pid)
+    nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-del ${veth_name}
 
     cname=$(basename ${cubedir})
 
