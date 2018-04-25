@@ -26,11 +26,9 @@ SRC_URI = " \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
     file://source/ansible/essential.yml \
-    file://source/ansible/netprime.yml \
     file://source/ansible/overc_config_vars.yml \
     file://source/ansible/overc.yml \
     file://source/ansible/post.yml \
-    file://source/ansible/setup_offset.yml \
     file://source/cube-admin \
     file://source/cube-network \
     file://source/cube-netconfig \

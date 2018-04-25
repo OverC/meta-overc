@@ -8,12 +8,6 @@
       state: restarted
     when: first_boot is defined
 
-  - name: disable configure_network_prime in next boot
-    replace:
-      dest: /etc/overc-conf/ansible/overc_config_vars.yml
-      regexp: '^configure_network_prime: true'
-      replace: '#configure_network_prime: true'
-
   - name: disable first_boot in next boot
     replace:
       dest: /etc/overc-conf/ansible/overc_config_vars.yml
