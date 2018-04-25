@@ -1,0 +1,7 @@
+#!/bin/bash
+
+/sbin/ip link set $1 down >/dev/null 2>&1
+
+/usr/bin/ovs-vsctl --if-exists del-port br-int $1
+
+/sbin/ip link del dev $1 >/dev/null 2>&1

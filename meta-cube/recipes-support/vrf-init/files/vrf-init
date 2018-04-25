@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Ensure we have some prerequisites in place
+mkdir -p /var/run/openvswitch
+
+# Start the db daemon
+/usr/share/openvswitch/scripts/ovs-ctl \
+    --no-ovs-vswitchd --no-monitor --system-id=random \
+    start
+
+# Start the vswitch daemon
+/usr/share/openvswitch/scripts/ovs-ctl \
+    --no-ovsdb-server --no-monitor --system-id=random \
+    start
+
+# Create the br-int bridge
+/usr/bin/ovs-vsctl add-br br-int
+
+# We can't exit else the container will be destroyed
+sleep infinity

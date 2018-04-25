@@ -995,6 +995,11 @@ convert_base_config_to_cube()
 	echo "${netdevs}" >> pflask.config
     fi
 
+    # cube-vrf doesn't have any externally available interfaces but needs a netns
+    if [ "${container_name}" = "cube-vrf" ]; then
+	pflask_args="${pflask_args} --netif"
+    fi
+
     # hooks ?
     poststart_hooks=$(jq -r '.hooks.poststart' config.json)
     if [ "${poststart_hooks}" != "null" ]; then
