@@ -55,6 +55,50 @@ IMAGE_FEATURES += '${@bb.utils.contains("OVERC_ESSENTIAL_MODE", "read-only", "re
 inherit core-image
 inherit builder-base
 
+#
+# Sets up a basic networking configuration which consists of a veth
+# pair and routing to use the network prime. Usually the veth peer
+# will be moved to the cube-vrf and 'plugged' into the cube lan
+# bridge but this behavior will depend on the existence of the
+# cube-vrf and the network hooks deployed.
+#
+ROOTFS_POSTPROCESS_COMMAND += "setup_essential_networking; "
+
+setup_essential_networking () {
+    # Configure networkd to create a veth pair
+    cat > ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.netdev << EOF
+[NetDev]
+Name=essential
+Kind=veth
+
+[Peer]
+Name=essential-peer
+EOF
+    chmod 644 ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.netdev
+    chown root.root ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.netdev
+
+    # Set network configuration for the 'internal' end of the veth pair
+    cat > ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.network << EOF
+[Match]
+Name=essential
+
+[Network]
+Address=192.168.42.2/24
+Gateway=192.168.42.1
+DNS=192.168.42.1
+EOF
+    chmod 644 ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.network
+    chown root.root ${IMAGE_ROOTFS}/etc/systemd/network/25-veth.network
+
+    # Setup resolv.conf (removing systemd's default link)
+    rm ${IMAGE_ROOTFS}/etc/resolv.conf
+    echo "nameserver 192.168.42.1" > ${IMAGE_ROOTFS}/etc/resolv.conf
+
+    # Add ourselves to the /etc/hosts file
+    echo "192.168.42.2    cube-essential" >> ${IMAGE_ROOTFS}/etc/hosts
+}
+
+
 ROOTFS_POSTPROCESS_COMMAND += '${@bb.utils.contains("IMAGE_FEATURES", "read-only-rootfs", "read_only_essential; ", "", d)}'
 
 read_only_essential () {
