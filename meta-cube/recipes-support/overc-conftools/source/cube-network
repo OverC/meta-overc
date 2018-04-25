@@ -64,9 +64,20 @@ get_cube_vrf_pid() {
 #
 if [ "${action}" = "nslinkup" ]; then
     cname=$(echo ${cubename} | cut -c1-13)
+
     # create the netns symlink
     mkdir -p /var/run/netns
     ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
+
+    if [ "$cname" = "cube-vrf" ]; then
+        # Move essential veth peer into cube-vrf
+        cube_vrf_pid=$(get_cube_vrf_pid)
+	ip link set essential up
+        ip link set essential-peer netns cube-vrf
+	ip netns exec cube-vrf ip link set essential-peer name essential
+	ip netns exec cube-vrf ip link set essential up
+        #nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-add essential
+    fi
     exit 0
 fi
 
@@ -75,6 +86,19 @@ fi
 #
 if [ "${action}" = "nslinkdown" ]; then
     cname=$(echo ${cubename} | cut -c1-13)
+
+    if [ "$cname" = "cube-vrf" ]; then
+	# Move essential veth peer back to rootns. vrf-iface-del deletes the
+	# interface normally so we need to move the interface before calling
+	# vrf-iface-del.
+	ip link set essential down
+	ip netns exec cube-vrf ip link set essential down
+	ip netns exec cube-vrf ip link set essential name essential-peer
+	ip netns exec cube-vrf ip link set essential-peer netns 1
+	# cleans up the interface from OVS
+	#nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-del essential
+    fi
+
     # cleans up the netns symlink
     ip netns delete ${cname} 2> /dev/null
     exit 0

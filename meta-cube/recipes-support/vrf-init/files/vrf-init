@@ -16,5 +16,12 @@ mkdir -p /var/run/openvswitch
 # Create the br-int bridge
 /usr/bin/ovs-vsctl add-br br-int
 
+# Add the essential port. Even though the interface doesn't yet exist
+# this port should always exist.  This is OK since cube-vrf will
+# always exist in the presence of cube-essential (the same may not be
+# said the other way around, outside of the network hooks essential
+# should not know about cube-vrf.
+/usr/bin/ovs-vsctl add-port br-int essential
+
 # We can't exit else the container will be destroyed
 sleep infinity

@@ -1,16 +1,4 @@
 ---
-  - name: setup local hosts
-    lineinfile: dest=/etc/hosts line='192.168.42.2    cube-essential'
-
-  - name: Remove default configuration file for essential
-    file: path=/etc/systemd/network/20-wired.network state=absent
-
-  - name: Remove resolv.conf produced by systemd for essential
-    file: path=/etc/resolv.conf state=absent
-
-  - name: Create new resolv.conf for essential
-    copy: content="nameserver 192.168.42.1\n" dest=/etc/resolv.conf mode=0666
-
   - name: check if timezone is available and timezone pkg is installed
     stat: path=/usr/share/zoneinfo/{{timezone}}
     register: tzinfo
