@@ -21,7 +21,6 @@ SRC_URI = " \
     file://source/COPYING \
     file://source/overc-conftools.service \
     file://source/network_prime/files/25-veth0.network \
-    file://source/network_prime/files/25-br-int.network.essential \
     file://source/network_prime/files/overc-network-prime-port-forward.service \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
@@ -45,7 +44,6 @@ do_install() {
 
     for file in overc-network-prime-port-forward.service \
                 25-veth0.network \
-		25-br-int.network.essential \
                 network_prime_port_forward.sh.erb; do
         install -m 644 ${WORKDIR}/source/network_prime/files/$file \
 	               ${D}/${sysconfdir}/overc-conf/network_prime/

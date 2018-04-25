@@ -72,7 +72,6 @@ RDEPENDS_packagegroup-essential-networking = "\
      iptables \
      net-tools \
      netcat \
-     openvswitch \
      dhcp-client \
     "
 
