@@ -2,12 +2,6 @@
   - name: setup local hosts
     lineinfile: dest=/etc/hosts line='192.168.42.2    cube-essential'
 
-  - name: Create a bridge named br-int
-    openvswitch_bridge: bridge=br-int state=present
-
-  - name: Copy networkd systemd configuration files for essential
-    copy: src=/etc/overc-conf/network_prime/25-br-int.network.essential dest=/etc/systemd/network/25-br-int.network owner=root group=root mode=0644
-
   - name: Remove default configuration file for essential
     file: path=/etc/systemd/network/20-wired.network state=absent
 
