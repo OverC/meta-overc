@@ -1,17 +1,4 @@
 ---
-  - name: check if timezone is available and timezone pkg is installed
-    stat: path=/usr/share/zoneinfo/{{timezone}}
-    register: tzinfo
-    when: not((timezone is undefined) or (timezone|trim == '') or (timezone is none))
-
-  - name: setup timezone if it is available
-    copy: content="{{timezone}}\n" dest=/etc/timezone mode=0644
-    when: tzinfo.stat is defined and tzinfo.stat.exists == True
-
-  - name: create symlink for local time
-    file: src=/usr/share/zoneinfo/{{timezone}} dest=/etc/localtime state=link
-    when: tzinfo.stat is defined and tzinfo.stat.exists == True
-
   - name: create group is initial user is configured
     group: name={{initial_user}} state=present
     when: not((initial_user is undefined) or (initial_user|trim == '') or (initial_user is none))
