@@ -4,8 +4,4 @@
   vars_files:
     - overc_config_vars.yml
 
-  tasks:
-  - include: essential.yml
-    when: first_boot is defined
-
   - include: post.yml

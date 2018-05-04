@@ -1,8 +1,0 @@
----
-  - name: create group is initial user is configured
-    group: name={{initial_user}} state=present
-    when: not((initial_user is undefined) or (initial_user|trim == '') or (initial_user is none))
-
-  - name: create initial user
-    user: name={{initial_user}} password={{initial_passwd}}
-    when: not((initial_user is undefined) or (initial_user|trim == '') or (initial_user is none))

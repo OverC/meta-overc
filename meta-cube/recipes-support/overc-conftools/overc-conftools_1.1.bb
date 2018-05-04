@@ -24,7 +24,6 @@ SRC_URI = " \
     file://source/network_prime/files/overc-network-prime-port-forward.service \
     file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
-    file://source/ansible/essential.yml \
     file://source/ansible/overc_config_vars.yml \
     file://source/ansible/overc.yml \
     file://source/ansible/post.yml \
