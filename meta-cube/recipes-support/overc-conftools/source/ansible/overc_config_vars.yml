@@ -1,8 +1,5 @@
 ---
 # define vars here
-network_prime_container:
-network_device:
 cname: []
-coffset: []
 first_boot: true
 initial_user:

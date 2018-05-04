@@ -2,12 +2,6 @@
   - name: set system id
     command: /etc/overc-conf/system/systemid-set.sh
 
-  - name: restart networking
-    systemd:
-      name: systemd-networkd
-      state: restarted
-    when: first_boot is defined
-
   - name: disable first_boot in next boot
     replace:
       dest: /etc/overc-conf/ansible/overc_config_vars.yml

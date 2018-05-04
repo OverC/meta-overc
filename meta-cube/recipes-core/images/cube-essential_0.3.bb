@@ -131,11 +131,6 @@ ExecStart=/bin/sh -c "/usr/bin/ansible-playbook /etc/overc-conf/ansible/overc.ym
     if [ -e ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network ]; then
 	rm -f ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network
     fi
-    if [ -e ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml ]; then
-        sed -i '/Remove default configuration.*essential/,/20-wired.network/d' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml
-        sed -i '/^ *file.*20-wired.network.essential/,/}/d' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml
-        sed -i 's/\/etc\/resolv.conf/\/run\/systemd\/resolve\/resolv.conf/g' ${IMAGE_ROOTFS}/etc/overc-conf/ansible/essential.yml
-    fi
     if [ -e ${IMAGE_ROOTFS}/etc/ansible/ansible.cfg ]; then
 	sed -i '/^\[defaults\]/a\\ \
 remote_tmp     = /var/lib/misc \
