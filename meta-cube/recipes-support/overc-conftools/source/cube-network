@@ -52,8 +52,11 @@ interface_exists() {
 
 # Get the cube-vrf 'init' PID
 get_cube_vrf_pid() {
-    cube_vrf_ppid=$(ps -ef|grep "pflask.*cube-vrf"|grep -v grep|awk '{print $2}')
-    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +"|grep -v grep|awk '{print $2}')
+    # The "true" parent will have init/systemd as their parent
+    cube_vrf_ppid=$(ps -ef|grep -E "[0-9]+\ +1\ .*pflask.*cube-vrf"|grep -v grep|awk '{print $2}')
+    # There can be multiple pids associated with the ppid at startup but we only care about
+    # the one either launching or running '/sbin/init', so filter accordingly
+    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +.*/sbin/init$"|grep -v grep|awk '{print $2}')
 }
 
 #
@@ -203,7 +206,7 @@ if [ "${action}" = "up" ]; then
     fi
 
     #
-    # Add the veth that stays in essential to the ovs-bridge. This gets us
+    # Add the one end of the veth to the cube-vrf. This gets us
     # connectivity to the network prime, and hence the outside world
     #
     cube_vrf_pid=$(get_cube_vrf_pid)
