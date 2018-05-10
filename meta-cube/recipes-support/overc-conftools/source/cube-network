@@ -59,6 +59,22 @@ get_cube_vrf_pid() {
     echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +.*/sbin/init$"|grep -v grep|awk '{print $2}')
 }
 
+get_vrf_container() {
+    # our default answer
+    vrf_container="cube-vrf"
+    # TODO: brute force. Could be an etcd lookup
+    for c in ls /opt/container/*; do
+	if [ -e "${c}/cube.attributes" ]; then
+	    cat ${c}/cube.attributes | grep -q -w vrf
+	    if [ $? -eq 0 ]; then
+		vrf_container=$(basename ${c})
+	    fi
+	fi
+    done
+
+    echo "${vrf_container}"
+}
+
 #
 # Useful for containers with no interfaces but which still have
 # a netns created which we want to access with 'ip netns'
@@ -66,20 +82,94 @@ get_cube_vrf_pid() {
 # Create the netns link in /var/run/netns
 #
 if [ "${action}" = "nslinkup" ]; then
+    echo "${pid}" > .cube.pid
     cname=$(echo ${cubename} | cut -c1-13)
 
     # create the netns symlink
     mkdir -p /var/run/netns
     ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
 
-    if [ "$cname" = "cube-vrf" ]; then
+    vrf_name=$(get_vrf_container)
+    if [ "$cname" = "${vrf_name}" ]; then
         # Move essential veth peer into cube-vrf
         cube_vrf_pid=$(get_cube_vrf_pid)
+	## from vrf-init
+	# Ensure we have some prerequisites in place
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- mkdir -p /var/run/openvswitch
+
+	# Start the db daemon
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- /usr/share/openvswitch/scripts/ovs-ctl --no-ovs-vswitchd --no-monitor --system-id=random start
+
+	# Start the vswitch daemon
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- /usr/share/openvswitch/scripts/ovs-ctl --no-ovsdb-server --no-monitor --system-id=random start
+
+	# Create the br-int bridge
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- /usr/bin/ovs-vsctl add-br br-int
+
+	# Add the essential port. Even though the interface doesn't yet exist
+	# this port should always exist.  This is OK since cube-vrf will
+	# always exist in the presence of cube-essential (the same may not be
+	# said the other way around, outside of the network hooks essential
+	# should not know about cube-vrf.
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- /usr/bin/ovs-vsctl add-port br-int essential
+
+	nsenter -t ${cube_vrf_pid} -m -n -p -u -- ip link set br-int up
+	## end vrf-init
+	
+	
+	# essential-peer comes from the setup_essential_networking in the essential image recipe
+	# TODO: we could vary the nsname to match the VRF container name
 	ip link set essential up
         ip link set essential-peer netns cube-vrf
 	ip netns exec cube-vrf ip link set essential-peer name essential
 	ip netns exec cube-vrf ip link set essential up
         #nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-add essential
+
+	# is there any other networking configuration ?
+	if [ -f cube.network.type ]; then
+	    network=$(cat cube.network.type)
+	fi
+
+	# TODO: this must become a function and shared with the code below
+	if [ "${network}" = "static" ]; then
+	    # the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
+	    ip=$(cat cube.network.ip)
+	    if [ -z "${ip}" ]; then
+		echo "ERROR: static networking selected and no IP provided"
+		exit 1
+	    fi
+
+	    if [ -f ".cube.device.network-overlay" ]; then
+		# any overlay ethernet devices ?
+		netdev=$(cat .cube.device.network-overlay)
+	    fi
+	    if [ -z "${netdev}" ]; then
+		echo "ERROR: static networking selected and no device configured"
+		exit 1
+	    fi
+
+	    device=$(echo ${netdev} | cut -f1 -d:)
+
+	    # the first entry is the primary, any others are aliases
+	    count=0
+	    for i in ${ip}; do
+		if [ ${count} -eq 0 ]; then
+		    nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev ${device}
+		    primary_ip=$(echo $i | cut -d/ -f1)
+		else
+		    nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev ${device}:${count}
+		fi
+		let count=${count}+1
+	    done
+
+	    gateway="192.168.42.1"
+	    if [ -f "cube.network.gateway" ]; then
+		gateway=$(cat cube.network.gateway)
+	    fi
+	    nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
+
+	    echo "${device}" > .cube.veth
+	fi
     fi
     exit 0
 fi
@@ -90,7 +180,8 @@ fi
 if [ "${action}" = "nslinkdown" ]; then
     cname=$(echo ${cubename} | cut -c1-13)
 
-    if [ "$cname" = "cube-vrf" ]; then
+    vrf_name=$(get_vrf_container)
+    if [ "$cname" = "${vrf_name}" ]; then
 	# Move essential veth peer back to rootns. vrf-iface-del deletes the
 	# interface normally so we need to move the interface before calling
 	# vrf-iface-del.
@@ -99,7 +190,7 @@ if [ "${action}" = "nslinkdown" ]; then
 	ip netns exec cube-vrf ip link set essential name essential-peer
 	ip netns exec cube-vrf ip link set essential-peer netns 1
 	# cleans up the interface from OVS
-	#nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-del essential
+	# TODO: OVS cleanup
     fi
 
     # cleans up the netns symlink
@@ -230,7 +321,7 @@ if [ "${action}" = "up" ]; then
 
     # Bring up the interface we just added to the bridge. It must be up so dhcp
     # can get an ip address.
-    ip link set dev ${veth_name} up
+    nsenter -t ${cube_vrf_pid} ip link set dev ${veth_name} up
 
     # TODO: we should have a third networking mode "self", which means that
     #       we'd make the veth available and let the container itself set up
@@ -363,7 +454,7 @@ if [ "${action}" = "up" ]; then
 
     ## TODO: this should be arbitrated to make sure we don't race, and so that dnsmasq
     ##       can be properly restarted
-    vrf=dom0
+    vrf=$(get_vrf_container)
     grep -q -w "${cname}.cube.lan" /opt/container/${vrf}/rootfs/etc/hosts
     if [ $? -eq 0 ]; then
 	# the name is already in there, replace it

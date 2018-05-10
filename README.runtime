@@ -98,6 +98,7 @@ to ensure minimal connectivity:
   - 192.168.42.1 : is always the network prime
   - 192.168.42.2 : is always essential
   - 192.168.42.3 : is always dom0
+  - 192.168.42.4 : is always the vrf
 
   - if dom0 is the net prime, it is both 42.1 and 42.3 
 

@@ -31,6 +31,22 @@ if [ -z "${pid}" ]; then
     fi
 fi
 
+get_vrf_container() {
+    # our default answer
+    vrf_container="cube-vrf"
+    # TODO: brute force. Could be an etcd lookup
+    for c in ls /opt/container/*; do
+	if [ -e "${c}/cube.attributes" ]; then
+	    cat ${c}/cube.attributes | grep -q -w vrf
+	    if [ $? -eq 0 ]; then
+		vrf_container=$(basename ${c})
+	    fi
+	fi
+    done
+
+    echo "${vrf_container}"
+}
+
 if [ "${action}" = "netprime" ]; then
     netdevs=$(cat .cube.device.network)
     for n in ${netdevs}; do
@@ -59,7 +75,9 @@ if [ "${action}" = "netprime" ]; then
 	    if [ -e "/etc/resolv.conf.${cubename}" ]; then
 		# the VRF (currently dom0) routes our DNS traffic, so we need to get
 		# this captured config into it's dnsmasq.conf
-		vrf="dom0"
+
+		# temp. this should just be a lookup, but hard coding to test the new VRF code
+		vrf=$(get_vrf_container)
 		if [ -e ".cube.vrf.name" ]; then
 		    vrf=$(cat .cube.vrf.name)
 		fi
@@ -76,16 +94,16 @@ if [ "${action}" = "netprime" ]; then
 		cat /etc/resolv.conf.${cubename} >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
 
 		# These may need to be refined, but they nat and forward and DNS
-		# traffic from the netprime (.1) to the VRF (currently dom0 @ .3)
+		# traffic from the netprime (.1) to the VRF (currently "the vrf" @ .4)
 		# TODO: the IPs could be variables
 
-		# check to make sure we aren't both .3 and .1 .. since we don't need any
+		# check to make sure we aren't both .4 and .1 .. since we don't need any
 		# port forwards in that case
 		forward_dns_to_vrf=t
 		if [ -f "cube.network.ip" ]; then
 		    for ip in $(cat cube.network.ip); do
 			ip_no_mask=${ip%/*}
-			if [ "${ip_no_mask}" == "192.168.42.3" ]; then
+			if [ "${ip_no_mask}" == "192.168.42.4" ]; then
 			    forward_dns_to_vrf=
 			fi
 		    done
@@ -93,20 +111,22 @@ if [ "${action}" = "netprime" ]; then
 
 		if [ -n "${forward_dns_to_vrf}" ]; then
 		    for ip in 192.168.42.1; do
-			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.3:53
-			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.3:53
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.4:53
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.4:53
 		    done
 		    # we need localhost, or the netprime won't have working DNS itself
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.3:53
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.3:53
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.4:53
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.4:53
 
 		    # TODO. this shouldn't be run over and over and over ...
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -I POSTROUTING -d 192.168.42.0/24 -j MASQUERADE
 		fi
 
-		# Enter dom0 and restart dnsmasq
-		dom0_pid=$(cat /opt/container/dom0/.cube.pid)
-		nsenter -t ${dom0_pid} -m -n -u -i -p -C --preserve-credentials -- systemctl restart dnsmasq
+		# Enter vrf and restart dnsmasq
+		vrf_name=$(get_vrf_container)
+		vrf_pid=$(cat /opt/container/${vrf_name}/.cube.pid)
+
+		nsenter -t ${vrf_pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/init restart
 	    fi
 	
 	    # We need to track the pids of dhclient so it can be killed later if the
@@ -132,7 +152,8 @@ if [ "${action}" = "vrf" ]; then
 	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c "echo \"interface=${veth_name}\" >> /etc/dnsmasq.conf"
 	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo "dhcp-range=192.168.42.100,192.168.42.200,2h" >> /etc/dnsmasq.conf'
 	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo "dhcp-option=option:router,192.168.42.1" >> /etc/dnsmasq.conf'
-	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials systemctl restart dnsmasq
+
+	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/init restart
 	if [ $? -ne 0 ]; then
 	    exit 0
 	fi

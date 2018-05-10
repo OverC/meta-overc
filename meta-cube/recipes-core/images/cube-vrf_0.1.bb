@@ -10,6 +10,8 @@ require recipes-core/images/c3-app-container.inc
 IMAGE_INSTALL += " \
     openvswitch \
     iproute2 \
+    dnsmasq \
+    base-passwd \
     vrf-init \
     bash \
 "

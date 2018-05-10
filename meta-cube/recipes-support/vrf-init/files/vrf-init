@@ -1,27 +1,41 @@
 #!/bin/bash
 
-# Ensure we have some prerequisites in place
-mkdir -p /var/run/openvswitch
 
-# Start the db daemon
-/usr/share/openvswitch/scripts/ovs-ctl \
-    --no-ovs-vswitchd --no-monitor --system-id=random \
-    start
+if [ "$1" == "start" ] || [ -z "$1" ]; then
+    # Ensure we have some prerequisites in place
+    mkdir -p /var/run/openvswitch
 
-# Start the vswitch daemon
-/usr/share/openvswitch/scripts/ovs-ctl \
-    --no-ovsdb-server --no-monitor --system-id=random \
-    start
+    # Start the db daemon
+    #/usr/share/openvswitch/scripts/ovs-ctl \
+    #--no-ovs-vswitchd --no-monitor --system-id=random \
+    #start
 
-# Create the br-int bridge
-/usr/bin/ovs-vsctl add-br br-int
+    # Start the vswitch daemon
+    #/usr/share/openvswitch/scripts/ovs-ctl \
+    #--no-ovsdb-server --no-monitor --system-id=random \
+    #start
 
-# Add the essential port. Even though the interface doesn't yet exist
-# this port should always exist.  This is OK since cube-vrf will
-# always exist in the presence of cube-essential (the same may not be
-# said the other way around, outside of the network hooks essential
-# should not know about cube-vrf.
-/usr/bin/ovs-vsctl add-port br-int essential
+    # Create the br-int bridge
+    #/usr/bin/ovs-vsctl add-br br-int
 
-# We can't exit else the container will be destroyed
-sleep infinity
+    # Add the essential port. Even though the interface doesn't yet exist
+    # this port should always exist.  This is OK since cube-vrf will
+    # always exist in the presence of cube-essential (the same may not be
+    # said the other way around, outside of the network hooks essential
+    # should not know about cube-vrf.
+    #/usr/bin/ovs-vsctl add-port br-int essential
+
+    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service
+
+    # We can't exit else the container will be destroyed
+    sleep infinity
+fi
+
+if [ "$1" == "restart" ]; then
+    dnspid=$(cat /var/run/dnsmasq.pid)
+    if [ -n "${dnspid}" ]; then
+	kill -9 ${dnspid}
+    fi
+
+    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service
+fi
