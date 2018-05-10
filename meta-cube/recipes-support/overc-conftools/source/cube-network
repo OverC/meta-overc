@@ -72,9 +72,11 @@ if [ "${action}" = "nslinkup" ]; then
     mkdir -p /var/run/netns
     ln -sfT /proc/${pid}/ns/net /var/run/netns/${cname}
 
+    # TODO: this needs to be an attribute check ...
     if [ "$cname" = "cube-vrf" ]; then
         # Move essential veth peer into cube-vrf
         cube_vrf_pid=$(get_cube_vrf_pid)
+	# essential-peer comes from the setup_essential_networking in the essential image recipe
 	ip link set essential up
         ip link set essential-peer netns cube-vrf
 	ip netns exec cube-vrf ip link set essential-peer name essential
