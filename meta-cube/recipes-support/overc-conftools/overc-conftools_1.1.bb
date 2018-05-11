@@ -20,7 +20,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 SRC_URI = " \
     file://source/COPYING \
     file://source/overc-conftools.service \
-    file://source/system/systemid-set.sh \
+    file://source/overc-conf.sh \
+    file://source/overc-conf.d/systemid-set.sh \
     file://source/ansible/overc_config_vars.yml \
     file://source/ansible/overc.yml \
     file://source/ansible/post.yml \
@@ -35,8 +36,10 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 do_install() {
-    install -d ${D}/${sysconfdir}/overc-conf/system
-    install -m 755 ${WORKDIR}/source/system/systemid-set.sh ${D}/${sysconfdir}/overc-conf/system/
+    install -d ${D}/${sysconfdir}/overc-conf
+    install -m 755 ${WORKDIR}/source/overc-conf.sh ${D}/${sysconfdir}/overc-conf/
+    install -d ${D}/${sysconfdir}/overc-conf/overc-conf.d
+    install -m 755 ${WORKDIR}/source/overc-conf.d/systemid-set.sh ${D}/${sysconfdir}/overc-conf/overc-conf.d/
 
     install -d ${D}/${sysconfdir}/overc-conf/ansible
     install -m 644 ${WORKDIR}/source/ansible/* ${D}/${sysconfdir}/overc-conf/ansible/

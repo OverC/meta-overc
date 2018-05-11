@@ -1,7 +1,4 @@
 ---
-  - name: set system id
-    command: /etc/overc-conf/system/systemid-set.sh
-
   - name: disable first_boot in next boot
     replace:
       dest: /etc/overc-conf/ansible/overc_config_vars.yml
