@@ -20,9 +20,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}:"
 SRC_URI = " \
     file://source/COPYING \
     file://source/overc-conftools.service \
-    file://source/network_prime/files/25-veth0.network \
-    file://source/network_prime/files/overc-network-prime-port-forward.service \
-    file://source/network_prime/files/network_prime_port_forward.sh.erb \
     file://source/system/systemid-set.sh \
     file://source/ansible/overc_config_vars.yml \
     file://source/ansible/overc.yml \
@@ -38,16 +35,6 @@ SRC_URI = " \
 S = "${WORKDIR}"
 
 do_install() {
-
-    install -d ${D}/${sysconfdir}/overc-conf/network_prime
-
-    for file in overc-network-prime-port-forward.service \
-                25-veth0.network \
-                network_prime_port_forward.sh.erb; do
-        install -m 644 ${WORKDIR}/source/network_prime/files/$file \
-	               ${D}/${sysconfdir}/overc-conf/network_prime/
-    done
-
     install -d ${D}/${sysconfdir}/overc-conf/system
     install -m 755 ${WORKDIR}/source/system/systemid-set.sh ${D}/${sysconfdir}/overc-conf/system/
 
