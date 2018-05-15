@@ -70,7 +70,8 @@ Networking for the platform is initially configured/controlled by the installer,
 is subsequently managed at runtime via configuration values associated with a given
 installer.
 
- essential: ansible manages the base networking configuration of the platform
+ essential: Has a persistent veth pair which will usually have one endpoint
+            moved to a VRF namespace and added to the system switch
  
  cube*: pflask configures and manages the networking of cubes via hooks and 
         cube-cfg values

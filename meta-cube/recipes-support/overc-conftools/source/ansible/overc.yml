@@ -1,7 +1,0 @@
----
-- hosts: localhost
-  connection: local
-  vars_files:
-    - overc_config_vars.yml
-
-  - include: post.yml

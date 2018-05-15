@@ -120,22 +120,8 @@ read_only_essential () {
         rm ${IMAGE_ROOTFS}/etc/system-id -f
     fi
     ln -s ../run/systemd/resolve/system-id ${IMAGE_ROOTFS}/etc/system-id
-    if [ -e ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service ]; then
-	sed -i '/ExecStart/d' ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service
-	sed -i '/^\[Service\]/a\\ \
-ExecStartPre=/bin/sh -c "cp /etc/hosts0 /run/systemd/resolve/hosts" \
-ExecStartPre=/bin/sh -c "cp /etc/dnsmasq.conf0 /run/systemd/resolve/dnsmasq.conf" \
-ExecStart=/bin/sh -c "/usr/bin/ansible-playbook /etc/overc-conf/ansible/overc.yml" \
-' ${IMAGE_ROOTFS}${systemd_system_unitdir}/overc-conftools.service
-    fi
     if [ -e ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network ]; then
 	rm -f ${IMAGE_ROOTFS}/etc/systemd/network/20-wired.network
-    fi
-    if [ -e ${IMAGE_ROOTFS}/etc/ansible/ansible.cfg ]; then
-	sed -i '/^\[defaults\]/a\\ \
-remote_tmp     = /var/lib/misc \
-local_tmp      = /var/lib/misc \
-' ${IMAGE_ROOTFS}/etc/ansible/ansible.cfg
     fi
     ln -s ../run/systemd/resolve/localtime ${IMAGE_ROOTFS}/etc/localtime
     ln -s ../run/systemd/resolve/timezone ${IMAGE_ROOTFS}/etc/timezone

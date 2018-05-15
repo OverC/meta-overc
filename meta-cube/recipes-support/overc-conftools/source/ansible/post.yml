@@ -1,6 +1,0 @@
----
-  - name: disable first_boot in next boot
-    replace:
-      dest: /etc/overc-conf/ansible/overc_config_vars.yml
-      regexp: '^first_boot: true'
-      replace: '#first_boot: true'

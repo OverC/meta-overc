@@ -9,7 +9,7 @@ DESCRIPTION = "Set of configuration files and systemd services \
   that images can include to allow for customization of images \
   through a set of supported tools. Including this package in an \
   image does not necessarily result in the configurations being \
-  applied. Supported tools currently include: ansible"
+  applied."
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
@@ -22,9 +22,6 @@ SRC_URI = " \
     file://source/overc-conftools.service \
     file://source/overc-conf.sh \
     file://source/overc-conf.d/systemid-set.sh \
-    file://source/ansible/overc_config_vars.yml \
-    file://source/ansible/overc.yml \
-    file://source/ansible/post.yml \
     file://source/cube-admin \
     file://source/cube-network \
     file://source/cube-netconfig \
@@ -40,9 +37,6 @@ do_install() {
     install -m 755 ${WORKDIR}/source/overc-conf.sh ${D}/${sysconfdir}/overc-conf/
     install -d ${D}/${sysconfdir}/overc-conf/overc-conf.d
     install -m 755 ${WORKDIR}/source/overc-conf.d/systemid-set.sh ${D}/${sysconfdir}/overc-conf/overc-conf.d/
-
-    install -d ${D}/${sysconfdir}/overc-conf/ansible
-    install -m 644 ${WORKDIR}/source/ansible/* ${D}/${sysconfdir}/overc-conf/ansible/
 
     #to create an empty system-id file to tell overc-installer
     #to bind mount it to dom0/cube-desktop to share one system
@@ -66,7 +60,6 @@ do_install() {
 }
 
 RDEPENDS_${PN} += " \
-    python3-ansible \
     bash \
     "
 
