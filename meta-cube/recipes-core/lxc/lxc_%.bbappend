@@ -15,10 +15,10 @@ SRC_URI += " \
     file://lxc-overlayrestore \
     file://overlayrestore \
     file://overlaycreate \
-    file://silence_no_escape_lxc-console.patch \
-    file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch \
-    file://lxc-confile-support-the-network-link-string-pattern-matc.patch \
     "
+# Fails to apply to v3.0.0 but possibly something we want to port at
+# some point. Dropping for now to allow LXC to build.
+#    file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch
 
 do_install_append(){
 	# essential system controls the network, so lxc-net.service is redundant,

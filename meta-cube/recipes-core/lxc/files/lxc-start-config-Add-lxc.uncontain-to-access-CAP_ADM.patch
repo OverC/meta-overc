@@ -25,7 +25,7 @@ diff --git a/doc/lxc.container.conf.sgml.in b/doc/lxc.container.conf.sgml.in
 index a4ef46d..4c183fa 100644
 --- a/doc/lxc.container.conf.sgml.in
 +++ b/doc/lxc.container.conf.sgml.in
-@@ -1185,6 +1185,21 @@ proc proc proc nodev,noexec,nosuid 0 0
+@@ -1509,6 +1509,21 @@ proc proc proc nodev,noexec,nosuid 0 0
              </para>
            </listitem>
          </varlistentry>
@@ -51,18 +51,18 @@ diff --git a/src/lxc/conf.h b/src/lxc/conf.h
 index c790bf7..11dd3b7 100644
 --- a/src/lxc/conf.h
 +++ b/src/lxc/conf.h
-@@ -332,6 +332,11 @@ struct lxc_conf {
- 	unsigned int kmsg;  // if 1, create /dev/kmsg symlink
- 	char *rcfile;	// Copy of the top level rcfile we read
+@@ -283,6 +283,11 @@ struct lxc_conf {
+ 	int stopsignal;	/* signal used to hard stop container */
+ 	char *rcfile;	/* Copy of the top level rcfile we read */
  
-+	// This admin container gets CAP_ADMIN_NS for the purpose
-+	// of later allowing an escape via setns() to the root
-+	// name space
++	/* This admin container gets CAP_ADMIN_NS for the purpose
++	 * of later allowing an escape via setns() to the root
++	 *  name space */
 +	int uncontain;
 +
- 	// Logfile and logleve can be set in a container config file.
- 	// Those function as defaults.  The defaults can be overriden
- 	// by command line.  However we don't want the command line
+ 	/* Logfile and logleve can be set in a container config file. Those
+ 	 * function as defaults. The defaults can be overriden by command line.
+ 	 * However we don't want the command line specified values to be saved
 diff --git a/src/lxc/confile.c b/src/lxc/confile.c
 index 9b22c6d..7e7fdef 100644
 --- a/src/lxc/confile.c
@@ -109,7 +109,7 @@ diff --git a/src/lxc/namespace.h b/src/lxc/namespace.h
 index 4916950..2655494 100644
 --- a/src/lxc/namespace.h
 +++ b/src/lxc/namespace.h
-@@ -31,6 +31,9 @@
+@@ -64,6 +64,9 @@
  #ifndef CLONE_FS
  #  define CLONE_FS                0x00000200
  #endif
