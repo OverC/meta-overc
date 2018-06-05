@@ -561,7 +561,7 @@ clean_config_artifacts()
     fi
 
     if [ "${type}" = "device" ] || [ "${type}" = "all" ]; then
-	rm -f ${out_dir}/.cube.device ${out_dir}/.cube.device.network ${out_dir}/.cube.device.vt
+	rm -f ${out_dir}/.cube.device ${out_dir}/.cube.device.network ${out_dir}/.cube.device.network-overlay ${out_dir}/.cube.device.vt
     fi
 
     if [ "${type}" = "hooks" ] || [ "${type}" = "all" ]; then
@@ -1984,6 +1984,26 @@ case "${cmd}" in
 
 	    # save the mount information for the generation phase
 	    case "${device_type}" in
+		network-overlay)
+		    check_isset ${out_dir}/.cube.device.network-overlay "$essential_device:$container_device"
+		    if [ $? -eq 1 ]; then
+			alreadyset=t
+		    fi
+		    case ${op} in
+			+)
+			    if [ -z "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
+				echo "$essential_device:$container_device"  >> ${out_dir}/.cube.device.network-overlay
+			    fi
+			    ;;
+			-)
+			    if [ -n "${alreadyset}" ]; then
+				container_mark_regen ${container_name}
+				sed "\#^${essential_device}:${container_device}\$#d" -i ${out_dir}/.cube.device.network-overlay
+			    fi
+			    ;;
+		    esac
+		    ;;
 		network)
 		    check_isset ${out_dir}/.cube.device.network "$essential_device:$container_device"
 		    if [ $? -eq 1 ]; then
