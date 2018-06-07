@@ -59,7 +59,9 @@ if [ "${action}" = "netprime" ]; then
 	    if [ -e "/etc/resolv.conf.${cubename}" ]; then
 		# the VRF (currently dom0) routes our DNS traffic, so we need to get
 		# this captured config into it's dnsmasq.conf
-		vrf="dom0"
+
+		# temp. this should just be a lookup, but hard coding to test the new VRF code
+		vrf="cube-vrf"
 		if [ -e ".cube.vrf.name" ]; then
 		    vrf=$(cat .cube.vrf.name)
 		fi
@@ -82,23 +84,23 @@ if [ "${action}" = "netprime" ]; then
 		# check to make sure we aren't both .3 and .1 .. since we don't need any
 		# port forwards in that case
 		forward_dns_to_vrf=t
-		if [ -f "cube.network.ip" ]; then
-		    for ip in $(cat cube.network.ip); do
-			ip_no_mask=${ip%/*}
-			if [ "${ip_no_mask}" == "192.168.42.3" ]; then
-			    forward_dns_to_vrf=
-			fi
-		    done
-		fi
+		# if [ -f "cube.network.ip" ]; then
+		#     for ip in $(cat cube.network.ip); do
+		# 	ip_no_mask=${ip%/*}
+		# 	if [ "${ip_no_mask}" == "192.168.42.3" ]; then
+		# 	    forward_dns_to_vrf=
+		# 	fi
+		#     done
+		# fi
 
 		if [ -n "${forward_dns_to_vrf}" ]; then
 		    for ip in 192.168.42.1; do
-			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.3:53
-			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.3:53
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination 192.168.42.4:53
+			nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -A PREROUTING  -d ${ip} -p udp -m udp --dport 53 -j DNAT --to-destination 192.168.42.4:53
 		    done
 		    # we need localhost, or the netprime won't have working DNS itself
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.3:53
-		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.3:53
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p tcp --dport 53 -j DNAT --to 192.168.42.4:53
+		    nsenter -t ${pid} -n --preserve-credentials -- iptables -A OUTPUT -t nat -p udp --dport 53 -j DNAT --to 192.168.42.4:53
 
 		    # TODO. this shouldn't be run over and over and over ...
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -I POSTROUTING -d 192.168.42.0/24 -j MASQUERADE

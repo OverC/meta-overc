@@ -152,6 +152,8 @@ if [ "${action}" = "nslinkup" ]; then
 		gateway=$(cat cube.network.gateway)
 	    fi
 	    nsenter -t ${pid} -n --preserve-credentials ip route add default via ${gateway}
+
+	    echo "${device}" > .cube.veth
 	fi
     fi
     exit 0
@@ -173,6 +175,8 @@ if [ "${action}" = "nslinkdown" ]; then
 	ip netns exec cube-vrf ip link set essential-peer netns 1
 	# cleans up the interface from OVS
 	#nsenter -t ${cube_vrf_pid} -m -n -p -u /usr/bin/vrf-iface-del essential
+
+	# TODO: OVS cleanup
     fi
 
     # cleans up the netns symlink
@@ -436,7 +440,7 @@ if [ "${action}" = "up" ]; then
 
     ## TODO: this should be arbitrated to make sure we don't race, and so that dnsmasq
     ##       can be properly restarted
-    vrf=dom0
+    vrf=cube-vrf
     grep -q -w "${cname}.cube.lan" /opt/container/${vrf}/rootfs/etc/hosts
     if [ $? -eq 0 ]; then
 	# the name is already in there, replace it
