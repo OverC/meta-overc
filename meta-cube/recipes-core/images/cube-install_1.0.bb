@@ -81,6 +81,7 @@ PACKAGE_INSTALL += " \
     bzip2 \
     python \
     btrfs-tools \
+    util-linux-uuidgen \
     "
 
 # Required by cubeit
