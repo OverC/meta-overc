@@ -28,6 +28,6 @@ dockerclient_sysroot_preprocess () {
 }
 
 FILES_${PN} += "${prefix}/local/go/src/${PKG_NAME}/*"
-RDEPENDS_${PN} = "bash"
+RDEPENDS_${PN} = "bash perl"
 
 deltask compile_ptest_base
