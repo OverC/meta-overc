@@ -1,4 +1,4 @@
-From 42c69bb787a8aab540470808d595c724ca928c4d Mon Sep 17 00:00:00 2001
+From 15c58b3009c031cd6e8f599618912f9952b245eb Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Sun, 3 Jul 2016 07:44:32 -0500
 Subject: [PATCH] Add -nocheckpid option
@@ -15,19 +15,27 @@ context.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 
+---
+ attacher.c   | 17 +++++++++++------
+ doc/screen.1 |  7 +++++++
+ help.c       |  1 +
+ screen.c     | 16 +++++++++++++---
+ socket.c     |  3 ++-
+ 5 files changed, 34 insertions(+), 10 deletions(-)
+
 diff --git a/attacher.c b/attacher.c
-index 1052549cbd57..2636ebf5579b 100644
+index 196993f..84bab28 100644
 --- a/attacher.c
 +++ b/attacher.c
-@@ -59,6 +59,7 @@ extern char HostName[];
- extern struct passwd *ppp;
- extern char *attach_tty, *attach_term, *LoginName, *preselect;
+@@ -64,6 +64,7 @@ extern bool attach_tty_is_in_new_ns;
+ /* Content of the tty symlink when attach_tty_is_in_new_ns == true. */
+ extern char attach_tty_name_in_ns[];
  extern int xflag, dflag, rflag, quietflag, adaptflag;
 +extern int nopidcheckflag;
  extern struct mode attach_Mode;
  extern struct NewWindow nwin_options;
  extern int MasterPid, attach_fd;
-@@ -307,11 +308,14 @@ int how;
+@@ -314,11 +315,14 @@ int how;
  
    debug2("Attach: uid %d euid %d\n", (int)getuid(), (int)geteuid());
    MasterPid = 0;
@@ -46,7 +54,7 @@ index 1052549cbd57..2636ebf5579b 100644
      }
    debug1("Attach decided, it is '%s'\n", SockPath);
    debug1("Attach found MasterPid == %d\n", MasterPid);
-@@ -459,7 +463,8 @@ static sigret_t
+@@ -466,7 +470,8 @@ static sigret_t
  AttacherSigInt SIGDEFARG
  {
    signal(SIGINT, AttacherSigInt);
@@ -56,7 +64,7 @@ index 1052549cbd57..2636ebf5579b 100644
    SIGRETURN;
  }
  
-@@ -627,7 +632,7 @@ Attacher()
+@@ -636,7 +641,7 @@ Attacher()
        alarm(15);
        pause();
        alarm(0);
@@ -66,7 +74,7 @@ index 1052549cbd57..2636ebf5579b 100644
  	  debug1("attacher: Panic! MasterPid %d does not exist.\n", MasterPid);
  	  AttacherPanic++;
 diff --git a/doc/screen.1 b/doc/screen.1
-index d3aab704d9b5..bdcdc895f33e 100644
+index 9eaf694..ff693e3 100644
 --- a/doc/screen.1
 +++ b/doc/screen.1
 @@ -299,6 +299,13 @@ Do not terminate the screen session when the final window is closed.  The
@@ -84,7 +92,7 @@ index d3aab704d9b5..bdcdc895f33e 100644
  Preselect a window. This is useful when you want to reattach to a
  specific window or you want to send a command via the \*Q-X\*U
 diff --git a/help.c b/help.c
-index fa95a4ae697a..092d98eaf2d6 100644
+index fa95a4a..092d98e 100644
 --- a/help.c
 +++ b/help.c
 @@ -88,6 +88,7 @@ void exit_with_usage(char *myname, char *message, char *arg)
@@ -96,10 +104,10 @@ index fa95a4ae697a..092d98eaf2d6 100644
    printf("-p window     Preselect the named window if it exists.\n");
    printf("-q            Quiet startup. Exits with non-zero return code if unsuccessful.\n");
 diff --git a/screen.c b/screen.c
-index 5553bf85f2ec..3b17d2395237 100644
+index e6739a9..a0d3204 100644
 --- a/screen.c
 +++ b/screen.c
-@@ -213,6 +213,7 @@ char *wlisttit;
+@@ -221,6 +221,7 @@ char *wlisttit;
  int auto_detach = 1;
  int iflag, rflag, dflag, lsflag, quietflag, wipeflag, xflag;
  int noexitflag;
@@ -107,7 +115,7 @@ index 5553bf85f2ec..3b17d2395237 100644
  int cmdflag;
  int queryflag = -1;
  int adaptflag;
-@@ -697,9 +698,18 @@ int main(int ac, char** av)
+@@ -702,9 +703,18 @@ int main(int ac, char** av)
              mflag = 1;
              break;
            case 'n':
@@ -130,10 +138,10 @@ index 5553bf85f2ec..3b17d2395237 100644
              break;
  
 diff --git a/socket.c b/socket.c
-index e464a62388c6..bad332c5062f 100644
+index 88c3dd8..faf32bb 100644
 --- a/socket.c
 +++ b/socket.c
-@@ -76,6 +76,7 @@ static void  AskPassword __P((struct msg *));
+@@ -77,6 +77,7 @@ static void  AskPassword __P((struct msg *));
  extern char *RcFileName, *extra_incap, *extra_outcap;
  extern int ServerSocket, real_uid, real_gid, eff_uid, eff_gid;
  extern int dflag, iflag, rflag, lsflag, quietflag, wipeflag, xflag;
@@ -141,7 +149,7 @@ index e464a62388c6..bad332c5062f 100644
  extern int queryflag;
  extern char *attach_tty, *LoginName, HostName[];
  extern struct display *display, *displays;
-@@ -862,7 +863,7 @@ struct win *wi;
+@@ -885,7 +886,7 @@ struct win *wi;
  	return -1;
      }
  
@@ -150,6 +158,3 @@ index e464a62388c6..bad332c5062f 100644
      {
        Msg(0, "Attach attempt with bad pid(%d)!", pid);
        return -1;
--- 
-2.11.0.rc2
-

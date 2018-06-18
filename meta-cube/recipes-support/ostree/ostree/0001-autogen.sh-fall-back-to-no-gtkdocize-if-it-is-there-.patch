@@ -1,4 +1,4 @@
-From 6a025e5eb379ae4b813eedba43f622abd8244ade Mon Sep 17 00:00:00 2001
+From 854cae8bd29ca0d28c9eb22427cf4960414d2cb3 Mon Sep 17 00:00:00 2001
 From: Krisztian Litkey <kli@iki.fi>
 Date: Sat, 10 Sep 2016 22:15:21 +0300
 Subject: [PATCH] autogen.sh: fall back to no gtkdocize if it is there but
@@ -9,7 +9,7 @@ Subject: [PATCH] autogen.sh: fall back to no gtkdocize if it is there but
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/autogen.sh b/autogen.sh
-index 0f32089..00f5069 100755
+index 689bba8..1f7d14c 100755
 --- a/autogen.sh
 +++ b/autogen.sh
 @@ -25,7 +25,13 @@ EXTRA_DIST =
@@ -26,7 +26,4 @@ index 0f32089..00f5069 100755
 +}
  fi
  
- cd $olddir
--- 
-2.5.5
-
+ if ! test -f libglnx/README.md || ! test -f bsdiff/README.md; then

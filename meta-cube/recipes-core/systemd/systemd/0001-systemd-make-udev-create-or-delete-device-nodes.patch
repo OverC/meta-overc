@@ -1,4 +1,4 @@
-From 46c4dea510d216f79e38570cdfbdb4e6198a3beb Mon Sep 17 00:00:00 2001
+From adde13ff0d782152345716e53a35d96936955e77 Mon Sep 17 00:00:00 2001
 From: Bruce Ashfield <bruce.ashfield@windriver.com>
 Date: Thu, 26 Nov 2015 00:33:06 -0500
 Subject: [PATCH] systemd: make udev create or delete device nodes
@@ -13,13 +13,16 @@ it usually mount tmpfs to its /dev/, thus the "create" and
 Signed-off-by: fupan li <fupan.li@windriver.com>
 [bva: ported to systemd 225]
 Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+
 ---
- src/udev/udev-node.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ src/udev/udev-node.c | 102 ++++++++++++++++++++++++++++++++++++++++++++++++++-
  1 file changed, 100 insertions(+), 2 deletions(-)
 
+diff --git a/src/udev/udev-node.c b/src/udev/udev-node.c
+index bb84588..77af381 100644
 --- a/src/udev/udev-node.c
 +++ b/src/udev/udev-node.c
-@@ -33,6 +33,62 @@
+@@ -35,6 +35,62 @@
  #include "string-util.h"
  #include "udev.h"
  
@@ -82,7 +85,7 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
  static int node_symlink(struct udev_device *dev, const char *node, const char *slink) {
          struct stat stats;
          char target[UTIL_PATH_SIZE];
-@@ -264,8 +320,13 @@ static int node_permissions_apply(struct
+@@ -265,8 +321,13 @@ static int node_permissions_apply(struct udev_device *dev, bool apply,
                  mode |= S_IFCHR;
  
          if (lstat(devnode, &stats) != 0) {
@@ -98,7 +101,7 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
          }
  
          if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum)) {
-@@ -359,13 +420,50 @@ void udev_node_add(struct udev_device *d
+@@ -359,13 +420,50 @@ void udev_node_add(struct udev_device *dev, bool apply,
  }
  
  void udev_node_remove(struct udev_device *dev) {
@@ -147,5 +150,5 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 +            rmdir_parents(udev_device_get_devnode(dev), "/");
 +
          /* remove /dev/{block,char}/$major:$minor */
-         xsprintf(filename, "/dev/%s/%u:%u",
-                  streq(udev_device_get_subsystem(dev), "block") ? "block" : "char",
+         xsprintf_dev_num_path(filename,
+                               streq(udev_device_get_subsystem(dev), "block") ? "block" : "char",
