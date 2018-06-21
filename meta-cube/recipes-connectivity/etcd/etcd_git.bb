@@ -81,17 +81,17 @@ do_install() {
 	install ${S}/src/import/bin/etcd ${D}/${bindir}/etcd
 	install ${S}/src/import/bin/etcdctl ${D}/${bindir}/etcdctl
 
-	install -d ${D}/lib/systemd/system/
-	install -m 0644 ${S}/src/import/contrib/systemd/etcd.service ${D}/lib/systemd/system/
+	install -d ${D}${systemd_unitdir}/system/
+	install -m 0644 ${S}/src/import/contrib/systemd/etcd.service ${D}${systemd_unitdir}/system/
 
 	# make sure etcd is willing to listen for more than localhost
-	sed -i 's%ExecStart.*%ExecStart=/usr/bin/etcd -listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 -advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001%g' ${D}/lib/systemd/system/etcd.service
+	sed -i 's%ExecStart.*%ExecStart=/usr/bin/etcd -listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 -advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001%g' ${D}${systemd_unitdir}/system/etcd.service
 
 	# etcd state is in /var/lib/etcd
 	install -d ${D}/${localstatedir}/lib/${BPN}
 
 	# we aren't creating a user, so we need to comment out this line
-	sed -i '/User/s/^/#/' ${D}/lib/systemd/system/etcd.service
+	sed -i '/User/s/^/#/' ${D}${systemd_unitdir}/system/etcd.service
 }
 
 deltask compile_ptest_base

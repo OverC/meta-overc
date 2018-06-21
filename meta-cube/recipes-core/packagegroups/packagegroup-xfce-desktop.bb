@@ -20,5 +20,5 @@ RDEPENDS_${PN} = " \
 
 pkg_postinst_${PN}() {
 #!/bin/sh -e
-ln -sf /lib/systemd/system/graphical.target /etc/systemd/system/default.target
+ln -sf ${systemd_unitdir}/system/graphical.target /etc/systemd/system/default.target
 }
