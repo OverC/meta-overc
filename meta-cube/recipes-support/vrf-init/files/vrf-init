@@ -1,29 +1,10 @@
 #!/bin/bash
 
-
+# TODO: move to a simple init system, like docker's tiny-init, since we will
+#       miss some reaping / exiting capabilities with this
 if [ "$1" == "start" ] || [ -z "$1" ]; then
     # Ensure we have some prerequisites in place
     mkdir -p /var/run/openvswitch
-
-    # Start the db daemon
-    #/usr/share/openvswitch/scripts/ovs-ctl \
-    #--no-ovs-vswitchd --no-monitor --system-id=random \
-    #start
-
-    # Start the vswitch daemon
-    #/usr/share/openvswitch/scripts/ovs-ctl \
-    #--no-ovsdb-server --no-monitor --system-id=random \
-    #start
-
-    # Create the br-int bridge
-    #/usr/bin/ovs-vsctl add-br br-int
-
-    # Add the essential port. Even though the interface doesn't yet exist
-    # this port should always exist.  This is OK since cube-vrf will
-    # always exist in the presence of cube-essential (the same may not be
-    # said the other way around, outside of the network hooks essential
-    # should not know about cube-vrf.
-    #/usr/bin/ovs-vsctl add-port br-int essential
 
     /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service
 
