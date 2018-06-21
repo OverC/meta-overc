@@ -37,7 +37,29 @@ for c in $(ls "${container_dir}/"); do
     fi
 done
 
+# *very* simple dependency resolution. We do not worry about cycles in a
+# graph, or conflicting dependencies. We can just ensure that container 'A'
+# is started before container 'B'.
+start_order=""
 for container in ${container_names}; do
+    if [ -e "${container_dir}/${container}/depends" ]; then
+	# todo: process this if it is a list
+	depend_container=$(cat ${container_dir}/${container}/depends)
+	echo "${start_order}" | grep -q -w ${depend_container}
+	if [ $? -ne 0 ]; then
+	    # the dependency isn't in the start list already, add it first
+	    start_order="${start_order} ${depend_container} ${container}"
+	fi
+    fi
+
+    # no depends, just add it!
+    echo "${start_order}" | grep -q -w ${container}
+    if [ $? -ne 0 ]; then
+	start_order="${start_order} ${container}"
+    fi
+done
+
+for container in ${start_order}; do
     # TODO: add non pflask launches ...
     if [ -e "${container_dir}/${container}/pflask.cmd" ]; then
 	# pflask launch

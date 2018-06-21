@@ -153,10 +153,8 @@ if [ "${action}" = "vrf" ]; then
 	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo "dhcp-range=192.168.42.100,192.168.42.200,2h" >> /etc/dnsmasq.conf'
 	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo "dhcp-option=option:router,192.168.42.1" >> /etc/dnsmasq.conf'
 
-	nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/init restart
-	if [ $? -ne 0 ]; then
-	    exit 0
-	fi
+	# dnsmasq is in the vrf, and we are the vrf, so there's no need to
+	# restart dnsmasq in this hook.
     fi
 
     # create the local lan configuration. When the oci-network hooks run, they'll
