@@ -45,12 +45,12 @@ do_install() {
         install -m 0755 ${WORKDIR}/${i} ${D}/${sbindir}
     done
 
-    install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/essential-autostart.service ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/reload-dom0-snapshot.service ${D}/lib/systemd/system/
+    install -d ${D}${systemd_unitdir}/system/
+    install -m 0644 ${WORKDIR}/essential-autostart.service ${D}${systemd_unitdir}/system/
+    install -m 0644 ${WORKDIR}/reload-dom0-snapshot.service ${D}${systemd_unitdir}/system/
 }
 
 FILES_${PN} += "${sbin} \
-                /lib/systemd/system \
+                ${systemd_unitdir}/system \
                 ${sysconfdir} \
 "

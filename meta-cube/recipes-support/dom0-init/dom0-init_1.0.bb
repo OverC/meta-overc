@@ -39,8 +39,8 @@ do_install() {
         install -m 0755 ${WORKDIR}/${i} ${D}/${sbindir}
     done
 
-    install -d ${D}/lib/systemd/system/
-    install -m 0644 ${WORKDIR}/dom0-ctl-core.service ${D}/lib/systemd/system/
+    install -d ${D}${systemd_unitdir}/system/
+    install -m 0644 ${WORKDIR}/dom0-ctl-core.service ${D}${systemd_unitdir}/system/
 
     install -d ${D}/${sysconfdir}
     install -m 0744 ${WORKDIR}/dom0-ctl-core.conf ${D}/${sysconfdir}
@@ -50,6 +50,6 @@ do_install() {
 }
 
 FILES_${PN} += "${sbin} \
-                /lib/systemd/system \
+                ${systemd_unitdir}/system \
                 ${sysconfdir} \
 "
