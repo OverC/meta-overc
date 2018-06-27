@@ -91,6 +91,11 @@ if [ "${action}" = "nslinkup" ]; then
 
     vrf_name=$(get_vrf_container)
     if [ "$cname" = "${vrf_name}" ]; then
+        # Load openvswitch if needed
+        if [ ! -e /sys/module/openvswitch ] ; then
+            modprobe openvswitch
+        fi
+
         # Move essential veth peer into cube-vrf
         cube_vrf_pid=$(get_cube_vrf_pid)
 	## from vrf-init
