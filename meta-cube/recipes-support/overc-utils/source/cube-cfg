@@ -252,6 +252,7 @@ CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;single;The nam
 CONFIG_MAP[cube.env]="cube.env;noop;multi;Set an environment variable for the container startup. cube.env:<var>=<value>"
 CONFIG_MAP[cube.dir]="cube.dir;noop;single;Set the starting directory for the the application"
 CONFIG_MAP[cube.container.system]="cube.container.type;noop;single;Set to 'true' if the container is a system (privileged) container"
+CONFIG_MAP[cube.gen.args]="cube.gen.args;noop;multi;Additional arguments for container configuration generationner"
 
 if [ -z "$1" ]; then
     usage_global
@@ -857,6 +858,13 @@ IFS='
 	cwd_arg="--process-cwd $(cat cube.dir)"
     fi
 
+    cube_gen_args=""
+    if [ -e "cube.gen.args" ]; then
+	for e in $(cat cube.gen.args${var_extension}); do
+	    cube_gen_args="$cube_gen_args $e"
+	done
+    fi
+
     console_mgr=$(cube-cfg ${get_flag} cube.console.mgr:)
     if [ "${console_mgr}" = "tty" ]; then
 	tty_flag="--process-tty"
@@ -876,6 +884,7 @@ IFS='
 		     --env container=docker \
                      ${capabilities} \
                      ${mount_args} \
+                     ${cube_gen_args} \
                      > config.json.tmp
     if [ ! -s config.json.tmp ] ; then
 	echo "ERROR: config.json generation failed"
@@ -1193,7 +1202,7 @@ check_isset() {
     value_to_check=$@
 
     if [ -e ${file_to_check} ]; then
-	cat ${file_to_check} | grep -q -w "${value_to_check}"
+	cat ${file_to_check} | grep -q -w -- "${value_to_check}"
 	if [ $? -eq 0 ]; then
 	    return 1
 	fi
@@ -1839,7 +1848,7 @@ case "${cmd}" in
 	## TODO combine this with the get/set code below, since this really
 	## is just a variant that uses append/remove
 	if [ -e ${out_dir}/cube.attributes ]; then
-	    cat ${out_dir}/cube.attributes | grep -q -w ${attribute}
+	    cat ${out_dir}/cube.attributes | grep -q -w -- "${attribute}"
 	    if [ $? -eq 0 ]; then
 		alreadyset=t
 	    fi
