@@ -363,6 +363,10 @@ if [ "${action}" = "up" ]; then
 	fi
 	#nsenter -t ${pid} -n --preserve-credentials dhclient ${veth_name}
 	primary_ip=$(nsenter -t ${pid} -n ip -o -4 addr list ${veth_name} | awk '{print $4}' | cut -d/ -f1)
+    elif [ "${network}" == "self" ]; then
+	# The container is going to take care of everything itself ... not really
+	# a great idea, but a valid usecase.
+	true
     else
 	# the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
 	ip=$(cat cube.network.ip)
