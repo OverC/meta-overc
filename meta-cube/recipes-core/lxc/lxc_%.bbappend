@@ -1,8 +1,4 @@
-# cgmanager is needed for running unpriv containers
-
-PACKAGECONFIG_append = " cgmanager templates seccomp"
-
-PACKAGECONFIG[cgmanager] = "--enable-cgmanager=yes,--enable-cgmanager=no,cgmanager,cgmanager"
+PACKAGECONFIG_append = " templates seccomp"
 
 SYSTEMD_AUTO_ENABLE_${PN}-setup = "enable"
 
