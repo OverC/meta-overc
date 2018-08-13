@@ -8,7 +8,7 @@ COMPATIBLE_MACHINE = "${MACHINE}"
 #
 # Grab our config fragment.
 #
-FILESEXTRAPATHS_prepend := "${THISDIR}:${THISDIR}/linux-yocto:"
+FILESEXTRAPATHS_prepend := "${THISDIR}:${THISDIR}/files:${THISDIR}/linux-yocto-dev:"
 SRC_URI += "file://builder.cfg"
 
 SRC_URI += "file://xt-checksum.scc \
