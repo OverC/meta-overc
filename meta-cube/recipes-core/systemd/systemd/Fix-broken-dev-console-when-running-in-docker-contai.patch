@@ -1,7 +1,7 @@
-From abe41fe3c56599bb0d6432b02cb0f41ff109042d Mon Sep 17 00:00:00 2001
+From e090049c751cd7f2fc0be49b9a1541267616921a Mon Sep 17 00:00:00 2001
 From: DirkTheDaring <dietmar.kling@web.de>
 Date: Sat, 1 Oct 2016 17:49:48 +0200
-Subject: [PATCH] Fix broken /dev/console when running in  docker container
+Subject: [PATCH] Fix broken /dev/console when running in docker container
 
 I run some service in a container with systemd. I noticed an incredible slowdown on docker containers in Fedora 25. When I debbuged the problem, it turned out that journald, which was configured to log to /dev/console, desperatly tried to open /dev/console for each log message an failed, because /dev/console was reported as "//deleted" if you did a cat /proc/1/mountinfo.
 e.g.
@@ -21,24 +21,25 @@ This actually closes STDOUT_FILEN which is connected to the filehandle where the
 The attached patch disables make_null_stdio() for systemd when run in a container, which makes it useable again in docker.
 Now journald  works with /dev/console output and  docker logs -f <containername> shows the output.
 ---
- src/core/main.c |   13 ++++++++++---
+ src/core/main.c | 13 ++++++++++---
  1 file changed, 10 insertions(+), 3 deletions(-)
 
+diff --git a/src/core/main.c b/src/core/main.c
+index 44dd834..0331a61 100644
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -2421,14 +2421,21 @@ int main(int argc, char *argv[]) {
+@@ -2272,13 +2272,20 @@ int main(int argc, char *argv[]) {
          }
  
          if (arg_system) {
 +                const char *c;
- 
-                 /* Try to figure out if we can use colors with the console. No
-                  * need to do that for user instances since they never log
-                  * into the console. */
+                 /* Try to figure out if we can use colors with the console. No need to do that for user instances since
+                  * they never log into the console. */
                  log_show_color(colors_enabled());
+ 
 -                r = make_null_stdio();
 -                if (r < 0)
--                        log_warning_errno(r, "Failed to redirect standard streams to /dev/null: %m");
+-                        log_warning_errno(r, "Failed to redirect standard streams to /dev/null, ignoring: %m");
 +                /* make_null_stdio would cause /dev/console to be closed in a
 +                 * (docker) container journald and other processes would not
 +                 * work properly anymore if they try to log to console */
@@ -46,8 +47,11 @@ Now journald  works with /dev/console output and  docker logs -f <containername>
 +                if (isempty(c)) {
 +                        r = make_null_stdio();
 +                        if (r < 0)
-+                                log_warning_errno(r, "Failed to redirect standard streams to /dev/null: %m");
++                                log_warning_errno(r, "Failed to redirect standard streams to /dev/null, ignoring: %m");
 +                }
          }
  
          /* Mount /proc, /sys and friends, so that /proc/cmdline and
+-- 
+2.7.4
+

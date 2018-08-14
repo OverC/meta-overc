@@ -1,17 +1,22 @@
-Allow /sys to be RW for a priveleged container.
+From 57a98cc738ae1391ff79b953f1c2dab184b38fa8 Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Tue, 14 Aug 2018 11:13:46 -0400
+Subject: [PATCH] Allow /sys to be RW for a priveleged container.
 
 In order to make this work properly the systemd's device mechanism
 needs to be turned off as if /sys was RO.
 
-
-
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
 ---
- src/core/device.c |   12 +++++++++++-
+ src/core/device.c | 12 +++++++++++-
  1 file changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/src/core/device.c b/src/core/device.c
+index a2d00a0..1169e56 100644
 --- a/src/core/device.c
 +++ b/src/core/device.c
-@@ -774,9 +774,19 @@ static bool device_supported(void) {
+@@ -986,9 +986,19 @@ static bool device_supported(void) {
          /* If /sys is read-only we don't support device units, and any
           * attempts to start one should fail immediately. */
  
@@ -32,3 +37,6 @@ needs to be turned off as if /sys was RO.
          return read_only <= 0;
  }
  
+-- 
+2.7.4
+
