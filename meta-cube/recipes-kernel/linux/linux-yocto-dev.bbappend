@@ -28,9 +28,6 @@ KERNEL_FEATURES_append = " features/tmpfs/tmpfs-posix-acl.scc"
 KERNEL_FEATURES_append = " features/cgroups/cgroups.scc"
 
 KERNEL_MODULE_AUTOLOAD += "openvswitch"
-KERNEL_MODULE_AUTOLOAD += "kvm"
-KERNEL_MODULE_AUTOLOAD += "kvm-amd"
-KERNEL_MODULE_AUTOLOAD += "kvm-intel"
 
 KERNEL_FEATURES_append += "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
 KERNEL_FEATURES_append = " cfg/systemd.scc"
