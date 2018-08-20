@@ -1,0 +1,16 @@
+diff --git a/src/libostree/ostree-repo.c b/src/libostree/ostree-repo.c
+index ec509e9..61bf162 100644
+--- a/src/libostree/ostree-repo.c
++++ b/src/libostree/ostree-repo.c
+@@ -3604,8 +3604,10 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
+   if (self->mode == OSTREE_REPO_MODE_BARE_USER)
+     {
+       g_autoptr(GBytes) bytes = glnx_fgetxattr_bytes (fd, "user.ostreemeta", error);
+-      if (bytes == NULL)
++      if (bytes == NULL){
++        glnx_throw (error, "****************The error file is: %s", loose_path_buf);
+         return FALSE;
++      }
+ 
+       g_autoptr(GVariant) metadata = g_variant_ref_sink (g_variant_new_from_bytes (OSTREE_FILEMETA_GVARIANT_FORMAT,
+                                                                                    bytes, FALSE));

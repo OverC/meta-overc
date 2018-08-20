@@ -1,0 +1,71 @@
+---
+ src/boot/grub2/ostree-grub-generator |   45 +++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 23 deletions(-)
+
+--- a/src/boot/grub2/ostree-grub-generator
++++ b/src/boot/grub2/ostree-grub-generator
+@@ -79,7 +79,10 @@ populate_menu()
+     else
+         boot_prefix="${OSTREE_BOOT_PARTITION}"
+     fi
++
+     count=0
++    declare -A boots=()
++
+     for config in $(ls -v -r $entries_path/*.conf); do
+         read_config ${config}
+         menu="${menu}menuentry '${title}' {\n"
+@@ -89,34 +92,30 @@ populate_menu()
+         fi
+         menu="${menu}}\n\n"
+ 
+-        linux_dir=`dirname ${sysroot_dir}/${boot_prefix}${linux}`
+-        linux_parent_dir=`basename ${linux_dir}`
+-        if [ -L ${linux_dir}/../${count} ]; then
+-	    unlink ${linux_dir}/../${count}
+-        fi	
+-        ln -sf ${linux_parent_dir} ${linux_dir}/../${count}
+-        ostree_boot_dir="${sysroot_dir}/${ostree}/../../../../boot"
+-        ostree_dir=`echo ${ostree} | cut -s -f3- -d '/'`
+-        if [ ! -d ${ostree_boot_dir} ]; then
+-            mkdir ${ostree_boot_dir}
+-        fi
+-        if [ -L ${ostree_boot_dir}/${count} ]; then
+-            unlink ${ostree_boot_dir}/${count}
+-        fi
+-        ln -sf ../${ostree_dir} ${ostree_boot_dir}/${count}
++        linux_dir=`dirname ${boot_prefix}${linux}`
++        boots[$count]=`mktemp -d ${sysroot_dir}${boot_prefix}/boot.XXXXXXXXXX`
++        ln -sf ${linux_dir} ${boots[$count]}/boot
++        ln -sf ../..${ostree} ${boots[$count]}/ostree
+         count=`expr $count + 1`
+     done
+     
+-    if [ $count -eq 1 ]; then
+-        if [ -L ${linux_dir}/../${count} ]; then
+-            unlink ${linux_dir}/../${count}
++    for i in 1 0; do
++        if [ -n "${boots[$i]}" -a -d ${boots[$i]} ]; then
++            ln -sTf `basename ${boots[$i]}` ${sysroot_dir}${boot_prefix}/$i
++        elif [ -n "${boots[0]}" -a -d ${boots[0]} ]; then
++            ln -sTf `basename ${boots[0]}`  ${sysroot_dir}${boot_prefix}/$i
+         fi
+-        if [ -L ${ostree_boot_dir}/${count} ]; then
+-            unlink ${ostree_boot_dir}/${count}
++    done
++
++    #rm the directories unlinked
++    cd ${sysroot_dir}${boot_prefix}
++    for i in boot\.*; do
++        num=`find . -lname $i | wc -l`
++        if [ $num -eq 0 ]; then
++            rm -rf $i
+         fi
+-        ln -sf ${linux_parent_dir} ${linux_dir}/../${count}
+-        ln -sf ../${ostree_dir} ${ostree_boot_dir}/${count}
+-    fi
++    done
++    cd -
+     # The printf command seems to be more reliable across shells for special character (\n, \t) evaluation
+     printf "$menu" >> ${new_grub2_cfg}
+ }

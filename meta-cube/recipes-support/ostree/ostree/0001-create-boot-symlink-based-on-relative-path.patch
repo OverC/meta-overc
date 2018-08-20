@@ -1,0 +1,27 @@
+From 454bc12500a6ddad9f5ade56dd1eaff3aeb8289a Mon Sep 17 00:00:00 2001
+From: Yunguo Wei <yunguo.wei@windriver.com>
+Date: Sat, 5 May 2018 17:49:06 +0800
+Subject: [PATCH] create boot symlink based on relative path
+
+If /boot is a seperated boot partition, grub will set root device to
+boot partition and an abs path doesn't make senese.
+
+Signed-off-by: Yunguo Wei <yunguo.wei@windriver.com>
+---
+ src/boot/grub2/ostree-grub-generator |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/src/boot/grub2/ostree-grub-generator
++++ b/src/boot/grub2/ostree-grub-generator
+@@ -92,9 +92,9 @@ populate_menu()
+         fi
+         menu="${menu}}\n\n"
+ 
+-        linux_dir=`dirname ${boot_prefix}${linux}`
++        linux_dir=`dirname ${linux}`
+         boots[$count]=`mktemp -d ${sysroot_dir}${boot_prefix}/boot.XXXXXXXXXX`
+-        ln -sf ${linux_dir} ${boots[$count]}/boot
++        ln -sf ..${linux_dir} ${boots[$count]}/boot
+         ln -sf ../..${ostree} ${boots[$count]}/ostree
+         count=`expr $count + 1`
+     done
