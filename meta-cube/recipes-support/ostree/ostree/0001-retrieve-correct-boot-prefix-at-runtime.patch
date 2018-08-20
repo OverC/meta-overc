@@ -1,0 +1,26 @@
+From 4aa830fcb2f560af116d5b2d7856d1ac347ef7bf Mon Sep 17 00:00:00 2001
+From: Yunguo Wei <yunguo.wei@windriver.com>
+Date: Mon, 7 May 2018 19:38:45 +0800
+Subject: [PATCH] retrieve correct boot prefix at runtime
+
+Signed-off-by: Yunguo Wei <yunguo.wei@windriver.com>
+---
+ src/boot/grub2/ostree-grub-generator | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
+index 0ebe113..a169892 100644
+--- a/src/boot/grub2/ostree-grub-generator
++++ b/src/boot/grub2/ostree-grub-generator
+@@ -77,6 +77,8 @@ populate_menu()
+     # Default to /boot if OSTREE_BOOT_PARTITION is not set and /boot is on the same device than ostree/repo
+     if [ -z ${OSTREE_BOOT_PARTITION+x} ] && [ -d /boot/ostree ] && [ -d /ostree/repo ] && [ $(stat -c '%d' /boot/ostree) -eq $(stat -c '%d' /ostree/repo) ]; then
+         boot_prefix="/boot"
++    elif [ -z ${OSTREE_BOOT_PARTITION} ] && [ -d /boot/efi/EFI/BOOT ]; then
++	boot_prefix="/boot"
+     else
+         boot_prefix="${OSTREE_BOOT_PARTITION}"
+     fi
+-- 
+2.7.4
+

@@ -1,0 +1,52 @@
+From f75cd3580c871c80008b1551c3c5cb17d5ffd836 Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Wed, 20 Jun 2018 10:22:09 +0800
+Subject: [PATCH] tweak regex of ostree-system-generator for pulsar.
+
+Pulsar generate grub.cfg based on Yocto rather than ostree's
+ostree-grub-generator.
+
+And pulsar has boot params ostree="/boot/0/ostree" which is a
+synlink point to "../../ostree/boot.0/pulsar-linux".
+
+So tweak regex of ostree-system-generator for pulsar.
+
+Upstream-Status: Inappropriate [Pulsar specific]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ src/libostree/ostree-impl-system-generator.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/src/libostree/ostree-impl-system-generator.c b/src/libostree/ostree-impl-system-generator.c
+index 413e4f6..8b802ac 100644
+--- a/src/libostree/ostree-impl-system-generator.c
++++ b/src/libostree/ostree-impl-system-generator.c
+@@ -95,16 +95,21 @@ stateroot_from_ostree_cmdline (const char *ostree_cmdline,
+ {
+   static GRegex *regex;
+   static gsize regex_initialized;
++  char ostree_cmdline_new[PATH_MAX] = {0};
++
++  if (readlink(ostree_cmdline, ostree_cmdline_new, sizeof(ostree_cmdline_new)) < 0)
++      return glnx_null_throw (error, "Failed to readlink %s", ostree_cmdline);
++
+   if (g_once_init_enter (&regex_initialized))
+     {
+-      regex = g_regex_new ("^/ostree/boot.[01]/([^/]+)/", 0, 0, NULL);
++      regex = g_regex_new ("/ostree/boot.[01]/([^/]+)/", 0, 0, NULL);
+       g_assert (regex);
+       g_once_init_leave (&regex_initialized, 1);
+     }
+ 
+   g_autoptr(GMatchInfo) match = NULL;
+-  if (!g_regex_match (regex, ostree_cmdline, 0, &match))
+-    return glnx_null_throw (error, "Failed to parse %s", ostree_cmdline);
++  if (!g_regex_match (regex, ostree_cmdline_new, 0, &match))
++    return glnx_null_throw (error, "Failed to parse %s", ostree_cmdline_new);
+ 
+   return g_match_info_fetch (match, 1);
+ }
+-- 
+2.7.4
+

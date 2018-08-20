@@ -1,0 +1,12 @@
+---
+ src/boot/grub2/ostree-grub-generator |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/src/boot/grub2/ostree-grub-generator
++++ b/src/boot/grub2/ostree-grub-generator
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ # The builtin grub.cfg generator.
+ #

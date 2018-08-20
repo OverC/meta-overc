@@ -1,0 +1,18 @@
+diff --git a/src/libostree/ostree-core.c b/src/libostree/ostree-core.c
+index 679c952..39ef959 100644
+--- a/src/libostree/ostree-core.c
++++ b/src/libostree/ostree-core.c
+@@ -2178,9 +2178,11 @@ _ostree_validate_bareuseronly_mode (guint32     content_mode,
+   if (S_ISREG (content_mode))
+     {
+       const guint32 invalid_modebits = ((content_mode & ~S_IFMT) & ~0775);
+-      if (invalid_modebits > 0)
+-        return glnx_throw (error, "Content object %s: invalid mode 0%04o with bits 0%04o",
++/*      if (invalid_modebits > 0)
++        glnx_throw (error, "Content object %s: invalid mode 0%04o with bits 0%04o",
+                            checksum, content_mode, invalid_modebits);
++*/
++
+     }
+   else if (S_ISLNK (content_mode))
+     ; /* Nothing */

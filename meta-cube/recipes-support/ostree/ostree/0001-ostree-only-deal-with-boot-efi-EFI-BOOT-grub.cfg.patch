@@ -1,0 +1,26 @@
+From 4fac4168d17ad1dcc28d4a37860aaa5d7e282bdc Mon Sep 17 00:00:00 2001
+From: fli <fupan.li@windriver.com>
+Date: Tue, 25 Jul 2017 02:50:23 -0700
+Subject: [PATCH] ostree: only deal with boot/efi/EFI/BOOT/grub.cfg
+
+Signed-off-by: fli <fupan.li@windriver.com>
+---
+ src/libostree/ostree-bootloader-grub2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libostree/ostree-bootloader-grub2.c b/src/libostree/ostree-bootloader-grub2.c
+index 2cd02287..762ac342 100644
+--- a/src/libostree/ostree-bootloader-grub2.c
++++ b/src/libostree/ostree-bootloader-grub2.c
+@@ -103,7 +103,7 @@ _ostree_bootloader_grub2_query (OstreeBootloader *bootloader,
+             break;
+ 
+           fname = g_file_info_get_name (file_info);
+-          if (strcmp (fname, "BOOT") == 0)
++          if (strcmp (fname, "BOOT") != 0)
+             continue;
+ 
+           if (g_file_info_get_file_type (file_info) != G_FILE_TYPE_DIRECTORY)
+-- 
+2.11.0
+
