@@ -43,6 +43,7 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     e2fsprogs-tune2fs \
     hdparm \
     iptables \
+    iptables-modules \
     lsb \
     parted \
     pseudo \

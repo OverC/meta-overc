@@ -111,6 +111,7 @@ OVERC_COMMON_NETWORKING = "\
      iproute2 \
      iputils \
      iptables \
+     iptables-modules \
      net-tools \
      netcat \
      openssh-ssh \
@@ -122,6 +123,7 @@ OVERC_DOM0_NETWORKING = "\
      iproute2 \
      iputils \
      iptables \
+     iptables-modules \
      net-tools \
      netcat \
      openssh-ssh \

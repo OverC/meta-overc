@@ -70,6 +70,7 @@ RDEPENDS_packagegroup-essential-networking = "\
      iproute2 \
      iputils \
      iptables \
+     iptables-modules \
      net-tools \
      netcat \
      dhcp-client \
