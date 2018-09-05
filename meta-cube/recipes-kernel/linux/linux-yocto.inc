@@ -19,6 +19,8 @@ KERNEL_FEATURES_append = " cfg/systemd.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext2.scc"
 
+KERNEL_MODULE_AUTOLOAD += "nf_conntrack_ipv6 openvswitch"
+
 # we trust the latest!
 SRCREV_machine_${MACHINE}="${AUTOREV}"
 SRCREV_meta="${AUTOREV}"
