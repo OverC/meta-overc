@@ -4,11 +4,11 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
 PKG_NAME = "github.com/coreos/etcd"
-SRC_URI = "git://${PKG_NAME}.git \
+SRC_URI = "git://${PKG_NAME}.git;branch=release-3.3 \
           "
 
-SRCREV = "99639186cd41eebd3f905935df586a9094a2bfa1"
-PV = "3.1+git${SRCPV}"
+SRCREV = "fca8add78a9d926166eb739b8e4a124434025ba3"
+PV = "3.3.9+git${SRCPV}"
 GO_IMPORT = "import"
 
 TARGET_CC_ARCH += "${LDFLAGS}"
