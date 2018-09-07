@@ -47,10 +47,9 @@ echo "REST server started at pid: $svr_pid"
 
 #################################################
 # test status
-# on bootup, dom0, dom1 and cube-desktop containers should be active
+# on bootup, dom0 and cube-desktop containers should be active
 #################################################
 test_container_status dom0 3
-test_container_status dom1 3
 test_container_status cube-desktop 3
 test_container_status invalid_container 0
 
