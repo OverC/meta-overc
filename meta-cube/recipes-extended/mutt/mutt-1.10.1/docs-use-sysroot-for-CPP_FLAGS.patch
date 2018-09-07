@@ -1,7 +1,7 @@
-From f1749b8bd73a32c4f0c3f1de205487d4843521a4 Mon Sep 17 00:00:00 2001
+From b0b338d3647430d586445f03084f327ef692f4a2 Mon Sep 17 00:00:00 2001
 From: Bruce Ashfield <bruce.ashfield@windriver.com>
 Date: Wed, 8 Apr 2015 15:55:05 -0400
-Subject: [PATCH 1/2] docs: use sysroot for CPP_FLAGS
+Subject: [PATCH] docs: use sysroot for CPP_FLAGS
 
 Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 ---
@@ -9,11 +9,11 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/doc/Makefile.am b/doc/Makefile.am
-index 4a6e475b6368..19e3a11b8b4c 100644
+index bc8f856..9346696 100644
 --- a/doc/Makefile.am
 +++ b/doc/Makefile.am
-@@ -3,7 +3,7 @@ subdir = doc
- DSLROOT = @DSLROOT@
+@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = 1.6 foreign
+ subdir = doc
  
  DEFS = -DSYSCONFDIR=\"$(sysconfdir)\" -DBINDIR=\"$(bindir)\" -DHAVE_CONFIG_H=1
 -AM_CPPFLAGS = -I. -I.. -I$(includedir) -I$(top_srcdir)
@@ -22,5 +22,5 @@ index 4a6e475b6368..19e3a11b8b4c 100644
  MAKEDOC_CPP = $(CPP) $(AM_CPPFLAGS) $(DEFS) $(CPPFLAGS) -D_MAKEDOC -C
  
 -- 
-2.1.0
+2.7.4
 
