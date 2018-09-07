@@ -24,8 +24,7 @@ to add the subuid property to your container specified in the
 HDINSTALL_CONTAINERS configure line, e.g.
 
 HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2:mergepath=/usr,essential \
-                      ${ARTIFACTS_DIR}/cube-dom1-genericx86-64.tar.bz2:vty=3:mergepath=/usr,essential,dom0 \
-                      ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2:vty=4:net=1:mergepath=/usr,essential,dom0,dom1 \
+                      ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2:vty=4:net=1:mergepath=/usr,essential,dom0 \
                       ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:subuid=800000"
 
 The value of the subuid will be the subuid used by the root user within the
