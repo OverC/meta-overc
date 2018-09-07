@@ -7,8 +7,11 @@ functionality. The current cubes are:
  - dom0: provides control services to the platform and is responsible for
          launching other containers in the system. Dom0 is not manipulated
          by non admin users.
- - dom1: provides system services (such as ntpd, etc) to the platform. This
-         is not used by a typical user.
+ - cube-vrf: provides virtual routing and forwarding (vrf) functions to the
+         system. By running an OpenVSwitch (ovs) bridge along with other
+         networking services. Containers will 'insert' one end of a veth pair
+         into the cube-vrf, via startup hooks, to join the cube LAN to provide
+         minimal networking to containers.
  - cube-desktop: provides full 'enterprise' functionality. This includes man pages,
          development tools, graphical desktop, etc. This domain is the primary
          environment for most users.
@@ -48,7 +51,7 @@ Modify local.conf with following settings:
 Clone the layers described in the meta-overc/README, and build the images
 mentioned in the overview:
 
-  % bitbake cube-dom0 cube-dom1 cube-desktop cube-essential cube-builder
+  % bitbake cube-dom0 cube-vrf cube-desktop cube-essential cube-builder
 
 This will take some time, since multiple images and configurations are
 being build and assembled.
@@ -74,7 +77,8 @@ OverC installer
 The OverC installer must be assembled from build artifacts, and provides a 
 bootable USB stick that is capable of installing to a hard disk on the 
 target system. It also completes required installation and configuration of
-the components that make up the core system (dom0, dom1, cube-desktop, essential).
+the components that make up the core system (dom0, cube-vrf, cube-desktop,
+essential).
 
 The OverC installer is available from the following repository:
 

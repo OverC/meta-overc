@@ -7,7 +7,7 @@ IMAGE_DIR=/root/images
 
 UPSTREAM_URL=http://openlinux.windriver.com/overc/images/genericx86-64/
 DOM0_IMAGE=cube-dom0-genericx86-64.tar.bz2
-DOM1_IMAGE=cube-dom1-genericx86-64.tar.bz2
+VRF_IMAGE=cube-vrf-genericx86-64.tar.bz2
 DOME_IMAGE=cube-desktop-genericx86-64.tar.bz2
 
 usage() {
@@ -89,11 +89,11 @@ log_error() {
 # Expected format we need to parse:
 #
 # root@cube-dom0:~# /usr/sbin/c3 list
-# name          type  status   attributes  addresses
-# ----          ----  ------   ----------  ---------
-# cube-desktop  oci   running  --          192.168.42.200
-# dom0          cube  running  vrf         netprime        192.168.42.1,10.0.2.15
-# dom1          oci   running  --          192.168.42.201
+# name          type    status   attributes  addresses
+# ----          ----    ------   ----------  ---------
+# cube-desktop  runc    running  --          192.168.42.200
+# dom0          pflask  running  netprime    192.168.42.1,192.168.42.3,10.0.2.15
+# vrf           pflask  running  vrf         192.168.42.4
 #
 #     return value:
 #        0: does not exist
@@ -143,8 +143,8 @@ activate() {
 		dom0)
 			rootfs=$IMAGE_DIR/$DOM0_IMAGE
 			;;
-		dom1)
-			rootfs=$IMAGE_DIR/$DOM1_IMAGE
+		vrf)
+			rootfs=$IMAGE_DIR/$VRF_IMAGE
 			;;
 		*desktop)
 			rootfs=$IMAGE_DIR/$DOME_IMAGE
@@ -266,7 +266,7 @@ pull_single_image() {
 
 pull_image() {
 	local url
-	for url in $DOM0_IMAGE $DOM1_IMAGE $DOME_IMAGE; do
+	for url in $DOM0_IMAGE $VRF_IMAGE $DOME_IMAGE; do
 		pull_single_image $UPSTREAM_URL/$url
 	done
 }
