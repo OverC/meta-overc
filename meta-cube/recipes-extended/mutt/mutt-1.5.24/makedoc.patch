@@ -1,8 +1,8 @@
-Index: mutt-1.5.19/doc/Makefile.am
-===================================================================
---- mutt-1.5.19.orig/doc/Makefile.am
-+++ mutt-1.5.19/doc/Makefile.am
-@@ -7,7 +7,7 @@ AM_CPPFLAGS = -I. -I.. -I$(includedir) -
+diff --git a/doc/Makefile.am b/doc/Makefile.am
+index 9346696..f021999 100644
+--- a/doc/Makefile.am
++++ b/doc/Makefile.am
+@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I. -I.. -I=$(includedir) -I$(top_srcdir)
  
  MAKEDOC_CPP = $(CPP) $(AM_CPPFLAGS) $(DEFS) $(CPPFLAGS) -D_MAKEDOC -C
  
@@ -10,11 +10,11 @@ Index: mutt-1.5.19/doc/Makefile.am
 +makedoc : $(makedoc_SOURCES)
  
  EXTRA_DIST = dotlock.man		\
- 	muttbug.man			\
-Index: mutt-1.5.19/doc/makedoc.c
-===================================================================
---- mutt-1.5.19.orig/doc/makedoc.c
-+++ mutt-1.5.19/doc/makedoc.c
+         smime_keys.man                  \
+diff --git a/doc/makedoc.c b/doc/makedoc.c
+index 1fcbc24..c5ca6e3 100644
+--- a/doc/makedoc.c
++++ b/doc/makedoc.c
 @@ -51,7 +51,7 @@
  #ifndef HAVE_STRERROR
  #ifndef STDC_HEADERS
