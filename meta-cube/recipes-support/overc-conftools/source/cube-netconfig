@@ -88,7 +88,9 @@ if [ "${action}" = "netprime" ]; then
 	    ##       The problem is. if we leave this self managed, we cannot set the DNS information
 	    ##       on the VRF and that's an issue.
 	    command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
-	    eval nsenter -t ${pid} -n -- ${command}
+	    # Run the command in the network prime's pid space such that when
+	    # the container is killed so is the command, should it be a daemon
+	    eval nsenter -p -t ${pid} -n -- ${command}
 	    if [ -e "/etc/resolv.conf.${cubename}" ]; then
 		# the VRF (currently dom0) routes our DNS traffic, so we need to get
 		# this captured config into it's dnsmasq.conf
