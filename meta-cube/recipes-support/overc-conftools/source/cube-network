@@ -478,8 +478,8 @@ if [ "${action}" = "up" ]; then
     if [ -f "cube.network.nameserver" ]; then
 	nameserver=$(cat cube.network.nameserver)
     fi
-    nsenter -t ${pid} -m sh -c "rm -f /etc/resolv.conf"
-    nsenter -t ${pid} -m sh -c "echo nameserver ${nameserver} > /etc/resolv.conf"
+    # On a system with /var/run the /etc/resolv.conf will be a volatile
+    nsenter -t ${pid} -m sh -c "if [ -e /var/run ] ; then echo nameserver ${nameserver} > /var/run/resolv.conf; ln -sf /var/run/resolv.conf /etc/resolv.conf; else rm -f /etc/resolv.conf; echo nameserver ${nameserver} > /etc/resolv.conf; fi"
 
     # and now some network namespace accounting
     mkdir -p /var/run/netns
