@@ -49,7 +49,24 @@ get_vrf_container() {
 
 if [ "${action}" = "netprime" ]; then
     netdevs=$(cat .cube.device.network)
+
+    # Expand any network+ args
+    netdevsexp=""
+    nds=`nsenter -t ${pid} -n ip -o link  |awk -F: '{print $2}'`
     for n in ${netdevs}; do
+        if [ "${n}" = "${n/+/}" ] ; then
+            netdevsexp="$n $netdevsexp"
+        else
+            device=$(echo ${n} | cut -f1 -d+)
+            for nd in $nds; do
+                if [ "$nd" != "${nd#$device}" ] ; then
+                    netdevsexp="$nd:$nd $netdevsexp"
+                fi
+            done
+        fi
+    done
+
+    for n in ${netdevsexp}; do
 	echo ${n} | grep -q veth
 	if [ $? -ne 0 ]; then
 	    # we have a real device
