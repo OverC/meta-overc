@@ -409,12 +409,13 @@ if [ "${action}" = "up" ]; then
 
 	# Expand any network+ args
 	netdevsexp=""
+	nds=`ip -o link  |awk -F: '{print $2}'`
 	for n in ${netdevs}; do
             if [ "${n}" = "${n/+/}" ] ; then
                 netdevsexp="$n $netdevsexp"
             else
                 device=$(echo ${n} | cut -f1 -d+)
-                for nd in `ip -o link  |awk -F: '{print $2}'`; do
+                for nd in $nds; do
                     if [ "$nd" != "${nd#$device}" ] ; then
                         netdevsexp="$nd:$nd $netdevsexp"
                     fi
