@@ -12,6 +12,7 @@ IMAGE_INSTALL += " \
     iproute2 \
     dnsmasq \
     base-passwd \
+    tini \
     vrf-init \
     bash \
 "
