@@ -6,7 +6,7 @@ if [ "$1" == "start" ] || [ -z "$1" ]; then
     # Ensure we have some prerequisites in place
     mkdir -p /var/run/openvswitch
 
-    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service
+    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service --resolv-file=/etc/vrf-resolv.conf
 
     # We can't exit else the container will be destroyed
     sleep infinity
@@ -18,5 +18,5 @@ if [ "$1" == "restart" ]; then
 	kill -9 ${dnspid}
     fi
 
-    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service
+    /usr/bin/dnsmasq -x /run/dnsmasq.pid -7 /etc/dnsmasq.d --local-service --resolv-file=/etc/vrf-resolv.conf
 fi
