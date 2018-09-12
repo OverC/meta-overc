@@ -56,7 +56,7 @@ get_cube_vrf_pid() {
     cube_vrf_ppid=$(ps -ef|grep -E "[0-9]+\ +1\ .*pflask.*cube-vrf"|grep -v grep|awk '{print $2}')
     # There can be multiple pids associated with the ppid at startup but we only care about
     # the one either launching or running '/sbin/init', so filter accordingly
-    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +.*/sbin/init$"|grep -v grep|awk '{print $2}')
+    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +.*/sbin/init"|grep -v grep|awk '{print $2}')
 }
 
 get_vrf_container() {
