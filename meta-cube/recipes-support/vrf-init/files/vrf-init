@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# TODO: move to a simple init system, like docker's tiny-init, since we will
-#       miss some reaping / exiting capabilities with this
+# This is usually called by tini 'init' for startup but called
+# directly for restart.
 if [ "$1" == "start" ] || [ -z "$1" ]; then
     # Ensure we have some prerequisites in place
     mkdir -p /var/run/openvswitch

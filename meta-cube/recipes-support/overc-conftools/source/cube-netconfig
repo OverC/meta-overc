@@ -126,7 +126,7 @@ if [ "${action}" = "netprime" ]; then
 		vrf_name=$(get_vrf_container)
 		vrf_pid=$(cat /opt/container/${vrf_name}/.cube.pid)
 
-		nsenter -t ${vrf_pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/init restart
+		nsenter -t ${vrf_pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/vrf-init restart
 	    fi
 	
 	    # We need to track the pids of dhclient so it can be killed later if the
