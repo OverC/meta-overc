@@ -82,16 +82,9 @@ if [ "${action}" = "netprime" ]; then
 		    vrf=$(cat .cube.vrf.name)
 		fi
 
-		# clean up, before we add our options
-		sed '/no-resolv/d' -i /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
-		sed '/server=.*/d' -i /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
-
-		sed '/search.*/d' -i /etc/resolv.conf.${cubename}
-		sed 's/nameserver /server=/g' -i /etc/resolv.conf.${cubename}
-
-		echo "# servers in this file are managed by the cube-netconfig hook. Any changes will be overwritten" >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
-		echo "no-resolv" >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
-		cat /etc/resolv.conf.${cubename} >> /opt/container/${vrf}/rootfs/etc/dnsmasq.conf
+		# Write out DNS forwarding information into the cube-vrf
+		echo "# servers in this file are managed by the cube-netconfig hook. Any changes will be overwritten" > /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
+		cat /etc/resolv.conf.${cubename} >> /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
 
 		# These may need to be refined, but they nat and forward and DNS
 		# traffic from the netprime (.1) to the VRF (currently "the vrf" @ .4)
@@ -122,11 +115,6 @@ if [ "${action}" = "netprime" ]; then
 		    nsenter -t ${pid} -n --preserve-credentials -- iptables -t nat -I POSTROUTING -d 192.168.42.0/24 -j MASQUERADE
 		fi
 
-		# Enter vrf and restart dnsmasq
-		vrf_name=$(get_vrf_container)
-		vrf_pid=$(cat /opt/container/${vrf_name}/.cube.pid)
-
-		nsenter -t ${vrf_pid} -m -n -u -i -p -C --preserve-credentials -- /sbin/init restart
 	    fi
 	
 	    # We need to track the pids of dhclient so it can be killed later if the
