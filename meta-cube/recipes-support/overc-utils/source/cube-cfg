@@ -1011,7 +1011,7 @@ convert_base_config_to_cube()
     fi
 
     # what is the executable we are running ?
-    app=$(jq -r  '.process.args | .[]' config.json)
+    app=$(jq -j  '.process.args | join(" ")' config.json)
 
     # and the root directory (to be appended to the current working dir)
     rootfs=$(jq -r  '.root.path'  config.json)
