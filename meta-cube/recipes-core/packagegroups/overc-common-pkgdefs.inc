@@ -119,7 +119,6 @@ OVERC_COMMON_NETWORKING = "\
     "
 
 OVERC_DOM0_NETWORKING = "\
-     dnsmasq \
      iproute2 \
      iputils \
      iptables \
