@@ -102,10 +102,6 @@ EOF
 ROOTFS_POSTPROCESS_COMMAND += '${@bb.utils.contains("IMAGE_FEATURES", "read-only-rootfs", "read_only_essential; ", "", d)}'
 
 read_only_essential () {
-    echo "none	/etc/openvswitch	tmpfs	defaults	1	1" >> ${IMAGE_ROOTFS}/etc/fstab
-    mkdir -p ${IMAGE_ROOTFS}/opt/container
-    echo "none	/opt/container	tmpfs	defaults	1	1" >> ${IMAGE_ROOTFS}/etc/fstab
-    echo "none	/var/lib/misc	tmpfs	defaults	1	1" >> ${IMAGE_ROOTFS}/etc/fstab
     if [ -e ${IMAGE_ROOTFS}/etc/hosts ]; then
         mv ${IMAGE_ROOTFS}/etc/hosts ${IMAGE_ROOTFS}/etc/hosts0
         ln -s ../run/systemd/resolve/hosts ${IMAGE_ROOTFS}/etc/hosts
