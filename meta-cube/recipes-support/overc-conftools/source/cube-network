@@ -363,8 +363,8 @@ if [ "${action}" = "up" ]; then
 	    mkdir -p /opt/container/${cname}/rootfs/var/lib/dhcp
 	fi
 	eval nsenter -t ${pid} -n -- ${command}
-	if [ -e "/etc/resolv.conf.${cname}" ]; then
-	    mv /etc/resolv.conf.${cname} /opt/container/${cname}/rootfs/etc/resolv.conf
+	if [ -e "/opt/container/${cname}/resolv.conf" ]; then
+	    mv /opt/container/${cname}/resolv.conf /opt/container/${cname}/rootfs/etc/resolv.conf
 	fi
 	#nsenter -t ${pid} -n --preserve-credentials dhclient ${veth_name}
 	primary_ip=$(nsenter -t ${pid} -n ip -o -4 addr list ${veth_name} | awk '{print $4}' | cut -d/ -f1)
