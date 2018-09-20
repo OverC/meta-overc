@@ -932,6 +932,7 @@ if [ -e "/opt/container/${container_name}/cube.console.mgr.runonce" ]; then
 else
     console_mgr=\$(cat /opt/container/${container_name}/cube.console.mgr)
 fi
+mkdir -p /var/lib/cube/${container_name}
 if [ "\${console_mgr}" = "tty" ] || [ "\${console_mgr}" = "screen-tty" ]; then
     if [ "\${args}" != "attach" ] ; then
 	rm -f /var/lib/cube/${container_name}/dtach-sock \
