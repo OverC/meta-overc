@@ -87,11 +87,11 @@ if [ "${action}" = "netprime" ]; then
 	    ##
 	    ##       The problem is. if we leave this self managed, we cannot set the DNS information
 	    ##       on the VRF and that's an issue.
-	    command="dhclient -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
+	    command="dhclient -lf /opt/container/${cubename}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
 	    # Run the command in the network prime's pid space such that when
 	    # the container is killed so is the command, should it be a daemon
 	    eval nsenter -p -t ${pid} -n -- ${command}
-	    if [ -e "/etc/resolv.conf.${cubename}" ]; then
+	    if [ -e "/opt/container/${cubename}/resolv.conf" ]; then
 		# the VRF (currently dom0) routes our DNS traffic, so we need to get
 		# this captured config into it's dnsmasq.conf
 
@@ -103,7 +103,7 @@ if [ "${action}" = "netprime" ]; then
 
 		# Write out DNS forwarding information into the cube-vrf
 		echo "# servers in this file are managed by the cube-netconfig hook. Any changes will be overwritten" > /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
-		cat /etc/resolv.conf.${cubename} >> /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
+		cat /opt/container/${cubename}/resolv.conf >> /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
 
 		# These may need to be refined, but they nat and forward and DNS
 		# traffic from the netprime (.1) to the VRF (currently "the vrf" @ .4)
