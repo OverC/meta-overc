@@ -48,6 +48,12 @@ additions/removals in dom0's '/lib/firmware' will be reflected in
 cube-essential's '/lib/firmware' after a sync, but not the other way
 around.
 
+NOTE ABOUT OPTIMIZATIONS:
+By default /var/lib/cube/essential/lib/firmware is a link to
+/opt/container/dom0/rootfs/lib/firmware.  This is a short circuit
+which is put in place to allow for just a single copy of the firmware.
+If you replace the link with a directory a second copy of the firmware
+will be created.
 
 Syncing
 -------------------------
@@ -59,16 +65,19 @@ look like one of the following:
 1)
   a) replace dom0 (with the new image containing '/lib/firmware' updates)
   b) restart dom0 (the dom0-ctl-core will automatically sync firmware)
+     * step b) is not needed if you are using the short circuit symlink
   c) reload cube-essential kernel modules affected by firmware updates
 
 2)
   a) update dom0 (with firmware related package updates)
   b) run '/etc/dom0.d/firmware-sync' to complete a sync
+     * step b) is not needed if you are using the short circuit symlink
   c) reload cube-essential kernel modules affected by firmware updates
 
 3)
   a) update or replace dom0 (including firmware updates)
   b) run '/etc/dom0.d/firmware-sync' to complete a sync
+     * step b) is not needed if you are using the short circuit symlink
   c) reboot the system
 
 NOTE that it may not always be possible to complete an update, which

@@ -27,3 +27,8 @@ fi
 
 # Create directories in case they have not been setup yet
 mkdir -p /var/lib/cube/all /var/lib/cube/essential /var/lib/cube/local
+# The default for the firmware is to point it to dom0
+if [ ! -e /var/lib/cube/essential/lib/firmware ] ; then
+    mkdir -p /var/lib/cube/essential/lib
+    ln -sf /opt/container/dom0/rootfs/lib/firmware /var/lib/cube/essential/lib/firmware
+fi

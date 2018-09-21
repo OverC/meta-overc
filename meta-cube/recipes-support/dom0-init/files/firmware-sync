@@ -18,6 +18,21 @@ container_dir="/opt/container"
 # This allows for firmware to be upgraded by updating dom0
 refresh_cube_essential_firmware()
 {
+    # Check if the copy desitation is a link to the origin directory
+    # if so, skip the sync.
+    if [ -L /var/lib/cube/essential/lib/firmware ] ; then
+	# Now check if these point to the same location
+	a=$(stat -c %i /lib/firmware/.)
+	b=$(stat -c %i /var/lib/cube/essential/lib/firmware/.)
+	if [ "${a}" = "${b}" ] ; then
+	    exit 0
+	fi
+   fi
+    firmloc=$(readlink /var/lib/cube/essential/lib/firmware)
+    if [ "${firmloc}" = "../opt/container/dom0/rootfs/lib/firmware" -o "${firmloc}" = "/opt/container/dom0/rootfs/lib/firmware" ] ; then
+	exit 0
+    fi
+
     local dom0_rootfs="${container_dir}/dom0/rootfs"
 
     if [ ! -d "/var/lib/cube/essential/lib/firmware/" ]; then
