@@ -6,7 +6,6 @@ After=container-shutdown-notifier.service syslog.target network.target
 Type=forking
 RemainAfterExit=yes
 # ExecStartPre=
-ExecStartPre=/etc/dom0.d/firmware-sync
 ExecStart=/usr/sbin/dom0-containers start
 ExecStop=/usr/sbin/dom0-containers stop
 # Environment=BOOTUP=serial

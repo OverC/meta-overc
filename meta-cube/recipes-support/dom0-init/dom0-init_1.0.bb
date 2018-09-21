@@ -9,7 +9,6 @@ RDEPENDS_${PN} = "overc-utils util-linux bash"
 SRC_URI = "file://dom0-containers \
            file://dom0-ctl-core.service \
            file://dom0-ctl-core.conf \
-           file://firmware-sync \
 "
 
 SRC_FILES_LIST="dom0-containers \
@@ -45,8 +44,6 @@ do_install() {
     install -d ${D}/${sysconfdir}
     install -m 0744 ${WORKDIR}/dom0-ctl-core.conf ${D}/${sysconfdir}
 
-    install -d ${D}/${sysconfdir}/dom0.d
-    install -m 0770 ${WORKDIR}/firmware-sync ${D}/${sysconfdir}/dom0.d/
 }
 
 FILES_${PN} += "${sbin} \
