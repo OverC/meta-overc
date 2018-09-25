@@ -6,6 +6,7 @@ do_install_append() {
 	cat<<EOF>${D}/etc/NetworkManager/NetworkManager.conf
 [main]
 plugins=keyfile
+rc-manager=file
 
 [keyfile]
 unmanaged-devices=interface-name:veth0;interface-name:veth-br-int
