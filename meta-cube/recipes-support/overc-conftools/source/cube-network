@@ -284,7 +284,7 @@ if [ "${action}" = "up" ]; then
 	    echo "${nm_unmanaged}" | grep -q ${veth_name}
 	    if [ $? -ne 0 ]; then
 		# delete the old lines
-		nsenter -t ${pid} -m sed -i "/[keyfile]/d" /etc/NetworkManager/NetworkManager.conf
+		nsenter -t ${pid} -m sed -i "/\[keyfile\]/d" /etc/NetworkManager/NetworkManager.conf
 		nsenter -t ${pid} -m sed -i "/${nm_unmanaged}/d" /etc/NetworkManager/NetworkManager.conf
 
 		# and now the new line with the old + new interface
