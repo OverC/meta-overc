@@ -9,11 +9,9 @@ firmware, many updates to cube-essential could be triggered by the
 need to update firmware (yes the # of updates isn't proportional to
 the size ratio but it is also non-zero).
 
-With the above in mind it was determined that sharing firmware with
-dom0 we can perform firmware updates without ever having to update
-cube-essential. Firmware updates can be made in dom0 and the result
-will be shared with cube-essential.
-
+With the above in mind it was determined that the firmware could be
+linked in from dom0 and dom0 will be the only location required for
+updates.
 
 Filesystem changes
 -------------------------
@@ -22,54 +20,40 @@ cube-essential
 ---
 In cube-essential '/lib/firmware' is no longer populated with firmware
 blobs and associated files/directories. '/lib/firmware' becomes a link
-to '/var/lib/cube/essential/lib/firmware' ('/var/lib/cube/essential'
-being a directory which is visible to dom0 and keeping '/lib/firmware'
-part of the path to make it clear what it is). If you examine
-'/lib/firmware' on cube-essential you will see a typical firmware
-directory, beyond this being a link to another directory.
+to '/opt/container/dom0/rootfs/lib/firmware'.
 
 NOTE: To accomplish the above you can examine the
 linux-firmware-cube-shared package (linux-firmware_git.bbappend)
 
+In order to facilitate the firmware living in the /opt/container
+directory a systemd service called essential-opt-mount.service was
+added which runs right after the systemd-remount-fs.service.  This
+ensures all the proper file systems are mounted by the time the
+firmware needs to load.
+
 dom0
 ---
 In dom0 you will find a '/lib/firmware' directory populated with
-firmware related files, per usual. You will also find that the
-dom0-ctl-core systemd service has a new 'ExecStartPre' called
-'firmware-sync'. This 'ExecStartPre' will call
-'/etc/dom0.d/firmware-sync' to allow the contents of dom0's
-'/lib/firmware' directory to be 'copied' to
-'/var/lib/cube/essential/lib/firmware', such that cube-essential will
-end up with a matching copy of the firmware in its '/lib/firmware'
-directory (link).
-
-NOTE: The 'copy' is a one direction sync from dom0 to cube-essential,
-additions/removals in dom0's '/lib/firmware' will be reflected in
-cube-essential's '/lib/firmware' after a sync, but not the other way
-around.
-
+firmware related files, per usual.
 
 Syncing
 -------------------------
 
-Updating the cube-essential firmware now involves different steps than
-you would find in the traditional model. A typical update now might
+Updating the cube-essential firmware now involves ensuring that you
+have updated dom0. A typical update now might
 look like one of the following:
 
 1)
   a) replace dom0 (with the new image containing '/lib/firmware' updates)
-  b) restart dom0 (the dom0-ctl-core will automatically sync firmware)
-  c) reload cube-essential kernel modules affected by firmware updates
+  b) reload cube-essential kernel modules affected by firmware updates
 
 2)
   a) update dom0 (with firmware related package updates)
-  b) run '/etc/dom0.d/firmware-sync' to complete a sync
-  c) reload cube-essential kernel modules affected by firmware updates
+  b) reload cube-essential kernel modules affected by firmware updates
 
 3)
   a) update or replace dom0 (including firmware updates)
-  b) run '/etc/dom0.d/firmware-sync' to complete a sync
-  c) reboot the system
+  b) reboot the system
 
 NOTE that it may not always be possible to complete an update, which
 includes firmware updates, without having to perform a system
