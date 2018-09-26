@@ -259,6 +259,11 @@ if [ "${action}" = "up" ]; then
 	network=$(cat cube.network.type)
     fi
 
+    devmgr="essential"
+    if [ -f cube.device.mgr ]; then
+	devmgr=$(cat cube.device.mgr)
+    fi
+
     # This creates a veth pair.
     #
     #    <container name>[digit.digit] -> veth-br-int
@@ -474,13 +479,15 @@ if [ "${action}" = "up" ]; then
 	echo ${primary_ip} ${cname}.cube.lan >> /opt/container/${vrf}/rootfs/etc/hosts
     fi
 
-    # note: this should be conditional with the fixed dhclient call abovee
-    nameserver="192.168.42.1"
-    if [ -f "cube.network.nameserver" ]; then
-	nameserver=$(cat cube.network.nameserver)
+    if [ "${devmgr}" != "self" -a "${devmgr}" != "none" ] ; then
+	# note: this should be conditional with the fixed dhclient call above
+	nameserver="192.168.42.1"
+	if [ -f "cube.network.nameserver" ]; then
+	    nameserver=$(cat cube.network.nameserver)
+	fi
+	# On a system with /var/run the /etc/resolv.conf will be a volatile
+	nsenter -t ${pid} -m sh -c "if [ -e /var/run ] ; then echo nameserver ${nameserver} > /var/run/resolv.conf; ln -sf /var/run/resolv.conf /etc/resolv.conf; else rm -f /etc/resolv.conf; echo nameserver ${nameserver} > /etc/resolv.conf; fi"
     fi
-    # On a system with /var/run the /etc/resolv.conf will be a volatile
-    nsenter -t ${pid} -m sh -c "if [ -e /var/run ] ; then echo nameserver ${nameserver} > /var/run/resolv.conf; ln -sf /var/run/resolv.conf /etc/resolv.conf; else rm -f /etc/resolv.conf; echo nameserver ${nameserver} > /etc/resolv.conf; fi"
 
     # and now some network namespace accounting
     mkdir -p /var/run/netns
