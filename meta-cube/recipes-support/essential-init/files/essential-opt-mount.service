@@ -1,0 +1,21 @@
+# Taken in part from systemd-remount-fs.service, because this
+# service needs to run immediately after it so as to allow
+# /lib/firmware to be available from:
+# /opt/container/dom0/rootfs/lib/firmware
+
+[Unit]
+Description=Essential Mount /opt/container
+DefaultDependencies=no
+Conflicts=shutdown.target
+After=systemd-fsck-root.service
+Before=systemd-remount-fs.service local-fs-pre.target local-fs.target shutdown.target
+Wants=local-fs-pre.target
+ConditionPathExists=/etc/fstab
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=-/usr/sbin/essential-opt-mount
+
+[Install]
+WantedBy=basic.target
