@@ -49,6 +49,11 @@ get_vrf_container() {
 
 if [ "${action}" = "netprime" ]; then
     netdevs=$(cat .cube.device.network)
+    vrf=$(get_vrf_container)
+    devmgr="essential"
+    if [ -f cube.device.mgr ]; then
+	devmgr=$(cat cube.device.mgr)
+    fi
 
     # Expand any network+ args
     netdevsexp=""
@@ -66,7 +71,25 @@ if [ "${action}" = "netprime" ]; then
         fi
     done
 
+    # In self managed mode with a netprime, the cube-vrf will get
+    # its injected file changed to a symlink, which is monitoried by
+    # inotify in the vrf which can allow the netprime's file system
+    # to come and go at will.
+
+    if [ "${devmgr}" = self ] ; then
+	rm -f /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
+	ln -s /opt/container/${cubename}/rootfs/etc/resolv.conf /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
+    fi
+
     for n in ${netdevsexp}; do
+
+	# When the network is set to none, all bets are off, and the
+	# and the end container must manage all settings for the VRF
+	# so that DNS works correctly for all containers on the system
+	if [ "${devmgr}" = "none" ] ; then
+	    break;
+	fi
+
 	echo ${n} | grep -q veth
 	if [ $? -ne 0 ]; then
 	    # we have a real device
@@ -75,6 +98,11 @@ if [ "${action}" = "netprime" ]; then
 	    # forwarding (for other containers to the external network)
 	    nsenter -t ${pid} -n --preserve-credentials iptables -t nat -A POSTROUTING -o ${device} -j MASQUERADE
 	    nsenter -t ${pid} -m -n -u -i -p -C --preserve-credentials sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+	    # In network = "self" mode, the monitoring of the DNS
+	    # configuration is already setup, so the rest is skipped.
+	    if [ "${devmgr}" = self ] ; then
+		continue;
+	    fi
 
 	    # Up the interface via dhclient, since not all netprime
 	    # containers are capable of doing this themselves
@@ -92,16 +120,8 @@ if [ "${action}" = "netprime" ]; then
 	    # the container is killed so is the command, should it be a daemon
 	    eval nsenter -p -t ${pid} -n -- ${command}
 	    if [ -e "/opt/container/${cubename}/resolv.conf" ]; then
-		# the VRF (currently dom0) routes our DNS traffic, so we need to get
-		# this captured config into it's dnsmasq.conf
 
-		# temp. this should just be a lookup, but hard coding to test the new VRF code
-		vrf=$(get_vrf_container)
-		if [ -e ".cube.vrf.name" ]; then
-		    vrf=$(cat .cube.vrf.name)
-		fi
-
-		# Write out DNS forwarding information into the cube-vrf
+		# Write out DNS forwarding information into the vrf
 		echo "# servers in this file are managed by the cube-netconfig hook. Any changes will be overwritten" > /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
 		cat /opt/container/${cubename}/resolv.conf >> /opt/container/${vrf}/rootfs/etc/vrf-resolv.conf
 
