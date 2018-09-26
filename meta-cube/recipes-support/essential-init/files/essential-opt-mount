@@ -1,0 +1,29 @@
+#!/bin/bash
+
+mount /opt/container || exit -1
+
+grep ^/dev/root /etc/fstab |grep -qw ro
+USE_RO=$?
+
+if [ $USE_RO = 0 ] ; then
+    mkdir -p /opt/container/.rootns/var/log/journal
+    mount -o bind /opt/container/.rootns/var/log/journal /var/log/journal
+
+    mkdir -p /opt/container/.rootns/var/lib/cube
+    mount -o bind /opt/container/.rootns/var/lib/cube /var/lib/cube
+
+    mkdir -p /opt/container/.rootns/var/volatile/tmp
+    chmod 1777 /opt/container/.rootns/var/volatile/tmp
+    mount -o bind /opt/container/.rootns/var/volatile /var/volatile
+
+    # verify /run directories and copy files into tmpfs, if using read-only root
+    mkdir -p /run/systemd/resolve
+    for f in dnsmasq.conf resolv.conf hosts localtime timezone; do
+	if [ -L /etc/${f} ] && [ -e /etc/${f}0 ] && [ ! -e /run/systemd/resolve/${f} ] ; then
+	    cp /etc/${f}0 /run/systemd/resolve/${f}
+	fi
+    done
+fi
+
+# Create directories in case they have not been setup yet
+mkdir -p /var/lib/cube/all /var/lib/cube/essential /var/lib/cube/local

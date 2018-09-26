@@ -104,14 +104,19 @@ ROOTFS_POSTPROCESS_COMMAND += '${@bb.utils.contains("IMAGE_FEATURES", "read-only
 read_only_essential () {
     if [ -e ${IMAGE_ROOTFS}/etc/hosts ]; then
         mv ${IMAGE_ROOTFS}/etc/hosts ${IMAGE_ROOTFS}/etc/hosts0
-        ln -s ../run/systemd/resolve/hosts ${IMAGE_ROOTFS}/etc/hosts
     fi
+    ln -s ../run/systemd/resolve/hosts ${IMAGE_ROOTFS}/etc/hosts
+
     if [ -e ${IMAGE_ROOTFS}/etc/dnsmasq.conf ]; then
         mv ${IMAGE_ROOTFS}/etc/dnsmasq.conf ${IMAGE_ROOTFS}/etc/dnsmasq.conf0
-        ln -s ../run/systemd/resolve/dnsmasq.conf ${IMAGE_ROOTFS}/etc/dnsmasq.conf
     fi
-    rm -f ${IMAGE_ROOTFS}/etc/resolv.conf
+    ln -s ../run/systemd/resolve/dnsmasq.conf ${IMAGE_ROOTFS}/etc/dnsmasq.conf
+
+    if [ -e ${IMAGE_ROOTFS}/etc/resolv.conf ]; then
+        mv ${IMAGE_ROOTFS}/etc/resolv.conf ${IMAGE_ROOTFS}/etc/resolv.conf0
+    fi
     ln -s ../run/systemd/resolve/resolv.conf ${IMAGE_ROOTFS}/etc/resolv.conf
+
     if [ -e ${IMAGE_ROOTFS}/etc/system-id ]; then
         rm ${IMAGE_ROOTFS}/etc/system-id -f
     fi

@@ -11,15 +11,18 @@ SRC_URI = "file://essential-autostart \
            file://reload-dom0-snapshot \
            file://reload-dom0-snapshot.service \
            file://daemonize-sigusr1-wait.c \
+	   file://essential-opt-mount.service \
+	   file://essential-opt-mount \
 "
 
 SRC_FILES_LIST = "essential-autostart \
                   reload-dom0-snapshot \
+                  essential-opt-mount \
 "
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "essential-autostart.service reload-dom0-snapshot.service"
+SYSTEMD_SERVICE_${PN} = "essential-autostart.service reload-dom0-snapshot.service essential-opt-mount.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
 systemd_postinst() {
@@ -48,6 +51,7 @@ do_install() {
     install -d ${D}${systemd_unitdir}/system/
     install -m 0644 ${WORKDIR}/essential-autostart.service ${D}${systemd_unitdir}/system/
     install -m 0644 ${WORKDIR}/reload-dom0-snapshot.service ${D}${systemd_unitdir}/system/
+    install -m 0644 ${WORKDIR}/essential-opt-mount.service ${D}${systemd_unitdir}/system/
 }
 
 FILES_${PN} += "${sbin} \

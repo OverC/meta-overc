@@ -1,22 +1,5 @@
 #!/bin/bash
 
-# Check that /var/log/journal is writeable, else set it up
-touch /var/log/journal
-if [ $? != 0 ] ; then
-    mkdir -p /opt/container/.rootns/var/log/journal
-    mount -o bind /opt/container/.rootns/var/log/journal /var/log/journal
-fi
-
-# Check that /var/lib/cube is writeable, else set it up
-touch /var/lib/cube
-if [ $? != 0 ] ; then
-    mkdir -p /opt/container/.rootns/var/lib/cube
-    mount -o bind /opt/container/.rootns/var/lib/cube /var/lib/cube
-fi
-
-# Create directories in case they have not been setup yet
-mkdir -p /var/lib/cube/all /var/lib/cube/essential /var/lib/cube/local
-
 if [ "$1" = "stop" ] ; then
     pid=`/bin/machinectl show dom0 -p Leader --value`
     if [ ! -n "$pid" ] ; then
