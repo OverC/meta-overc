@@ -20,7 +20,6 @@ BBLAYERS ?= " \
   $HOME/poky/meta-openembedded/meta-multimedia \
   $HOME/poky/meta-cloud-services \
   $HOME/poky/meta-security \
-  $HOME/poky/meta-qt4 \
   $HOME/poky/meta-openembedded/meta-filesystems \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
