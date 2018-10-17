@@ -9,8 +9,8 @@ DESCRIPTION = "Packages required to round out the native host system for OverC"
 LICENSE = "MIT"
 
 # grr - packagegroup is special and wants to be allarch, which
-# doesn't work so well if we want to filter grub for x86 etc.
-PACKAGE_ARCH = "${TUNE_PKGARCH}"
+# doesn't work so well if we want to filter grub for MACHINE_FEATURES, etc.
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 inherit packagegroup
 
 require overc-common-pkgdefs.inc
