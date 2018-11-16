@@ -48,7 +48,7 @@ index 825ab00..592c69e 100644
 @@ -398,6 +402,8 @@ main(int argc, char **argv) {
  			no_dhclient_pid = 1;
  		} else if (!strcmp(argv[i], "--no-pid")) {
- 			no_pid_file = ISC_TRUE;
+ 			no_pid_file = true;
 +		} else if (!strcmp(argv[i], "--psig")) {
 +			psig = 1;
  		} else if (!strcmp(argv[i], "-cf")) {
