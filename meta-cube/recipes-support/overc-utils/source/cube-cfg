@@ -251,7 +251,7 @@ CONFIG_MAP[cube.network.gateway]="cube.network.gateway;noop;single;The gateway t
 CONFIG_MAP[cube.network.nameserver]="cube.network.nameserver;noop;single;The nameserver to use for the container"
 CONFIG_MAP[cube.env]="cube.env;noop;multi;Set an environment variable for the container startup. cube.env:<var>=<value>"
 CONFIG_MAP[cube.dir]="cube.dir;noop;single;Set the starting directory for the the application"
-CONFIG_MAP[cube.container.system]="cube.container.type;noop;single;Set to 'true' if the container is a system (privileged) container"
+CONFIG_MAP[cube.container.system]="cube.container.system;noop;single;Set to 'true' if the container is a system (privileged) container"
 
 if [ -z "$1" ]; then
     usage_global
