@@ -16,10 +16,10 @@ Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
  client/dhclient.c | 10 ++++++++++
  1 file changed, 10 insertions(+)
 
-diff --git a/client/dhclient.c b/client/dhclient.c
-index 825ab00..592c69e 100644
---- a/client/dhclient.c
-+++ b/client/dhclient.c
+Index: dhcp-4.4.1/client/dhclient.c
+===================================================================
+--- dhcp-4.4.1.orig/client/dhclient.c
++++ dhcp-4.4.1/client/dhclient.c
 @@ -40,6 +40,7 @@
  #include <sys/time.h>
  #include <sys/wait.h>
@@ -28,7 +28,7 @@ index 825ab00..592c69e 100644
  
  TIME default_lease_time = 43200; /* 12 hours... */
  TIME max_lease_time = 86400; /* 24 hours... */
-@@ -58,6 +59,8 @@ int dhcp_max_agent_option_packet_length = 0;
+@@ -58,6 +59,8 @@
  
  int interfaces_requested = 0;
  
@@ -37,7 +37,7 @@ index 825ab00..592c69e 100644
  struct iaddr iaddr_broadcast = { 4, { 255, 255, 255, 255 } };
  struct iaddr iaddr_any = { 4, { 0, 0, 0, 0 } };
  struct in_addr inaddr_any;
-@@ -183,6 +186,7 @@ static const char use_v6command[] = "Command not used for DHCPv4: %s";
+@@ -183,6 +186,7 @@
  "                [-s server-addr] [-cf config-file]\n" \
  "                [-df duid-file] [-lf lease-file]\n" \
  "                [-pf pid-file] [--no-pid] [-e VAR=val]\n" \
@@ -45,16 +45,16 @@ index 825ab00..592c69e 100644
  "                [-sf script-file] [interface]*"
  
  #define DHCLIENT_USAGEH "{--version|--help|-h}"
-@@ -398,6 +402,8 @@ main(int argc, char **argv) {
+@@ -398,6 +402,8 @@
  			no_dhclient_pid = 1;
  		} else if (!strcmp(argv[i], "--no-pid")) {
- 			no_pid_file = true;
+ 			no_pid_file = ISC_TRUE;
 +		} else if (!strcmp(argv[i], "--psig")) {
 +			psig = 1;
  		} else if (!strcmp(argv[i], "-cf")) {
  			if (++i == argc)
  				usage(use_noarg, argv[i-1]);
-@@ -4447,6 +4453,10 @@ void detach ()
+@@ -4447,6 +4453,10 @@
  	/* Become session leader and get pid... */
  	(void) setsid ();
  
@@ -65,6 +65,3 @@ index 825ab00..592c69e 100644
  	/* Close standard I/O descriptors. */
  	(void) close(0);
  	(void) close(1);
--- 
-2.7.4
-
