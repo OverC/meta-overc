@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable Features needed by a kubernetes node"
+define KFEATURE_COMPATIBILITY board
+
+kconf non-hardware k8s.cfg

@@ -10,6 +10,7 @@ SRC_URI += "file://xt-checksum.scc \
             file://criu.scc \
             file://virt.scc \
             file://uncontain.scc \
+            file://k8s.scc \
             "
 KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES_append = " features/nfsd/nfsd-enable.scc"
@@ -20,6 +21,20 @@ KERNEL_FEATURES_append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES_append = " cfg/fs/ext2.scc"
 
 KERNEL_MODULE_AUTOLOAD_append += "nf_conntrack_ipv6 openvswitch"
+
+# kubernetes stuff. maybe hide in a distro variable ?
+KERNEL_MODULE_AUTOLOAD_append += "ip_vs_rr ip_vs_wrr ip_vs_sh"
+KERNEL_MODULE_AUTOLOAD_append += "vxlan vport-vxlan"
+KERNEL_MODULE_AUTOLOAD_append += "br_netfilter"
+KERNEL_MODULE_AUTOLOAD_append += "xt_set"
+KERNEL_MODULE_AUTOLOAD_append += "ip_set_hash_ip ip_set_hash_netport ip_set_hash_ipportip"
+KERNEL_MODULE_AUTOLOAD_append += "ip_set ip_set_hash_ipportnet ip_set_hash_ipmark ip_set_bitmap_ipmac"
+KERNEL_MODULE_AUTOLOAD_append += "ip_set_bitmap_port ip_set_hash_netportnet ip_set_hash_mac"
+KERNEL_MODULE_AUTOLOAD_append += "ip_set_hash_net ip_set_bitmap_ip ip_set_hash_ipmac ip_set_list_set"
+KERNEL_MODULE_AUTOLOAD_append += "ip_set_hash_netiface ip_set_hash_ipport ip_set_hash_netnet"
+KERNEL_MODULE_PROBECONF_append += "nf_conntrack nf_conntrack_ipv6"
+module_conf_nf_conntrack = "options nf_conntrack hashsize=131072"
+module_conf_nf_conntrack_ipv6 = "options nf_conntrack_ipv6 hashsize=131072"
 
 # we trust the latest!
 SRCREV_machine_${MACHINE}="${AUTOREV}"
