@@ -55,11 +55,11 @@ index 0e21e6d..30823dd 100644
 + */
 +static pid_t init_ns_child_not_parent(struct task_struct *tsk)
 +{
-+	if (tsk->pids[PIDTYPE_PID].pid &&
++	if (tsk->thread_pid &&
 +	    tsk->parent &&
-+	    tsk->parent->pids[PIDTYPE_PID].pid &&
-+	    tsk->pids[PIDTYPE_PID].pid->level == 0 &&
-+	    tsk->parent->pids[PIDTYPE_PID].pid->level == 1)
++	    tsk->parent->thread_pid &&
++	    tsk->thread_pid->level == 0 &&
++	    tsk->parent->thread_pid->level == 1)
 +		return tsk->pid;
 +	return 0;
 +}
