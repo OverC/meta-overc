@@ -780,6 +780,12 @@ generate_base_config()
 
     if [ -e "cube.container.system" ]; then
 	capabilities="--privileged"
+
+	# we need to pass through some devices to this type of container
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/vda*'
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/sda*'
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/sba*'
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/kmsg'
     else
 	# TODO: these can also be cube-cfg values, but right now are
 	#       restricted for compatibility reasons
@@ -1959,6 +1965,63 @@ case "${cmd}" in
 		cat "${out_dir}/.cube.device.${device_type}"
 	    else
 		echo ""
+	    fi
+	elif [ ${colons} -eq 1 ]; then
+	    # this is a <whitelist>|<blacklist>:<pattern or device>
+	    white_or_blacklist=$(echo ${name_temp} | cut -f1 -d:)
+	    device_or_pattern=$(echo ${name_temp} | cut -f2 -d:)
+
+	    if [ -n "${white_or_blacklist}" ]; then
+		# was there a + or - as part of the device ?
+		case ${white_or_blacklist} in
+		    -*)
+			white_or_blacklist=$(echo ${white_or_blacklist} | sed 's/^-//')
+			op="-"
+			;;
+		    +*)
+			white_or_blacklist=$(echo ${white_or_blacklist} | sed 's/^+//')
+			op="+"
+			;;
+		    *)
+			op="+"
+			;;
+		esac
+	    fi
+
+	    if [ "${white_or_blacklist}" = "whitelist" ]; then
+		check_isset ${out_dir}/.cube.dev.whitelist "${device_or_pattern}"
+		if [ $? -eq 1 ]; then
+		    alreadyset=t
+		fi
+		case ${op} in
+		    +)
+			if [ -z "${alreadyset}" ]; then
+			    echo "${device_or_pattern}" >> .cube.dev.whitelist
+			fi
+			;;
+		    -)
+			if [ -n "${alreadyset}" ]; then
+			    sed "\#^${device_or_pattern}#d" -i ${out_dir}/.cube.dev.whitelist
+			fi
+			;;
+		esac
+	    else
+		check_isset ${out_dir}/.cube.dev.blacklist "${device_or_pattern}"
+		if [ $? -eq 1 ]; then
+		    alreadyset=t
+		fi
+		case ${op} in
+		    +)
+			if [ -z "${alreadyset}" ]; then
+			    echo "${device_or_pattern}" >> .cube.dev.blacklist
+			fi
+			;;
+		    -)
+			if [ -n "${alreadyset}" ]; then
+			    sed "\#^${device_or_pattern}#d" -i ${out_dir}/.cube.dev.blacklist
+			fi
+			;;
+		esac
 	    fi
 	elif [ ${colons} -eq 2 ]; then
 	    # we have <type>:<source>:<dest>

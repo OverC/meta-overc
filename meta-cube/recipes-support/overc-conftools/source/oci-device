@@ -24,9 +24,34 @@ if [ "${action}" = "up" ]; then
 
     # TODO: read a .cube.dev.whitelist and a .cube.dev.blacklist to manipulate
     #       the available devices
-
     if [ -e ".cube.dev.whitelist" ]; then
-	true
+	dev_list=""
+	set -o noglob
+	for d in $(cat .cube.dev.whitelist); do
+	    set +o noglob
+	    # this expands wildcards
+	    devices_expanded=$(ls $d 2> /dev/null)
+	    dev_list="${dev_list} ${devices_expanded}"
+	done
+
+	for d in ${dev_list}; do
+	    MINOR=$(stat -c %T $d)
+	    MAJOR=$(stat -c %t $d)
+	    TYPE=$(stat -c %F $d)
+	    #echo "dev: $d major: $MAJOR minor: $MINOR: type: $TYPE"
+	    case $TYPE in
+		*block*)
+		    TYPE_LETTER="b"
+		    ;;
+		*character*)
+		    TYPE_LETTER="c"
+		    ;;
+		*)
+		    ;;
+	    esac
+
+	    nsenter -t ${pid} -m --preserve-credentials mknod $d $TYPE_LETTER 0x$MAJOR 0x$MINOR
+	done
     fi
 fi
 
