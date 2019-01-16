@@ -785,6 +785,8 @@ generate_base_config()
 	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/vda*'
 	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/sda*'
 	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/sba*'
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/hda*'
+	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/hdb*'
 	${mydir}/cube-cfg -o ${out_dir} device whitelist:'/dev/kmsg'
     else
 	# TODO: these can also be cube-cfg values, but right now are
