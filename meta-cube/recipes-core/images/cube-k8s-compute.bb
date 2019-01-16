@@ -15,7 +15,7 @@ CUBE_K8S_COMPUTE_EXTRA_INSTALL ?= ""
 IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES ?= "tar.bz2"
 IMAGE_FSTYPES_remove = "live"
-IMAGE_FSTYPES_append = " container oci"
+IMAGE_FSTYPES_append = " container"
 
 IMAGE_CONTAINER_NO_DUMMY = "1"
 
