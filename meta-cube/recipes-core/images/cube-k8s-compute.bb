@@ -12,8 +12,6 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 CUBE_K8S_COMPUTE_EXTRA_INSTALL ?= ""
 
-inherit image-oci
-
 IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES ?= "tar.bz2"
 IMAGE_FSTYPES_remove = "live"
