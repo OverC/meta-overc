@@ -130,8 +130,10 @@ if [ "${action}" = "netprime" ]; then
 		    let count=${count}+1
 		done
 
-		# todo: should specify a gateway
-		nsenter -t ${pid} -n --preserve-credentials route add default ${device}
+		if [ -f "cube.network.external.gateway" ]; then
+		    gateway="gw $(cat cube.network.external.gateway)"
+		fi
+		nsenter -t ${pid} -n --preserve-credentials route add default ${gateway} dev ${device}
 
 		nameserver="192.168.42.1"
 		if [ -f "cube.network.external.nameserver" ]; then
