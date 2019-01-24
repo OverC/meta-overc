@@ -115,10 +115,39 @@ if [ "${action}" = "netprime" ]; then
 	    ##
 	    ##       The problem is. if we leave this self managed, we cannot set the DNS information
 	    ##       on the VRF and that's an issue.
-	    command="dhclient -lf /opt/container/${cubename}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
-	    # Run the command in the network prime's pid space such that when
-	    # the container is killed so is the command, should it be a daemon
-	    eval nsenter -p -t ${pid} -n -- ${command}
+	    # the ip must be in the format of address/mask, i.e.: 192.168.42.101/24
+	    ip=$(cat cube.network.external.ip)
+	    if [ -n "${ip}" ]; then
+		# the first entry is the primary, any others are aliases
+		count=0
+		for i in ${ip}; do
+		    if [ ${count} -eq 0 ]; then
+			nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev ${device}
+			primary_ip=$(echo $i | cut -d/ -f1)
+		    else
+			nsenter -t ${pid} -n --preserve-credentials ip addr add $i dev ${device}:${count}
+		    fi
+		    let count=${count}+1
+		done
+
+		# todo: should specify a gateway
+		nsenter -t ${pid} -n --preserve-credentials route add default ${device}
+
+		nameserver="192.168.42.1"
+		if [ -f "cube.network.external.nameserver" ]; then
+		    nameserver=$(cat cube.network.external.nameserver)
+		fi
+		echo "${nameserver}" > /opt/container/${cubename}/resolv.conf
+
+		# On a system with /var/run the /etc/resolv.conf will be a volatile
+		#nsenter -t ${pid} -m sh -c "if [ -e /var/run ] ; then echo nameserver ${nameserver} > /var/run/resolv.conf; ln -sf /var/run/resolv.conf /etc/resolv.conf; else rm -f /etc/resolv.conf; echo nameserver ${nameserver} > /etc/resolv.conf; fi"
+	    else
+		command="dhclient -lf /opt/container/${cubename}/rootfs/var/lib/dhcp/dhclient.leases -sf /usr/sbin/dhclient-script.container -e CONTAINER=${cubename} --no-pid ${device} >> /dev/null 2>&1"
+		# Run the command in the network prime's pid space such that when
+		# the container is killed so is the command, should it be a daemon
+		eval nsenter -p -t ${pid} -n -- ${command}
+	    fi
+
 	    if [ -e "/opt/container/${cubename}/resolv.conf" ]; then
 
 		# Write out DNS forwarding information into the vrf
