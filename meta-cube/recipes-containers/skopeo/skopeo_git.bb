@@ -4,35 +4,6 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=7e611105d3e369954840a6668c438584"
 
 DEPENDS = "\
-           go-urfave \
-           containers-image \
-           go-digest \
-           go-cheggaaa-pb.v1 \
-           containers-storage \
-           go-logrus \
-           go-check \
-           go-testify \
-           go-spew \
-           go-difflib \	
-           go-errors \
-           crypto \
-           go-connections \
-           go-tar-split \
-           go-context \
-           go-mux \
-           go-units \
-           go-net \
-           go-distribution \
-           go-libtrust \
-           oci-image-spec \
-           go-gpgme \
-           go-glog \
-           go-client-go \
-           go-yaml \
-           go-yaml.v2 \
-           go-mergo \
-           go-zfs \
-           go-uuid \
            gpgme \
            multipath-tools \
            btrfs-tools \
