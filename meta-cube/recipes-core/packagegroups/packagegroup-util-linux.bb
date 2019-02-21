@@ -66,4 +66,5 @@ RDEPENDS_packagegroup-util-linux-misc = "\
     util-linux-bash-completion \
     util-linux-hwclock \
     util-linux-getopt \
+    util-linux-nsenter \
     "
