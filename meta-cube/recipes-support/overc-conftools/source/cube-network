@@ -353,6 +353,9 @@ if [ "${action}" = "up" ]; then
     fi
     nsenter -t ${pid} -n --preserve-credentials ip link set dev ${veth_name} up address ${mac_address}
 
+    # "dynamic" is the most common network setup. It uses a hashed mac address to
+    # quickly assign a local ip address, which is conntect to the VRF via OVS, from
+    # there it is NAT'd to the outside world.
     if [ "${network}" == "dynamic" ]; then
 	ip=$(c3-ipcfg alloc mac ${mac_address})
 	if [ -n "${ip}" ]; then
