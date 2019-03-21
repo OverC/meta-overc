@@ -46,7 +46,7 @@ RRECOMMENDS_${PN} = " \
     \
     xfce4-appfinder \
     xfce4-screenshooter \
-    xfce4-mixer \
+    xfce4-pulseaudio-plugin \
     xfce4-taskmanager \
 "
 
