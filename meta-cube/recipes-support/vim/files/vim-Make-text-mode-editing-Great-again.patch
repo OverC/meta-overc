@@ -1,4 +1,4 @@
-From 3be4e61d0468d7b77812f56bf6660c71ac74c2a8 Mon Sep 17 00:00:00 2001
+From 4e1db5613ca5ce207d8f2df7fceba4e40b13b254 Mon Sep 17 00:00:00 2001
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 Date: Mon, 3 Apr 2017 22:58:39 -0400
 Subject: [PATCH] vim: Make text mode editing Great again.
@@ -30,12 +30,12 @@ Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
  2 files changed, 22 insertions(+), 17 deletions(-)
 
 diff --git a/runtime/defaults.vim b/runtime/defaults.vim
-index 0dcb922..b780bd7 100644
+index e8a0ff4..251fe93 100644
 --- a/runtime/defaults.vim
 +++ b/runtime/defaults.vim
 @@ -3,6 +3,10 @@
  " Maintainer:	Bram Moolenaar <Bram@vim.org>
- " Last change:	2017 Jun 13
+ " Last change:	2019 Feb 18
  "
 +" Modified:	Paul Gortmaker <paul.gortmaker@windriver.com>
 +" Reason:	better alignment with "typical" distro settings.
@@ -80,12 +80,12 @@ index 0dcb922..b780bd7 100644
  " Switch syntax highlighting on when the terminal has colors or when using the
  " GUI (which always has colors).
 diff --git a/runtime/evim.vim b/runtime/evim.vim
-index 7bfebcd..a7299e6 100644
+index 4a875ee..f66a840 100644
 --- a/runtime/evim.vim
 +++ b/runtime/evim.vim
 @@ -2,6 +2,10 @@
  " Maintainer:	Bram Moolenaar <Bram@vim.org>
- " Last Change:	2017 Sep 20
+ " Last Change:	2019 Jan 27
  
 +" Modified:	Paul Gortmaker <paul.gortmaker@windriver.com>
 +" Reason:	better alignment with "typical" distro settings.
