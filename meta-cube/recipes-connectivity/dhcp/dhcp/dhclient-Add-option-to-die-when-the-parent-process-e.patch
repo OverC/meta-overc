@@ -1,4 +1,4 @@
-From 1dc743c947ff4b3ac780195b66ed7c3a962cd781 Mon Sep 17 00:00:00 2001
+From bfe48e5fb3c63ea55976af0181f3af1094839b4c Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Tue, 27 Mar 2018 22:10:15 -0700
 Subject: [PATCH] dhclient: Add option to die when the parent process exits
@@ -48,7 +48,7 @@ index 825ab00..592c69e 100644
 @@ -398,6 +402,8 @@ main(int argc, char **argv) {
  			no_dhclient_pid = 1;
  		} else if (!strcmp(argv[i], "--no-pid")) {
- 			no_pid_file = true;
+ 			no_pid_file = ISC_TRUE;
 +		} else if (!strcmp(argv[i], "--psig")) {
 +			psig = 1;
  		} else if (!strcmp(argv[i], "-cf")) {
