@@ -1,5 +1,6 @@
-SHRT_VER = "${@oe.utils.trim_version("${PV}", 2)}"
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-yocto-${SHRT_VER}:${THISDIR}:${THISDIR}/linux-yocto:"
+#SHRT_VER = "${@oe.utils.trim_version("${PV}", 2)}"
+#FILESEXTRAPATHS_prepend := "${THISDIR}/linux-yocto-${SHRT_VER}:${THISDIR}:${THISDIR}/linux-yocto:"
+FILESEXTRAPATHS_prepend := "${THISDIR}:${THISDIR}/linux-yocto:"
 
 SRC_URI += '${@bb.utils.contains("OVERC_PLATFORM_TUNING", "builder", "file://builder.cfg ", "",d)}'
 SRC_URI += "file://xt-checksum.scc \
