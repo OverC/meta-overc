@@ -1,5 +1,5 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://vim-Make-text-mode-editing-Great-again.patch;patchdir=.."
+SRC_URI += "file://vim-Make-text-mode-editing-Great-again.patch"
 
 # Temporary workaround for absence upstream ; delete ASAP.
 SRC_URI[md5sum] = "2bfd304eabd99fc57629851cd96bdbfd"
