@@ -23,19 +23,6 @@ SRC_FILES_LIST = "essential-autostart \
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "essential-autostart.service reload-dom0-snapshot.service essential-opt-mount.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
-
-systemd_postinst() {
-OPTS=""
-
-if [ -n "$D" ]; then
-    OPTS="--root=$D"
-fi
-
-if type systemctl >/dev/null 2>/dev/null; then
-	systemctl $OPTS ${SYSTEMD_AUTO_ENABLE} ${SYSTEMD_SERVICE}
-fi
-}
 
 do_compile() {
 	${CC} ${CFLAGS} ${LDFLAGS} -Wall ${WORKDIR}/daemonize-sigusr1-wait.c -o ${B}/daemonize-sigusr1-wait
