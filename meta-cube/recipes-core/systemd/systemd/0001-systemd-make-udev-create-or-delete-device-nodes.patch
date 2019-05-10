@@ -1,29 +1,20 @@
-From e2cbf226e19bee636850281a9cd40e0a65434aa4 Mon Sep 17 00:00:00 2001
-From: Bruce Ashfield <bruce.ashfield@windriver.com>
-Date: Thu, 26 Nov 2015 00:33:06 -0500
-Subject: [PATCH] systemd: make udev create or delete device nodes
+From f8465850af1734851caea8b42bb0b047f17317e3 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Thu, 9 May 2019 17:01:19 -0400
+Subject: [PATCH] foo
 
-Since udev 176, the 'devtmpfs' filesystem is required,
-and udev will not create or delete device nodes anymore,
-it only adjusts permissions and ownership of device nodes
-and maintains additional symlinks. But for linux containers,
-it usually mount tmpfs to its /dev/, thus the "create" and
-"delete" functions are still needed.
-
-Signed-off-by: fupan li <fupan.li@windriver.com>
-[bva: ported to systemd 225]
-Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
 ---
- src/udev/udev-node.c | 102 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 100 insertions(+), 2 deletions(-)
+ src/udev/udev-node.c | 105 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 103 insertions(+), 2 deletions(-)
 
 diff --git a/src/udev/udev-node.c b/src/udev/udev-node.c
-index 333dcae..d45aec1 100644
+index cfbbd7b283..4ee7922aac 100644
 --- a/src/udev/udev-node.c
 +++ b/src/udev/udev-node.c
-@@ -22,6 +22,62 @@
- #include "string-util.h"
- #include "udev.h"
+@@ -27,6 +27,63 @@
+ #include "strxcpyx.h"
+ #include "udev-node.h"
  
 +#define TMP_FILE_EXT		".udev-tmp"
 +
@@ -81,15 +72,17 @@ index 333dcae..d45aec1 100644
 +	return err;
 +}
 +
- static int node_symlink(struct udev_device *dev, const char *node, const char *slink) {
-         struct stat stats;
-         char target[UTIL_PATH_SIZE];
-@@ -252,8 +308,13 @@ static int node_permissions_apply(struct udev_device *dev, bool apply,
++
+ static int node_symlink(sd_device *dev, const char *node, const char *slink) {
+         _cleanup_free_ char *slink_dirname = NULL, *target = NULL;
+         const char *id_filename, *slink_tmp;
+@@ -296,8 +353,15 @@ static int node_permissions_apply(sd_device *dev, bool apply,
+         else
                  mode |= S_IFCHR;
  
-         if (lstat(devnode, &stats) != 0) {
--                err = log_debug_errno(errno, "cannot stat() node '%s' (%m)", devnode);
--                goto out;
+-        if (lstat(devnode, &stats) < 0)
+-                return log_device_debug_errno(dev, errno, "cannot stat() node '%s' (%m)", devnode);
++        if (lstat(devnode, &stats) < 0) {
 +                log_debug("creating device node '%s', devnum=%d:%d, mode=%#o, uid=%d, gid=%d\n",
 +                    devnode, major(devnum), minor(devnum), mode, uid, gid);
 +
@@ -97,24 +90,25 @@ index 333dcae..d45aec1 100644
 +                        err = log_debug_errno(errno, "cannot create node '%s' (%m)", devnode);
 +                        goto out;
 +                }
-         }
++	} 
  
-         if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum)) {
-@@ -346,13 +407,50 @@ void udev_node_add(struct udev_device *dev, bool apply,
- }
- 
- void udev_node_remove(struct udev_device *dev) {
+         if (((stats.st_mode & S_IFMT) != (mode & S_IFMT)) || (stats.st_rdev != devnum))
+                 return log_device_debug_errno(dev, SYNTHETIC_ERRNO(EEXIST), "Found node '%s' with non-matching devnum %s, skip handling",
+@@ -427,6 +491,11 @@ int udev_node_remove(sd_device *dev) {
+         _cleanup_free_ char *filename = NULL;
+         const char *devlink;
+         int r;
 +        struct udev *udev = udev_device_get_udev(dev);
-         struct udev_list_entry *list_entry;
 +        struct udev_device *dev_check;
-         char filename[DEV_NUM_PATH_MAX];
 +        const char *devnode;
 +        struct stat stats;
 +        int err = 0;
  
-         /* remove/update symlinks, remove symlinks from name index */
-         udev_list_entry_foreach(list_entry, udev_device_get_devlinks_list_entry(dev))
-                 link_update(dev, udev_list_entry_get_name(list_entry), false);
+         assert(dev);
+ 
+@@ -434,6 +503,38 @@ int udev_node_remove(sd_device *dev) {
+         FOREACH_DEVICE_DEVLINK(dev, devlink)
+                 (void) link_update(dev, devlink, false);
  
 +        devnode = udev_device_get_devnode(dev);
 +        if (devnode == NULL){
@@ -148,9 +142,9 @@ index 333dcae..d45aec1 100644
 +        if (err == 0)
 +            rmdir_parents(udev_device_get_devnode(dev), "/");
 +
-         /* remove /dev/{block,char}/$major:$minor */
-         xsprintf_dev_num_path(filename,
-                               streq(udev_device_get_subsystem(dev), "block") ? "block" : "char",
+         r = xsprintf_dev_num_path_from_sd_device(dev, &filename);
+         if (r < 0)
+                 return log_device_debug_errno(dev, r, "Failed to get device path: %m");
 -- 
-2.7.4
+2.19.1
 

@@ -1,7 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
-        file://0001-systemd-make-udev-create-or-delete-device-nodes.patch \
 	file://OverC_Allow_RW_sys.patch \
 	file://create_block_devs_containers.patch \
        "
