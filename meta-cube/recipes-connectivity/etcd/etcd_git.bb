@@ -29,19 +29,6 @@ SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "etcd.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
-systemd_postinst() {
-OPTS=""
-
-if [ -n "$D" ]; then
-    OPTS="--root=$D"
-fi
-
-if type systemctl >/dev/null 2>/dev/null; then
-        systemctl $OPTS ${SYSTEMD_AUTO_ENABLE} ${SYSTEMD_SERVICE}
-fi
-}
-
-
 RDEPENDS_${PN} = "bash"
 
 do_compile() {

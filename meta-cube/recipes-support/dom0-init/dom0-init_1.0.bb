@@ -20,19 +20,6 @@ SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "dom0-ctl-core.service"
 SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 
-systemd_postinst() {
-OPTS=""
-
-if [ -n "$D" ]; then
-    OPTS="--root=$D"
-fi
-
-if type systemctl >/dev/null 2>/dev/null; then
-	systemctl $OPTS ${SYSTEMD_AUTO_ENABLE} ${SYSTEMD_SERVICE}
-fi
-}
-
-
 do_install() {
     install -d ${D}/${sbindir}
     for i in ${SRC_FILES_LIST}; do
