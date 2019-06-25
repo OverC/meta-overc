@@ -24,6 +24,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  overc-conftools \
 		  rndmac \
 		  screen-getty \
+		  systemd-container \
 		  iw \
 		  essential-init \
 		  pflask \
