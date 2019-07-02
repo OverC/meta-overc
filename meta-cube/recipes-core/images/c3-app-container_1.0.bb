@@ -3,6 +3,6 @@ DESCRIPTION = "A small application container which will run \
                 ${C3_APP_CONTAINER_APP}."
 HOMEPAGE = "http://www.windriver.com"
 
-require c3-app-container.inc
+inherit c3-app-container
 
 IMAGE_INSTALL += "${C3_APP_CONTAINER_APP}"
