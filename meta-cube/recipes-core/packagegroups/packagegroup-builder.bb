@@ -204,7 +204,7 @@ RDEPENDS_packagegroup-builder-graphics = "\
     libgl-dev \
     libglu \
     libglu-dev \
-    libsdl \
-    libsdl-dev \
+    libsdl2 \
+    libsdl2-dev \
     libx11-dev \
     "
