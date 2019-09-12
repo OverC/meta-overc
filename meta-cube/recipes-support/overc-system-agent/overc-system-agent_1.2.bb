@@ -22,6 +22,7 @@ RDEPENDS_${PN} = "\
 	python3-jinja2 \
 	python3-markupsafe \
 	python3-werkzeug \
+	python3-core \
 	bash \
 	bc \
 	overc-installer \

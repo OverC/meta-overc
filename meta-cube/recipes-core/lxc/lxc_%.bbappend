@@ -16,6 +16,8 @@ SRC_URI += " \
 # some point. Dropping for now to allow LXC to build.
 #    file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch
 
+RDEPENDS_${PN} += "bash"
+
 do_install_append(){
 	# essential system controls the network, so lxc-net.service is redundant,
 	# remove the dependancy from lxc.service to reduce the boottime.
