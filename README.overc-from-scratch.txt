@@ -1,33 +1,30 @@
 build setup and layer fetching
 ------------------------------
 
- % mkdir overc
- % cd overc
+ # Set OVERCDIR to the desired location
+ % OVERCDIR = ~/overc
+ % mkdir ${OVERCDIR}
+ % cd ${OVERCDIR}
 
- % git clone git://github.com/OverC/overc-installer.git -b master-oci
+ % git clone git://github.com/OverC/overc-installer.git -b master
  % cd overc-installer
- % ./lib/github-fetcher.py -b master-oci OverC meta-overc meta-cube/recipes-support/overc-utils/source/cube-cfg sbin/
- % ./lib/github-fetcher.py -b master-oci OverC meta-overc meta-cube/recipes-support/overc-utils/source/cube-ctl sbin/
+ % ./lib/github-fetcher.py -b master OverC meta-overc meta-cube/recipes-support/overc-utils/source/cube-cfg sbin/
+ % ./lib/github-fetcher.py -b master OverC meta-overc meta-cube/recipes-support/overc-utils/source/cube-ctl sbin/
  % chmod +x sbin/cube-ctl
  % chmod +x sbin/cube-cfg
 
  # NOTE: you must have root access, and btrfs-tools and 'jq' installed on the machine
  #       that will run the installer.
+ # sudo apt install -y btrfs-tools jq
  
- % git checkout -b master-next origin/master-oci
- % cd ..
-
+ % cd ${OVERCDIR}
  % git clone git://git.yoctoproject.org/poky
  % git clone git://git.openembedded.org/meta-openembedded
- % cd meta-openembedded
- % git checkout -b master-next origin/master-next
- % cd ..
  % git clone git://github.com/OverC/meta-overc.git
- % cd meta-overc
- % git checkout -b master-oci origin/master-oci
- % cd ..
  % git clone git://git.yoctoproject.org/meta-virtualization
+ % git clone git://git.yoctoproject.org/meta-cloud-services
  % git clone git://git.yoctoproject.org/meta-security
+ % git clone git://git.yoctoproject.org/meta-selinux
 
 % source poky/oe-init-build-env build
 
@@ -47,24 +44,36 @@ layers:
  % bitbake-layers add-layer ../meta-overc/
  % bitbake-layers add-layer ../meta-overc/meta-cube/
  % bitbake-layers add-layer ../meta-virtualization/
+ % bitbake-layers add-layer ../meta-cloud-services/
  % bitbake-layers add-layer ../meta-security
+ % bitbake-layers add-layer ../meta-selinux
 
 local.conf:
+--cut--
+cat << EOF >>  conf/local.conf
 
- # set the machine
- MACHINE="genericx86-64"
- KMACHINE_genericx86-64 ?= "common-pc-64"
+#
+# OverC updates
+#
 
- # disto: replace the poky distro with:
- DISTRO ?= "overc"
+# set the machine
+MACHINE = "genericx86-64"
+KMACHINE_genericx86-64 = "common-pc-64"
 
- # build and kernel options
- IMAGE_FSTYPES_append = " tar.bz2"
- OVERC_ESSENTIAL_MODE = "read-write"
- PREFERRED_PROVIDER_virtual/kernel = "linux-yocto"
+# disto: replace the poky distro with:
+DISTRO = "overc"
 
- # if you are building and booting on an non-efi machine (i.e. like qemu)
- MACHINE_FEATURES_remove = "efi"
+# build and kernel options
+IMAGE_FSTYPES_append = " tar.bz2"
+NOISO = "1"
+IMAGE_FSTYPES_remove = "hddimg wic wic.bmap"
+OVERC_ESSENTIAL_MODE = "read-write"
+PREFERRED_PROVIDER_virtual/kernel = "linux-yocto"
+
+# if you are building and booting on an non-efi machine (i.e. like qemu)
+MACHINE_FEATURES_remove = "efi"
+EOF
+--cut--
 
 build
 -----
@@ -72,6 +81,10 @@ build
  % bitbake cube-essential
  % bitbake cube-dom0
  % bitbake cube-server
+ % bitbake cube-vrf
+ % bitbake cube-builder-initramfs
+or
+ % bitbake cube-essential cube-dom0 cube-server cube-vrf cube-builder-initramfs
 
 installer
 ---------
@@ -80,26 +93,31 @@ installer
  # cube-dom0 and cube-server as payload containers.
 
  % mkdir ~/.overc/
- % cd ~/overc/overc-installer
+ % cd ${OVERCDIR}/overc-installer
  % cp config/config-usb.sh.sample ~/.overc/config-usb.sh
+ % cp config/config-usb-cube.sh.sample ~/.overc/config-live-dom0-server.sh
+ % sed 's/[ \t]*$//' <<'ENDPATCH' > >(patch -p1 --ignore-whitespace ~/.overc/config-live-dom0-server.sh)
+--- config-live-dom0-server.sh        2019-09-13 20:15:11.792212539 -0400
++++ config-live-dom0-server.sh.good   2019-09-13 20:14:51.603190437 -0400
+@@ -14,11 +14,12 @@
+ #   console (container gets a virtual console)
+ #   hardconsole (container gets a physical console)
+ #   type=<system> (is the container privileged/system ?)
+-HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2:mergepath=/usr,essential \
++HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:vty=2:console:net=1 \
+                       ${ARTIFACTS_DIR}/cube-vrf-genericx86-64.tar.bz2:net=vrf:app=/usr/bin/docker-init,/sbin/vrf-init \
+-                      ${ARTIFACTS_DIR}/cube-desktop-genericx86-64.tar.bz2:vty=3:net=1:mergepath=/usr,essential,dom0 \
+                       ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:subuid=800000"
 
- % cat ~/.overc/config-live-dom0-server.sh
++SCREEN_GETTY_CONSOLE=ttyS0,115200
++
+ NETWORK_DEVICE="enp0s3"
 
-source config-usb.sh
-
-SCREEN_GETTY_CONSOLE=ttyS0,115200
-TARGET_DISK_SIZE=10G
-
-HDINSTALL_ROOTFS="${ARTIFACTS_DIR}/cube-essential-genericx86-64.tar.bz2"
-
-HDINSTALL_CONTAINERS="${ARTIFACTS_DIR}/cube-dom0-genericx86-64.tar.bz2:console:vty=2:net=1 \
-                      ${ARTIFACTS_DIR}/cube-server-genericx86-64.tar.bz2:vty=4"
-
-NETWORK_DEVICE="enp0s3"
+ ## Uncomment to use GPT
+ENDPATCH
 
  # create the live image
- % cd tmp/deploy/images/genericx86-64
- % sudo ~/overc/overc-installer/sbin/cubeit -v -v  --force  --config config-live-dom0-server.sh --artifacts `pwd` /tmp/overc-test.img
+ % sudo ./sbin/cubeit --force  --config config-live-dom0-server.sh --artifacts $(pwd)/../build/tmp/deploy/images/genericx86-64 /tmp/overc-test.img
  
 run it!: qemu
 --------------
@@ -108,7 +126,7 @@ run it!: qemu
         -curses -vnc :3 -serial mon:stdio \
         -boot a -drive file=/tmp/overc-test.img,media=disk,if=virtio,index=0 \
         -device virtio-net-pci,id=net0,netdev=hostnet0 \
-        -netdev user,id=hostnet0
+        -netdev user,id=hostnet0 -device virtio-rng-pci
 
  # you should see the cube-dom0 login prompt.
  # ctrl-w 0 switches the screen tty mux to cube-essential, ctrl-w 1 to get back
