@@ -1,17 +1,21 @@
-From e35bee64d765b83ba38dcca9400ab759bd305261 Mon Sep 17 00:00:00 2001
-From: Bruce Ashfield <bruce.ashfield@windriver.com>
-Date: Tue, 10 Jan 2017 16:10:25 -0500
-Subject: [PATCH] pflask: add CLONE_UNCONTAIN to clone flags
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Sat, 12 Oct 2019 08:10:25 -0600
+Subject: [PATCH] pflask: allow UNCONTAIN with CAP_ADMIN_NS
 
-Allow pflask containers to have the ability to uncontain themselves. This
-will become an optional flag in the future.
+The CAP_ADMIN_NS allows a level 1 container to return to the pid_ns of
+the root name space.  In order to pass on the CAP_ADMIN_NS capability
+bit, the ambient and inheritable CAP_ADMIN_NS bits must be set.
 
-Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+The -C/--uncontain option to pflask allows pflask containers to have
+the ability to uncontain themselves. This will become an optional flag
+in the future.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
  src/cmdline.c |   19 ++++++++++++++++++-
  src/cmdline.h |    3 +++
- src/pflask.c  |    7 +++++++
- 3 files changed, 28 insertions(+), 1 deletion(-)
+ src/pflask.c  |   29 +++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+), 1 deletion(-)
 
 --- a/src/cmdline.c
 +++ b/src/cmdline.c
@@ -107,23 +111,52 @@ Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
    unsigned int keepenv_given ;	/**< @brief Whether keepenv was given.  */
 --- a/src/pflask.c
 +++ b/src/pflask.c
-@@ -58,6 +58,10 @@
+@@ -46,6 +46,7 @@
+ 
+ #include "cmdline.h"
+ 
++#include <sys/capability.h>
+ #include "capabilities.h"
+ #include "pty.h"
+ #include "user.h"
+@@ -58,6 +59,24 @@
  #include "printf.h"
  #include "util.h"
  
-+#ifndef CLONE_UNCONTAIN
-+#  define CLONE_UNCONTAIN         0x00001000
++/* From kernel and libcap definitions */
++#define NUMBER_OF_CAP_SETS 3
++#define _LIBCAP_CAPABILITY_U32S 2
++struct _cap_struct {
++    struct __user_cap_header_struct head;
++    union {
++        struct __user_cap_data_struct set;
++        __u32 flat[NUMBER_OF_CAP_SETS];
++    } u[_LIBCAP_CAPABILITY_U32S];
++    uid_t rootid;
++};
++
++#define raise_cap(x,set)   u[(x)>>5].flat[set]       |=  (1<<((x)&31))
++
++#ifndef CAP_ADMIN_NS
++#  define CAP_ADMIN_NS	38
 +#endif
 +
  static size_t validate_optlist(const char *name, const char *opts);
  
  static void do_daemonize(void);
-@@ -179,6 +183,9 @@ int main(int argc, char *argv[]) {
+@@ -179,6 +198,16 @@ int main(int argc, char *argv[]) {
  	if (args.no_pidns_flag)
  		clone_flags &= ~(CLONE_NEWPID);
  
-+	if (args.uncontain_flag)
-+		clone_flags |= CLONE_UNCONTAIN;
++	if (args.uncontain_flag) {
++		struct _cap_struct *cap_fix = cap_get_proc();
++		fail_if( !cap_fix, "Could not read capabilities");
++		cap_fix->raise_cap(CAP_ADMIN_NS, CAP_INHERITABLE);
++		cap_set_proc(cap_fix);
++		fail_if(prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, CAP_ADMIN_NS, 0, 0) != 0,
++			"CAP_ADMIN_NS raise failed");
++                cap_free(cap_fix);
++	}
 +
  	if (args.attach_given) {
  		master_fd = recv_pty(args.attach_arg);

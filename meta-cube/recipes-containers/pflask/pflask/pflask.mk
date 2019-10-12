@@ -82,12 +82,12 @@ LIB_ST:= $(addprefix -l,$(LIB_ST))
 LIBPATH_SH+=
 LIBPATH_SH:= $(addprefix -L,$(LIBPATH_SH))
 
-LINK_ST= -Wl,-Bstatic $(LIBPATH_ST) $(LIB_ST)
+LINK_ST= -Wl,-Bstatic $(LIBPATH_ST) $(LIB_ST) -lcap
 
 LIB_SH+=
 LIB_SH:= $(addprefix -l,$(LIB_SH))
 
-LINK_SH= -Wl,-Bdynamic $(LIBPATH_SH) $(LIB_SH)
+LINK_SH= -Wl,-Bdynamic $(LIBPATH_SH) $(LIB_SH) -lcap
 
 #------------------------------------------------------------------------------
 # returns the relative path of this component from the top directory
