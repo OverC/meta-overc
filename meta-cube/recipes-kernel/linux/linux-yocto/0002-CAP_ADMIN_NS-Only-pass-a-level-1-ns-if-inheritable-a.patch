@@ -1,0 +1,52 @@
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Fri, 11 Oct 2019 10:11:23 -0600
+Subject: [PATCH 2/2] CAP_ADMIN_NS: Only pass a level 1 ns if inheritable and ambient
+
+
+The CAP_ADMIN_NS capability can only be passed on to a level 1
+container from the root name space when both the inheritable and
+ambient CAP_ADMIN_NS bits have been set, else the capability is
+stripped when the name space is created at do_fork() time.  This will
+allow for complete backward compatibility with the security model in
+use by name spaces and various container managers.
+
+The container manager would be responsible for the setting up a name
+space with CAP_ADMIN_NS and dealing with all the
+restrictions/permissions/responsibilities that come with this
+capability.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/cred.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -372,6 +372,27 @@ int copy_creds(struct task_struct *p, un
+ 	}
+ #endif
+ 
++	/*
++	 * Unless the root ns is explicitly passing CAP_ADMIN_NS power
++	 * it should be stripped.
++	 */
++	if ((clone_flags & CLONE_NEWPID) &&
++	    cap_raised(new->cap_effective, CAP_ADMIN_NS)) {
++		if (cap_raised(p->real_cred->cap_ambient, CAP_ADMIN_NS)) {
++				cap_lower(new->cap_inheritable, CAP_ADMIN_NS);
++				cap_lower(new->cap_ambient, CAP_ADMIN_NS);
++				/* Only allowed from the root ns */
++				if (p->thread_pid->level != 0) {
++					cap_lower(new->cap_bset, CAP_ADMIN_NS);
++					cap_lower(new->cap_effective, CAP_ADMIN_NS);
++					cap_lower(new->cap_permitted, CAP_ADMIN_NS);
++				}
++		} else {
++			cap_lower(new->cap_bset, CAP_ADMIN_NS);
++			cap_lower(new->cap_effective, CAP_ADMIN_NS);
++			cap_lower(new->cap_permitted, CAP_ADMIN_NS);
++		}
++	}
+ 	atomic_inc(&new->user->processes);
+ 	p->cred = p->real_cred = get_cred(new);
+ 	alter_cred_subscribers(new, 2);
