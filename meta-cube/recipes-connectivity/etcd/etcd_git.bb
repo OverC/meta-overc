@@ -81,4 +81,10 @@ do_install() {
 	sed -i '/User/s/^/#/' ${D}${systemd_unitdir}/system/etcd.service
 }
 
+do_install_append_aarch64() {
+	# ARM64 support isn't official for etcd, yet it is used a lot
+	# https://github.com/etcd-io/etcd/issues/9077
+	sed -i '/Environment=ETCD_NAME/aEnvironment=ETCD_UNSUPPORTED_ARCH=arm64' ${D}${systemd_unitdir}/system/etcd.service
+}
+
 deltask compile_ptest_base
