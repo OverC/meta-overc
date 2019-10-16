@@ -1131,7 +1131,7 @@ case "${cmd}" in
 		    exit 1
 		fi
 
-		oci-image-tool create --ref ${tag} ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
+		oci-image-tool create --ref name=${tag} ${out_dir}/${container_name}/docker ${out_dir}/${container_name}/oci-runtime
 		if [ $? -ne 0 ]; then
 		    echo "[ERROR]: error OCI runtime could not be created from ${container_source}"
 		    exit 1
