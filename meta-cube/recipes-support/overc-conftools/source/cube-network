@@ -52,11 +52,9 @@ interface_exists() {
 
 # Get the cube-vrf 'init' PID
 get_cube_vrf_pid() {
-    # The "true" parent will have init/systemd as their parent
-    cube_vrf_ppid=$(ps -ef|grep -E "[0-9]+\ +1\ .*pflask.*cube-vrf"|grep -v grep|awk '{print $2}')
-    # There can be multiple pids associated with the ppid at startup but we only care about
-    # the one either launching or running 'docker-init', so filter accordingly
-    echo $(ps -ef|grep -E "[0-9]+\ +${cube_vrf_ppid}\ +.*docker-init"|grep -v grep|awk '{print $2}')
+    local pid
+    pid=$(cat /var/run/systemd/machines/cube-vrf |grep ^LEADER)
+    echo ${pid#LEADER=}
 }
 
 get_vrf_container() {
