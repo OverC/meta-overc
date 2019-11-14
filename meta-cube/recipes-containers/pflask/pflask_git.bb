@@ -67,6 +67,7 @@ do_install() {
 		extra_ldflags=$(pkg-config --libs dbus-1)
 	fi
 
-	oe_runmake install DEFINES="${EXTRA_DEFINES_${PN}}" CFLAGS="${CFLAGS} ${extra_cflags}" LIB_SH="${extra_ldflags}"
+	oe_runmake install DEFINES="${EXTRA_DEFINES_${PN}}" CFLAGS="${CFLAGS} \
+             ${extra_cflags}" LIB_SH="${extra_ldflags}" BINDIR=${D}${base_bindir}
 }
 
