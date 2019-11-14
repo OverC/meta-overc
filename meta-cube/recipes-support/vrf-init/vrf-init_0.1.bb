@@ -13,8 +13,8 @@ SRC_URI = " \
 "
 
 do_install() {
-    install -d ${D}/sbin
-    install -m 0755 ${WORKDIR}/vrf-init ${D}/sbin/vrf-init
+    install -d ${D}${base_sbindir}
+    install -m 0755 ${WORKDIR}/vrf-init ${D}${base_sbindir}/vrf-init
 
     install -d ${D}/${prefix}
     install -d ${D}/${bindir}
