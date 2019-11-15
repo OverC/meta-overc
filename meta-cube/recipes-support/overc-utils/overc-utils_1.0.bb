@@ -72,4 +72,5 @@ FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconf
 
 RDEPENDS_${PN} += "bash dtach nanomsg udev systemd-extra-utils jq overc-installer udocker \
                    sed which grep util-linux-nsenter util-linux-column util-linux-setsid \
+                   util-linux-script \
 "
