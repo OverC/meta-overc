@@ -93,7 +93,6 @@ RDEPENDS_packagegroup-builder-sdk = "\
     perl-module-text-wrap \
     pkgconfig \
     quilt \
-    texi2html \
     texinfo \
     zile"
 
