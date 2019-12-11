@@ -2,11 +2,11 @@ SUMMARY = "OverC installer script"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
-SRCREV = "${AUTOREV}"
+SRCREV ?= "4dfffc0829e839633fa672632ad2befacc327f4b"
 PV = "1.0+git${SRCPV}"
 
 SRC_URI = " \
-    git://github.com/OverC/overc-installer.git;branch=master-oci \
+    git://github.com/OverC/overc-installer.git;branch=master \
     file://git/COPYING \
 "
 
