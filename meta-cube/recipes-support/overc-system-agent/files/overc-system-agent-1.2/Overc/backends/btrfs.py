@@ -27,8 +27,11 @@ class Btrfs(Utils):
             self.kernel = "/boot/kernel7.img"
         elif self._path_exists('/boot/Image', True):
             self.kernel = "/boot/Image"
+        else:
+            self.kernel = ""
 
-        self.kernel_md5 = self._compute_checksum(self.kernel, True)
+        if self.kernel:
+            self.kernel_md5 = self._compute_checksum(self.kernel, True)
 
         if not self.rootdev or not self.rootfs:
             sys.exit(2)
@@ -183,12 +186,15 @@ class Btrfs(Utils):
         subvolid = self._get_btrfs_value('%s/%s' % (SYSROOT, self.next_rootfs), 'Subvolume ID', True)
         argv = 'subvolume set-default %s %s' % (subvolid, SYSROOT)
         if not self._btrfs(argv, True):
-            #factory-reset the kernel image
-            self.message += "factory reset kernel %s \n" % self.kernel
-            real_kernel = subprocess.check_output("cube-cmd realpath %s/%s/%s" % (SYSROOT, FACTORY_SNAPSHOT, self.kernel), shell=True).decode("utf-8").strip("\n")
-            os.system('cube-cmd cp -f %s %s' % (real_kernel, self.kernel))
-            if self._path_exists(real_kernel + '.p7b', True):
-                os.system('cube-cmd cp -f %s.p7b %s.p7b' % (real_kernel, self.kernel))
+            #factory-reset the kernel image, skip if we didn't find the kernel file in __init__
+            if self.kernel:
+                self.message += "factory reset kernel %s \n" % self.kernel
+                real_kernel = subprocess.check_output("cube-cmd realpath %s/%s/%s" % (SYSROOT, FACTORY_SNAPSHOT, self.kernel), shell=True).decode("utf-8").strip("\n")
+                os.system('cube-cmd cp -f %s %s' % (real_kernel, self.kernel))
+                if self._path_exists(real_kernel + '.p7b', True):
+                    os.system('cube-cmd cp -f %s.p7b %s.p7b' % (real_kernel, self.kernel))
+            else:
+                self.message += "Unable to factory reset the kernel, did not find kernel file\n"
 
             #if grub-efi exists, factory-reset those files from the original rootfs too.
             if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, FACTORY_SNAPSHOT), True):
@@ -308,19 +314,23 @@ class Btrfs(Utils):
                 return False
                 # sys.exit(2)
 
-            upgrade_kernel = subprocess.check_output("%srealpath %s/%s/%s" % (cube_cmd, SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8").strip("\n")
-            upgrade_kernel_md5 = ''
-            if self._path_exists(upgrade_kernel, host):
-                upgrade_kernel_md5 = self._compute_checksum(upgrade_kernel, host)
+            # Upgrade the kernel, skip if we weren't able to identify the kernel file during __init__
+            if self.kernel:
+                upgrade_kernel = subprocess.check_output("%srealpath %s/%s/%s" % (cube_cmd, SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8").strip("\n")
+                upgrade_kernel_md5 = ''
+                if self._path_exists(upgrade_kernel, host):
+                    upgrade_kernel_md5 = self._compute_checksum(upgrade_kernel, host)
 
-            if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
-                #backup kernel
-                os.system('%scp -f %s  %s_bakup' % (cube_cmd, self.kernel, self.kernel))
-                if self._path_exists(self.kernel + '.p7b', host):
-                    os.system('%scp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
-                os.system('%scp -f %s %s' % (cube_cmd, upgrade_kernel, self.kernel))
-                if self._path_exists(upgrade_kernel + '.p7b', host):
-                    os.system('%scp -f %s.p7b %s.p7b' % (cube_cmd, upgrade_kernel, self.kernel))
+                if upgrade_kernel_md5 and self.kernel_md5 != upgrade_kernel_md5:
+                    #backup kernel
+                    os.system('%scp -f %s  %s_bakup' % (cube_cmd, self.kernel, self.kernel))
+                    if self._path_exists(self.kernel + '.p7b', host):
+                        os.system('%scp -f %s.p7b %s_bakup.p7b' % (cube_cmd, self.kernel, self.kernel))
+                    os.system('%scp -f %s %s' % (cube_cmd, upgrade_kernel, self.kernel))
+                    if self._path_exists(upgrade_kernel + '.p7b', host):
+                        os.system('%scp -f %s.p7b %s.p7b' % (cube_cmd, upgrade_kernel, self.kernel))
+            else:
+                self.message += "Unable to upgrade the kernel, did not find kernel file.\n"
 
             #if grub-efi exists, replace the old one with it in case they are upgraded also
             if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, self.next_rootfs), host):
@@ -356,19 +366,23 @@ class Btrfs(Utils):
             return False
             # sys.exit(2)
 
-        rollback_kernel = '%s/%s/%s' % (SYSROOT, self.next_rootfs, self.kernel)
-        rollback_kernel_md5 = ''
-        if self._path_exists(rollback_kernel, True):
-            rollback_kernel = subprocess.check_output("cube-cmd realpath %s/%s/%s" % (SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8").strip('\n')
+        # Rollback the kernel, skip if we were not able to find the kernel file in __init__
+        if self.kernel:
+            rollback_kernel = '%s/%s/%s' % (SYSROOT, self.next_rootfs, self.kernel)
+            rollback_kernel_md5 = ''
+            if self._path_exists(rollback_kernel, True):
+                rollback_kernel = subprocess.check_output("cube-cmd realpath %s/%s/%s" % (SYSROOT, self.next_rootfs, self.kernel), shell=True).decode("utf-8").strip('\n')
+            else:
+                rollback_kernel = '%s_bakup' % self.kernel
+
+            upgrade_kernel_md5 = self._compute_checksum(rollback_kernel, True)
+
+            if rollback_kernel_md5 != self.kernel_md5:
+                os.system('cube-cmd cp -f %s %s' % (rollback_kernel, self.kernel))
+                if self._path_exists(rollback_kernel + '.p7b', True):
+                    os.system('cube-cmd cp -f %s.p7b %s.p7b' % (rollback_kernel, self.kernel))
         else:
-            rollback_kernel = '%s_bakup' % self.kernel
-
-        upgrade_kernel_md5 = self._compute_checksum(rollback_kernel, True)
-
-        if rollback_kernel_md5 != self.kernel_md5:
-            os.system('cube-cmd cp -f %s %s' % (rollback_kernel, self.kernel))
-            if self._path_exists(rollback_kernel + '.p7b', True):
-                os.system('cube-cmd cp -f %s.p7b %s.p7b' % (rollback_kernel, self.kernel))
+            self.message += "Unable to rollback kernel, did not find kernel file.\n"
 
         #if grub-efi exists, rollback it too
         if self._path_exists('%s/%s/boot/EFI/BOOT' % (SYSROOT, self.next_rootfs), True):
