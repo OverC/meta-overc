@@ -25,6 +25,8 @@ class Btrfs(Utils):
             self.kernel = "/boot/fitImage"
         elif self._path_exists('/boot/kernel7.img', True):
             self.kernel = "/boot/kernel7.img"
+        elif self._path_exists('/boot/Image', True):
+            self.kernel = "/boot/Image"
 
         self.kernel_md5 = self._compute_checksum(self.kernel, True)
 
