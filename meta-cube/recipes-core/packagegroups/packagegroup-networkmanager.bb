@@ -14,5 +14,5 @@ RDEPENDS_${PN} = "\
     networkmanager \
     network-manager-applet \
     gnome-keyring \
-    udisks \
+    udisks2 \
     "
