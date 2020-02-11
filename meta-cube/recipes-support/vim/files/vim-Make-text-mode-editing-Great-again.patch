@@ -1,4 +1,4 @@
-From 4e1db5613ca5ce207d8f2df7fceba4e40b13b254 Mon Sep 17 00:00:00 2001
+From 88e66d3db81b259c95eaea5853281d2732d4ec55 Mon Sep 17 00:00:00 2001
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 Date: Mon, 3 Apr 2017 22:58:39 -0400
 Subject: [PATCH] vim: Make text mode editing Great again.
@@ -25,17 +25,17 @@ vim default, so offended people can direct their complaints accordingly.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- runtime/defaults.vim | 23 ++++++++++++++---------
+ runtime/defaults.vim | 26 +++++++++++++++-----------
  runtime/evim.vim     | 16 ++++++++--------
- 2 files changed, 22 insertions(+), 17 deletions(-)
+ 2 files changed, 23 insertions(+), 19 deletions(-)
 
 diff --git a/runtime/defaults.vim b/runtime/defaults.vim
-index e8a0ff4..251fe93 100644
+index e881604..d9c3260 100644
 --- a/runtime/defaults.vim
 +++ b/runtime/defaults.vim
 @@ -3,6 +3,10 @@
  " Maintainer:	Bram Moolenaar <Bram@vim.org>
- " Last change:	2019 Feb 18
+ " Last change:	2019 Oct 27
  "
 +" Modified:	Paul Gortmaker <paul.gortmaker@windriver.com>
 +" Reason:	better alignment with "typical" distro settings.
@@ -61,21 +61,24 @@ index e8a0ff4..251fe93 100644
  
  " Do not recognize octal numbers for Ctrl-A and Ctrl-X, most users find it
  " confusing.
-@@ -73,11 +77,12 @@ map Q gq
- " Revert with ":iunmap <C-U>".
- inoremap <C-U> <C-G>u<C-U>
- 
--" In many terminal emulators the mouse works just fine.  By enabling it you
--" can position the cursor, Visually select and scroll with the mouse.
+@@ -77,13 +81,13 @@ inoremap <C-U> <C-G>u<C-U>
+ " can position the cursor, Visually select and scroll with the mouse.
+ " Only xterm can grab the mouse events when using the shift key, for other
+ " terminals use ":", select text and press Esc.
 -if has('mouse')
--  set mouse=a
+-  if &term =~ 'xterm'
+-    set mouse=a
+-  else
+-    set mouse=nvi
+-  endif
 -endif
-+" In some terminal emulators the mouse kind of works.  By enabling it you
-+" can position the cursor, visually select and scroll with the mouse.
-+" Note that it does break a very common paste use case if you enable it.
-+" if has('mouse')
-+"   set mouse=a
-+" endif
++"if has('mouse')
++"  if &term =~ 'xterm'
++"    set mouse=a
++"  else
++"    set mouse=nvi
++"  endif
++"endif
  
  " Switch syntax highlighting on when the terminal has colors or when using the
  " GUI (which always has colors).
