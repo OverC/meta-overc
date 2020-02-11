@@ -18,8 +18,8 @@ SRCREV = "94fcec123257d47c4629dadd04add4247cd74f8c"
 S = "${WORKDIR}/git"
 
 DEPENDS = ""
-RDEPENDS_${PN} = "python-subprocess \
-                  python-modules \
+RDEPENDS_${PN} = " \
+                  python3-modules \
                   ca-certificates \
                   curl \
                  "
