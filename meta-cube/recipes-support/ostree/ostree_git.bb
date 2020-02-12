@@ -40,9 +40,9 @@ DEPENDS += "attr libarchive glib-2.0 pkgconfig gpgme fuse libsoup-2.4 e2fsprogs 
 DEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', ' systemd', '', d)}"
 DEPENDS_remove_class-native = "systemd-native"
 
-RDEPENDS_${PN} = "python util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl"
+RDEPENDS_${PN} = "python3 util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl"
 
-RDEPENDS_${PN}_remove_class-native = "python-native"
+RDEPENDS_${PN}_remove_class-native = "python3-native"
 
 RDEPENDS_${PN}_append_class-target = " pv"
 
