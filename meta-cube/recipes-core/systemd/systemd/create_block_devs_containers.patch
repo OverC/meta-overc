@@ -6,13 +6,13 @@ Subject: [PATCH] Create block devs containers
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
 ---
- rules/50-udev-default.rules.in | 3 ++-
+ rules.d/50-udev-default.rules.in | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/rules/50-udev-default.rules.in b/rules/50-udev-default.rules.in
+diff --git a/rules.d/50-udev-default.rules.in b/rules.d/50-udev-default.rules.in
 index 191f56f..2c5cf7a 100644
---- a/rules/50-udev-default.rules.in
-+++ b/rules/50-udev-default.rules.in
+--- a/rules.d/50-udev-default.rules.in
++++ b/rules.d/50-udev-default.rules.in
 @@ -56,7 +56,8 @@ KERNEL=="lp[0-9]*", GROUP="lp"
  KERNEL=="irlpt[0-9]*", GROUP="lp"
  SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:0701??:*", GROUP="lp"
