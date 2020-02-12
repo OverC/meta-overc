@@ -164,8 +164,8 @@ OVERC_COMMON_PERL = " \
     "
 
 OVERC_COMMON_PYTHON = " \
-     python-misc \
-     python-pip \
+     python3-misc \
+     python3-pip \
     "
 
 OVERC_COMMON_TOOLS = "\
