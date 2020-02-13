@@ -160,10 +160,7 @@ RDEPENDS_packagegroup-builder-extended = "\
     python3-modules \
     python3-misc \
     python3-git \
-    python \
-    python-compiler \
-    python-misc \
-    python-modules \
+    python3 \
     python3-rpm \
     quota \
     readline \
