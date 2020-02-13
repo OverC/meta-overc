@@ -110,7 +110,6 @@ RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 += "${@bb.utils.contains('MAC
 RDEPENDS_packagegroup-builder-extended = "\
     bash-completion \
     bzip2 \
-    chkconfig \
     chrpath \
     cpio \
     curl \
