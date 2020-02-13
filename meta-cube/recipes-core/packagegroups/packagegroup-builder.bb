@@ -44,7 +44,6 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     hdparm \
     iptables \
     iptables-modules \
-    lsb \
     parted \
     pseudo \
     screen \
