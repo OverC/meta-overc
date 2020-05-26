@@ -782,7 +782,9 @@ tweak_container_devices()
 
 	for v in ${vts}; do
 	    vty_num=$(echo $v | cut -f1 -d: | sed 's%/dev/tty%%')
-	    ln -sf /lib/systemd/system/getty@.service ${container_storage}/${container_name}/rootfs/etc/systemd/system/getty.target.wants/getty@tty${vty_num}.service
+	    if [ $(echo $vty_num | grep -Ec "^[0-9]+$") -eq 1 ]; then
+		ln -sf /lib/systemd/system/getty@.service ${container_storage}/${container_name}/rootfs/etc/systemd/system/getty.target.wants/getty@tty${vty_num}.service
+	    fi
 	done
 
 	sed -i "s%ConditionPathExists=/dev/tty0%#ConditionPathExists=/dev/tty0%g" ${container_storage}/${container_name}/rootfs/lib/systemd/system/getty@.service
