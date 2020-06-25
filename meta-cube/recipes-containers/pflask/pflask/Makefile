@@ -1,14 +1,17 @@
 #------------------------------------------------------------------------------
+# This is not part of the pflask distribution and is modified by hand.
+#------------------------------------------------------------------------------
 # WAFTOOLS generated makefile
 # version: 0.4.13
 # waf: 1.8.19
 #------------------------------------------------------------------------------
 
+
 SHELL=/bin/sh
 
 # commas, spaces and tabs:
-sp:= 
-sp+= 
+# Defining a space with 'sp:= ' does not work for recent make's
+sp :=  $(subst !, ,!)
 tab:=$(sp)$(sp)$(sp)$(sp)
 comma:=,
 
