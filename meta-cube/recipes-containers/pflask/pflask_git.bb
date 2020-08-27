@@ -39,7 +39,6 @@ EXTRA_DEFINES_${PN} = "${@bb.utils.contains('PACKAGECONFIG','dbus','HAVE_DBUS', 
 
 EXTRA_OEMAKE = "\
     'CC=${CC}' \
-    'CFLAGS=${CFLAGS}' \
     'LDFLAGS=${LDFLAGS}' \
     'LINKFLAGS=${LDFLAGS}' \
     'PREFIX=${D}' \
@@ -67,7 +66,7 @@ do_install() {
 		extra_ldflags=$(pkg-config --libs dbus-1)
 	fi
 
-	oe_runmake install DEFINES="${EXTRA_DEFINES_${PN}}" CFLAGS="${CFLAGS} \
+	oe_runmake install DEFINES="${EXTRA_DEFINES_${PN}}" CFLAGS="-fcommon ${CFLAGS} \
              ${extra_cflags}" LIB_SH="${extra_ldflags}" BINDIR=${D}${base_bindir}
 }
 
