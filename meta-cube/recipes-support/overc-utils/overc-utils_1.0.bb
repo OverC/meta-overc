@@ -19,7 +19,7 @@ SRC_URI = " \
     file://source/cube-device-functions \
     file://source/c3-completions \
     file://source/c3-construct \
-    file://source/c3-cmds/* \
+    file://source/c3-cmds/ \
 "
 
 do_install() {
