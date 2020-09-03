@@ -73,7 +73,7 @@ RDEPENDS_packagegroup-essential-networking = "\
      iptables-modules \
      net-tools \
      netcat \
-     dhcp-client \
+     dhcpcd \
     "
 
 RDEPENDS_packagegroup-essential-only = "\
