@@ -36,7 +36,7 @@ RDEPENDS_packagegroup-builder = "\
 RDEPENDS_packagegroup-builder-host-tools = "\
     btrfs-tools \
     debianutils \
-    dhcpcd \
+    dhcp-client \
     e2fsprogs \
     e2fsprogs-e2fsck \
     e2fsprogs-mke2fs \

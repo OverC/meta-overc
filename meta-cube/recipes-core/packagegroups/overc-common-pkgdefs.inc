@@ -106,7 +106,7 @@ OVERC_EXTRA_EXTENDED = "\
     "
 
 OVERC_COMMON_NETWORKING = "\
-     dhcpcd \
+     dhcp-client \
      ifupdown \
      iproute2 \
      iputils \

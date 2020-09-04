@@ -58,7 +58,7 @@ PACKAGE_INSTALL += " \
     nfs-utils-client \
     sed \
     vim \
-    dhcpcd \
+    dhcp-client \
     grep \
     findutils \
     iproute2 \
