@@ -6,7 +6,7 @@ SRC_URI = "http://http.debian.net/debian/pool/main/i/initramfs-tools/initramfs-t
 SRC_URI[md5sum] = "d4b260cc2244b44ba48f9d0b84101dc7"
 SRC_URI[sha256sum] = "e5bd5a4fa543e9438ad59399d275681c7db0840fed2c531383ad81d5d8b5552f"
 
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
 S = "${WORKDIR}/${PN}"
 

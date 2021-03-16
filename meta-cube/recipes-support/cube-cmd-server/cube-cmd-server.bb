@@ -2,7 +2,7 @@ SUMMARY = "CUBE Command Server"
 DESCRIPTION = "A service for taking action on commands from containers"
 
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
 SRC_URI = "file://cube-cmd-server.service \
            file://cube-cmd-server.conf \

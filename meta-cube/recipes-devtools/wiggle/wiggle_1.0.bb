@@ -8,7 +8,7 @@ SRCREV = "eac35c077388a3dcbbe4ca033c6a43ec6a4fe059"
 
 S = "${WORKDIR}/git"
 
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
 DEPENDS = "ncurses groff-native"
 RDEPENDS_${PN} = "ncurses ncurses-terminfo"
