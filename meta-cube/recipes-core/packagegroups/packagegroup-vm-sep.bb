@@ -8,15 +8,19 @@ inherit packagegroup
 
 PACKAGES = "\
     packagegroup-vm-sep \
-    packagegroup-runv \
     "
+
+# runv is currently broken: march 2021 (due to hyperstart)
+# packagegroup-runv 
 
 RDEPENDS_${PN} = " \
     libvirt \
     qemu \
     qemu-x86_64 \
-    hyperstart \
 "
+
+# hyperstart is currently broken: march 2021
+# hyperstart
 
 RDEPENDS_packagegroup-runv = " \
     runv \
