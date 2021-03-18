@@ -10,7 +10,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 CUBE_DOM0_EXTRA_INSTALL ?= " "
 
-OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-runv','',d)}"
+#OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-runv','',d)}"
+OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-vm-sep','',d)}"
 
 PACKAGE_EXCLUDE = "busybox* "
 # Exclude documention packages, which can be installed later
