@@ -59,6 +59,11 @@ branch: master
 revision: HEAD
 prio: default
 
+URI: git://git.yoctoproject.org/meta-selinux
+branch: master
+revision: HEAD
+prio: default
+
 Maintenance
 -----------
 
