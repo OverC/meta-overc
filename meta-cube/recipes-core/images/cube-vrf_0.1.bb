@@ -5,7 +5,7 @@ routing functions are managed by this container."
 
 HOMEPAGE = "http://www.windriver.com"
 
-require recipes-core/images/c3-app-container.inc
+inherit c3-app-container
 
 IMAGE_INSTALL += " \
     openvswitch \

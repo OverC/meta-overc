@@ -14,4 +14,4 @@ SERVICES_TO_DISABLE_append += "${C3_SYSTEMD_CONTAINER_DISABLE_SERVICES}"
 # Use local.conf to enable systemd services
 SERVICES_TO_ENABLE += "${C3_SYSTEMD_CONTAINER_ENABLE_SERVICES}"
 
-require c3-systemd-container.inc
+inherit c3-systemd-container
