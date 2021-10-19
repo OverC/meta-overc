@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
 	file://OverC_Allow_RW_sys.patch \
@@ -10,4 +10,4 @@ SRC_URI += " \
 # After this is resolved and runc is upreved this patch should go away
 SRC_URI += "file://Fix-broken-dev-console-when-running-in-docker-contai.patch"
 
-PACKAGECONFIG_append = " iptc"
+PACKAGECONFIG:append = " iptc"

@@ -1,4 +1,4 @@
-do_install_append () {
+do_install:append () {
     securetty_file=${D}${sysconfdir}/securetty
 
     echo '' >> $securetty_file

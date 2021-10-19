@@ -14,7 +14,7 @@ CUBE_SERVER_EXTRA_INSTALL ?= ""
 
 IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 PACKAGE_EXCLUDE = "busybox*"
 # Exclude documention packages, which can be installed later

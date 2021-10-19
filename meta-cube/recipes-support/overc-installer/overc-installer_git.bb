@@ -23,7 +23,7 @@ do_install() {
 	install -m 0755 ${S}/files/overc_cleanup.service ${D}${systemd_system_unitdir}/
 }
 
-FILES_${PN} += "/opt/${BPN} \
+FILES:${PN} += "/opt/${BPN} \
 		${systemd_system_unitdir} \
 	    "
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"

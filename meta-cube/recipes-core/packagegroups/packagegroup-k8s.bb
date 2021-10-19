@@ -11,7 +11,7 @@ PACKAGES = "\
     packagegroup-k8s-master \
     "
 
-RDEPENDS_packagegroup-k8s-compute = " \
+RDEPENDS:packagegroup-k8s-compute = " \
     packagegroup-container \
     packagegroup-docker \
     docker-registry \
@@ -23,6 +23,6 @@ RDEPENDS_packagegroup-k8s-compute = " \
     kube-proxy \
 "
 
-RDEPENDS_packagegroup-k8s-master = " \
+RDEPENDS:packagegroup-k8s-master = " \
     packagegroup-container \
 "

@@ -31,7 +31,7 @@ lxc_block_device_mgmt() {
 			if [ "$ACTION" = "add" ]; then
 				lxc_block_device_add_partition $container $DEVNAME
 			elif [ "$ACTION" = "remove" ]; then
-				lxc_block_device_remove_partition $container $DEVNAME
+				lxc_block_device:remove_partition $container $DEVNAME
 			fi
 		else
 			log "target container $container is NOT running"

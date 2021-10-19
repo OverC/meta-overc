@@ -4,7 +4,7 @@
 #
 inherit package
 
-python package_name_hook_append() {
+python package_name_hook:append() {
     """
     OE only RPROVIDES ${pn}-dev for dev rpm packages, which is not compatible with
     Redhat/CentOS, who provide ${pn}-devel. In order to build redhat/CentOS third party
@@ -19,22 +19,22 @@ python package_name_hook_append() {
             #Some ${pn}-dev doesn't set RPROVIDES specifically, those pkgs should also
             #RPROVIDES ${pn}-devel.
             #
-            if (not d.getVar('RPROVIDES_' + pkg, True)):
-                d.setVar('RPROVIDES_' + pkg, " " + pkg + "el")
+            if (not d.getVar('RPROVIDES:' + pkg, True)):
+                d.setVar('RPROVIDES:' + pkg, " " + pkg + "el")
             else:
                 #Some ${pn}-dev RPROVIDES the packages are not compatible with the 
                 #Redhat/CentOS, such as alsa-lib's alsa-lib-dev PROVIDES alsa-dev,
                 #but Redhat/CentOS's alsa-lib-dev PROVIDES alsa-lib-dev, instead of
                 #alsa-dev, here adds the ${pn}-devel PROVIDES to every ${pn}-dev.
-                if ((pkg + "el") not in list(d.getVar('RPROVIDES_' + pkg, True))):
-                    d.appendVar('RPROVIDES_' + pkg, " " + pkg + "el")
+                if ((pkg + "el") not in list(d.getVar('RPROVIDES:' + pkg, True))):
+                    d.appendVar('RPROVIDES:' + pkg, " " + pkg + "el")
 
             if pkg.startswith("lib") and not pkg.startswith("lib32-"):
-                d.appendVar('RPROVIDES_' + pkg, " " + pkg[3:])
+                d.appendVar('RPROVIDES:' + pkg, " " + pkg[3:])
 
-        for (rprov_pkg, rprov) in bb.utils.explode_dep_versions2(d.getVar('RPROVIDES_' + pkg, True) or "").items():
-            if rprov_pkg.endswith('-dev') and (rprov_pkg + "el") not in list(d.getVar('RPROVIDES_' + pkg, True)):
-                d.appendVar('RPROVIDES_' + pkg, " " + rprov_pkg + "el")
+        for (rprov_pkg, rprov) in bb.utils.explode_dep_versions2(d.getVar('RPROVIDES:' + pkg, True) or "").items():
+            if rprov_pkg.endswith('-dev') and (rprov_pkg + "el") not in list(d.getVar('RPROVIDES:' + pkg, True)):
+                d.appendVar('RPROVIDES:' + pkg, " " + rprov_pkg + "el")
 
         #
         #Some packages such as openssl, audit also produced openssl-libs 
@@ -44,16 +44,16 @@ python package_name_hook_append() {
         #are not provided by other rpms.
         #
         if pkg.endswith("-dev"):
-            newpkg = d.getVar('PKG_' + pkg, True)
+            newpkg = d.getVar('PKG:' + pkg, True)
             #
             #Some packages will rewrite their package names by
             #changing PKG. Here also add a rprovides for this new 
             #pkg name. For an example, see debian.bbclass
             #
             if newpkg:
-                provs = d.getVar('RPROVIDES_' + pkg, True)
+                provs = d.getVar('RPROVIDES:' + pkg, True)
                 if newpkg+"el" not in provs:
-                    d.appendVar('RPROVIDES_' + pkg, " " + newpkg+"el")
+                    d.appendVar('RPROVIDES:' + pkg, " " + newpkg+"el")
             #
             #Some packages such as openssl, audit also produced openssl-libs 
             #and audit-libs, audit-libs-devel rpm packages, which will be buildrequired 
@@ -69,13 +69,13 @@ python package_name_hook_append() {
 
                 provide_pn_libs = 0
                 for npkg in packages.split():
-                    provides = d.getVar('RPROVIDES_' + npkg, True)
+                    provides = d.getVar('RPROVIDES:' + npkg, True)
                     if (provides and libpkg in provides):
                         provide_pn_libs = 1
 
                 if not provide_pn_libs:
-                    d.appendVar('RPROVIDES_' + pkg, " " + libpkg)
-                    d.appendVar('RPROVIDES_' + pkg, " " + libpkgdev)
+                    d.appendVar('RPROVIDES:' + pkg, " " + libpkg)
+                    d.appendVar('RPROVIDES:' + pkg, " " + libpkgdev)
 
-        bb.debug(1, 'RPROVIDES: pkg %s rprovides: %s' % (pkg, str(d.getVar('RPROVIDES_' + pkg, True))))
+        bb.debug(1, 'RPROVIDES: pkg %s rprovides: %s' % (pkg, str(d.getVar('RPROVIDES:' + pkg, True))))
 }

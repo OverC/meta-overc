@@ -16,7 +16,7 @@ SRCREV = "cad6ed022d7aa8e0909d50277cba0398b915ae46"
 PV = "0.1.0+git${SRCPV}"
 
 DEPENDS += "nanomsg"
-RDEPENDS_${PN} += "nanomsg"
+RDEPENDS:${PN} += "nanomsg"
 
 PARALLEL_MAKE = ""
 
@@ -40,9 +40,9 @@ do_install() {
 }
 
 PACKAGES += "${PN}-server ${PN}-client"
-FILES_${PN}-server = "${sbindir}/nanoserver"
-FILES_${PN}-client = "${bindir}/nanoclient"
-FILES_${PN} = "\
+FILES:${PN}-server = "${sbindir}/nanoserver"
+FILES:${PN}-client = "${bindir}/nanoclient"
+FILES:${PN} = "\
     ${bindir}/nanoread \
     ${bindir}/nanowrite \
     ${libdir}/libnanoio.so* \

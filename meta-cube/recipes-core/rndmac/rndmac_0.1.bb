@@ -15,7 +15,7 @@ SRC_URI = "file://LICENSE.GPL2 \
 
 S = "${WORKDIR}"
 
-FILES_${PN} += "${systemd_unitdir}/system/rndmac.service"
+FILES:${PN} += "${systemd_unitdir}/system/rndmac.service"
 
 do_install() {
 	oe_runmake DEST=${D}${bindir} install

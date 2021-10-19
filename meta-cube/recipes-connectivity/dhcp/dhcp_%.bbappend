@@ -4,7 +4,7 @@
 # ip address for eth0, otherwise both of the br0 and eth0 will
 # get ip address and cause the network cannot reach out.
 
-SYSTEMD_AUTO_ENABLE_${PN}-client_forcevariable = "disable"
+SYSTEMD_AUTO_ENABLE:${PN}-client:forcevariable = "disable"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://dhclient-Add-option-to-die-when-the-parent-process-e.patch"

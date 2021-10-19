@@ -22,14 +22,14 @@ inherit goarch
 # This issue occurs due to compiling without ldflags, but a
 # solution has yet to be found. For now we ignore this error with
 # the line below.
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP:${PN} = "ldflags"
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "etcd.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_SERVICE:${PN} = "etcd.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
-RDEPENDS_${PN} = "bash"
+RDEPENDS:${PN} = "bash"
 
 do_compile() {
 	export GOARCH="${TARGET_GOARCH}"
@@ -83,7 +83,7 @@ do_install() {
 	sed -i '/User/s/^/#/' ${D}${systemd_unitdir}/system/etcd.service
 }
 
-do_install_append_aarch64() {
+do_install:append:aarch64() {
 	# ARM64 support isn't official for etcd, yet it is used a lot
 	# https://github.com/etcd-io/etcd/issues/9077
 	sed -i '/Environment=ETCD_NAME/aEnvironment=ETCD_UNSUPPORTED_ARCH=arm64' ${D}${systemd_unitdir}/system/etcd.service

@@ -19,7 +19,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 		  ${CUBE_BUILDER_EXTRA_INSTALL} \
 		 "
 
-XSERVER_append = " xserver-xorg \
+XSERVER:append = " xserver-xorg \
            xserver-xorg-extension-dri \
            xserver-xorg-extension-dri2 \
            xserver-xorg-extension-glx \
@@ -46,7 +46,7 @@ IMAGE_FEATURES += "x11-base"
 IMAGE_FEATURES += "package-management doc-pkgs"
 
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 inherit core-image
 inherit builder-base

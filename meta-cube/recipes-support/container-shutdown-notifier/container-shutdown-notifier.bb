@@ -4,15 +4,15 @@ DESCRIPTION = "A service for informing of container shutdown"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
-RDEPENDS_${PN} = "bash overc-utils"
+RDEPENDS:${PN} = "bash overc-utils"
 
 SRC_URI = "file://container-shutdown-notifier \
            file://container-shutdown-notifier.service \
 "
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "container-shutdown-notifier.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_SERVICE:${PN} = "container-shutdown-notifier.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}

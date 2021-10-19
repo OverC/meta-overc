@@ -4,7 +4,7 @@ DESCRIPTION = "A tool for the initial essential setup"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
-RDEPENDS_${PN} = "util-linux bash pflask"
+RDEPENDS:${PN} = "util-linux bash pflask"
 
 SRC_URI = "file://essential-autostart \
            file://essential-autostart.service \
@@ -22,7 +22,7 @@ SRC_FILES_LIST = "essential-autostart \
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "essential-autostart.service reload-dom0-snapshot.service essential-opt-mount.service"
+SYSTEMD_SERVICE:${PN} = "essential-autostart.service reload-dom0-snapshot.service essential-opt-mount.service"
 
 do_compile() {
 	${CC} ${CFLAGS} ${LDFLAGS} -Wall ${WORKDIR}/daemonize-sigusr1-wait.c -o ${B}/daemonize-sigusr1-wait
@@ -41,7 +41,7 @@ do_install() {
     install -m 0644 ${WORKDIR}/essential-opt-mount.service ${D}${systemd_unitdir}/system/
 }
 
-FILES_${PN} += "${sbin} \
+FILES:${PN} += "${sbin} \
                 ${systemd_unitdir}/system \
                 ${sysconfdir} \
 "

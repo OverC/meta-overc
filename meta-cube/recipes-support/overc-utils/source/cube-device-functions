@@ -67,7 +67,7 @@ function lxc_block_device_add() {
 	$LXC_CMD_PREFIX lxc-device -n $1 add $2
 }
 
-function lxc_block_device_remove() {
+function lxc_block_device:remove() {
 	$LXC_CMD_PREFIX lxc-device -n $1 del $2
 }
 
@@ -88,7 +88,7 @@ function lxc_block_device_add_partitions() {
 	done
 }
 
-function lxc_block_device_remove_partition() {
+function lxc_block_device:remove_partition() {
 	local target_container=$1
 	local target_device=$2
 	local_pid=`$LXC_CMD_PREFIX lxc-info -n ${target_container} |grep PID| awk '{print $2}'`
@@ -96,13 +96,13 @@ function lxc_block_device_remove_partition() {
     $LXC_CMD_PREFIX bash -c "chroot /proc/$local_pid/root unlink $target_device"
 }
 
-function lxc_block_device_remove_partitions() {
+function lxc_block_device:remove_partitions() {
 	local target_container=$1
 	local target_device=$2
 
 	for partition in `fdisk -l ${target_device} |grep ^${target_device} | cut -d" " -f1 |xargs`
 	do
-	    lxc_block_device_remove ${target_container} $partition
+	    lxc_block_device:remove ${target_container} $partition
 	done
 }
 
@@ -118,13 +118,13 @@ function block_device_add_partitions() {
 	fi
 }
 
-function block_device_remove() {
+function block_device:remove() {
 	if [ "$virt" = "lxc" ]; then
-		lxc_block_device_remove $1 $2
+		lxc_block_device:remove $1 $2
 	fi
 }
-function block_device_remove_partitions() {
+function block_device:remove_partitions() {
 	if [ "$virt" = "lxc" ]; then
-		lxc_block_device_remove_partitions $1 $2
+		lxc_block_device:remove_partitions $1 $2
 	fi
 }

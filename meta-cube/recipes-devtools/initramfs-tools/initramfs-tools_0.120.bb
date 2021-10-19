@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 S = "${WORKDIR}/${PN}"
 
-RDEPENDS_${PN} = "libudev cpio util-linux kmod"
+RDEPENDS:${PN} = "libudev cpio util-linux kmod"
 
 do_install () {
         install -d ${D}/etc

@@ -9,13 +9,13 @@ SRC_URI = " \
 inherit distutils3 systemd
 
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "factory-reset.service"
+SYSTEMD_SERVICE:${PN} = "factory-reset.service"
 
 PACKAGES += "${PN}-bash-completion"
 
-RDEPENDS_${PN}-bash-completion = "bash-completion"
+RDEPENDS:${PN}-bash-completion = "bash-completion"
 
-RDEPENDS_${PN} = "\
+RDEPENDS:${PN} = "\
 	btrfs-tools \
 	python3-flask \
 	python3-itsdangerous \
@@ -29,8 +29,8 @@ RDEPENDS_${PN} = "\
 	${PN}-bash-completion \
 	"
 
-FILES_${PN}-dev += "${libdir}/pkgconfig"
-FILES_${PN}-bash-completion = "${datadir}/bash-completion/*"
+FILES:${PN}-dev += "${libdir}/pkgconfig"
+FILES:${PN}-bash-completion = "${datadir}/bash-completion/*"
 
 do_install() {
 	install -d ${D}/opt/${BPN}/
@@ -64,7 +64,7 @@ do_install() {
         install -m 644 ${S}/bash-completion/* ${D}/${datadir}/bash-completion/completions/overc
 }
 
-FILES_${PN} += "/opt/${BPN} ${sysconfdir}/overc \
+FILES:${PN} += "/opt/${BPN} ${sysconfdir}/overc \
                 ${base_libdir}/systemd \
 	      "
 

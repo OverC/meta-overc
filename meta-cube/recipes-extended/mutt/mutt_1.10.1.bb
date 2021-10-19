@@ -10,7 +10,7 @@ groups of messages."
 LICENSE = "GPLv2"
 
 DEPENDS = "ncurses gnutls gpgme mime-support"
-RDEPENDS_${PN} = "perl"
+RDEPENDS:${PN} = "perl"
 
 SRC_URI = "https://bitbucket.org/mutt/mutt/downloads/mutt-${PV}.tar.gz \
            file://docs-use-sysroot-for-CPP_FLAGS.patch \
@@ -35,11 +35,11 @@ EXTRA_OECONF = "--with-curses=${STAGING_LIBDIR}/.. \
 
 # TODO: --enable-gpgme: needs m4 macro converted to pkg-config
                
-do_compile_prepend () {
+do_compile:prepend () {
          ${BUILD_CC} doc/makedoc.c -o doc/makedoc
 }
 
 # mime.types conflicts with the one from mime_support
-do_install_append () {
+do_install:append () {
 	rm -f ${D}${sysconfdir}/mime.types
 }

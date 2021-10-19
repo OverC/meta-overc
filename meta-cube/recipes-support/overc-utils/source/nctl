@@ -553,7 +553,7 @@ server_client_control() {
 				    rm -f "${FUNCTIONS_DIR}/${file}"
 				fi
 			    fi
-			    acl_remove ${owner} $(basename "${file}")
+			    acl:remove ${owner} $(basename "${file}")
 			fi
 			;;
 		    *)
@@ -1035,7 +1035,7 @@ acl_add() {
     eval $dyn_array+=\("${cmd}"\)
 }
 
-acl_remove() {
+acl:remove() {
     local requestor=$1
     local cmd=$2
 

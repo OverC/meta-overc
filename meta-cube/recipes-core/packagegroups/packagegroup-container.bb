@@ -14,7 +14,7 @@ PACKAGES = "\
     packagegroup-oci \
     "
 
-RDEPENDS_${PN} = " \
+RDEPENDS:${PN} = " \
     libvirt \
     libvirt-python \
     packagegroup-lxc \
@@ -23,18 +23,18 @@ RDEPENDS_${PN} = " \
     riddler \
 "
 
-RDEPENDS_packagegroup-lxc = " \
+RDEPENDS:packagegroup-lxc = " \
     lxc \
 "
-RDEPENDS_packagegroup-lxc-setup = " \
+RDEPENDS:packagegroup-lxc-setup = " \
     lxc-setup \
 "
 
-RDEPENDS_packagegroup-docker = " \
+RDEPENDS:packagegroup-docker = " \
     docker \
 "
 
-RDEPENDS_packagegroup-oci = " \
+RDEPENDS:packagegroup-oci = " \
     virtual/runc \
     oci-systemd-hook \
     oci-runtime-tools \

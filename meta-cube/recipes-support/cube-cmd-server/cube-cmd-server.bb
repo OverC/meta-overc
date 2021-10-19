@@ -9,14 +9,14 @@ SRC_URI = "file://cube-cmd-server.service \
            file://auth.db \
            file://functions.d \
 "
-RDEPENDS_${PN} = "bash gawk dtach overc-utils nanomsg"
+RDEPENDS:${PN} = "bash gawk dtach overc-utils nanomsg"
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "cube-cmd-server.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_SERVICE:${PN} = "cube-cmd-server.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${WORKDIR}/cube-cmd-server.service ${D}${systemd_system_unitdir}
 
@@ -28,6 +28,6 @@ do_install_append() {
     install -m 0644 ${WORKDIR}/auth.db ${D}${localstatedir}/lib/cube-cmd-server/
 }
 
-FILES_${PN} = "${sysconfdir}/ \
+FILES:${PN} = "${sysconfdir}/ \
                ${localstatedir}/lib/cube-cmd-server/ \
 	       ${systemd_system_unitdir}/cube-cmd-server.service"

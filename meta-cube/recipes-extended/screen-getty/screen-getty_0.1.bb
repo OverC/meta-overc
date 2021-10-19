@@ -13,7 +13,7 @@ SRC_URI = "file://COPYING \
 
 S = "${WORKDIR}"
 
-FILES_${PN} += "${systemd_unitdir}"
+FILES:${PN} += "${systemd_unitdir}"
 
 do_install() {
 	oe_runmake DEST=${D} SBIN=${base_sbindir} install

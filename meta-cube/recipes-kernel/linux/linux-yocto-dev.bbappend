@@ -8,7 +8,7 @@ COMPATIBLE_MACHINE = "${MACHINE}"
 #
 # Grab our config fragment.
 #
-FILESEXTRAPATHS_prepend := "${THISDIR}:${THISDIR}/linux-yocto:"
+FILESEXTRAPATHS:prepend := "${THISDIR}:${THISDIR}/linux-yocto:"
 SRC_URI += "file://builder.cfg"
 
 SRC_URI += "file://xt-checksum.scc \
@@ -24,16 +24,16 @@ SRC_URI += "file://xt-checksum.scc \
 # was LINUX_VERSION_EXTENSION ?= "-yoctodev-${LINUX_KERNEL_TYPE}"
 LINUX_VERSION_EXTENSION = "-cube"
 
-KERNEL_FEATURES_append = " features/kvm/qemu-kvm-enable.scc"
-KERNEL_FEATURES_append = " features/tmpfs/tmpfs-posix-acl.scc"
-KERNEL_FEATURES_append = " features/cgroups/cgroups.scc"
+KERNEL_FEATURES:append = " features/kvm/qemu-kvm-enable.scc"
+KERNEL_FEATURES:append = " features/tmpfs/tmpfs-posix-acl.scc"
+KERNEL_FEATURES:append = " features/cgroups/cgroups.scc"
 
-KERNEL_MODULE_AUTOLOAD_append += "nf_conntrack_ipv6 openvswitch"
+KERNEL_MODULE_AUTOLOAD:append += "nf_conntrack_ipv6 openvswitch"
 
-KERNEL_FEATURES_append += "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
-KERNEL_FEATURES_append = " cfg/systemd.scc"
-KERNEL_FEATURES_append = " cfg/fs/ext3.scc"
-KERNEL_FEATURES_append = " cfg/fs/ext2.scc"
+KERNEL_FEATURES:append += "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
+KERNEL_FEATURES:append = " cfg/systemd.scc"
+KERNEL_FEATURES:append = " cfg/fs/ext3.scc"
+KERNEL_FEATURES:append = " cfg/fs/ext2.scc"
 
 # we are ok with version mismatches, since AUTOREV is frequently used
 deltask kernel_version_sanity_check
@@ -48,11 +48,11 @@ python __anonymous () {
         for type in tfmake.split():
             typelower = type.lower()
 
-            rkis = d.getVar('RDEPENDS_kernel-image', True) or ""
+            rkis = d.getVar('RDEPENDS:kernel-image', True) or ""
             rkistr = ' '
             for rki in rkis.split():
                 if rki != 'kernel-image-' + typelower:
                     rkistr += ' ' + rki
 
-            d.setVar('RDEPENDS_kernel-image', rkistr)
+            d.setVar('RDEPENDS:kernel-image', rkistr)
 }

@@ -1,8 +1,8 @@
-PACKAGECONFIG_append = " templates seccomp"
+PACKAGECONFIG:append = " templates seccomp"
 
-SYSTEMD_AUTO_ENABLE_${PN}-setup = "enable"
+SYSTEMD_AUTO_ENABLE:${PN}-setup = "enable"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://ovs-up \
@@ -16,9 +16,9 @@ SRC_URI += " \
 # some point. Dropping for now to allow LXC to build.
 #    file://lxc-start-config-Add-lxc.uncontain-to-access-CAP_ADM.patch
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
-do_install_append(){
+do_install:append(){
 	# essential system controls the network, so lxc-net.service is redundant,
 	# remove the dependancy from lxc.service to reduce the boottime.
 

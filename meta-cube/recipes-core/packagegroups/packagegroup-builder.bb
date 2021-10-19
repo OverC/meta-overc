@@ -24,7 +24,7 @@ PACKAGES = "\
     packagegroup-builder-host-tools \
     "
 
-RDEPENDS_packagegroup-builder = "\
+RDEPENDS:packagegroup-builder = "\
     packagegroup-builder-debug \
     packagegroup-builder-sdk \
     packagegroup-builder-extended \
@@ -33,7 +33,7 @@ RDEPENDS_packagegroup-builder = "\
     packagegroup-builder-host-tools \
     "
 
-RDEPENDS_packagegroup-builder-host-tools = "\
+RDEPENDS:packagegroup-builder-host-tools = "\
     btrfs-tools \
     debianutils \
     dhcp-client \
@@ -51,7 +51,7 @@ RDEPENDS_packagegroup-builder-host-tools = "\
     vim \
     "
 
-RRECOMMENDS_packagegroup-builder-host-tools = "\
+RRECOMMENDS:packagegroup-builder-host-tools = "\
     kernel-module-tun \
     kernel-module-iptable-raw \
     kernel-module-iptable-nat \
@@ -60,7 +60,7 @@ RRECOMMENDS_packagegroup-builder-host-tools = "\
     "
 
 # eglibc-utils: for rpcgen
-RDEPENDS_packagegroup-builder-sdk = "\
+RDEPENDS:packagegroup-builder-sdk = "\
     autoconf \
     automake \
     binutils \
@@ -95,7 +95,7 @@ RDEPENDS_packagegroup-builder-sdk = "\
     texinfo \
     zile"
 
-RDEPENDS_packagegroup-builder-debug = " \
+RDEPENDS:packagegroup-builder-debug = " \
     gdb \
     gdbserver \
     rsync \
@@ -103,11 +103,11 @@ RDEPENDS_packagegroup-builder-debug = " \
     "
 
 
-RDEPENDS_packagegroup-builder-extended_ARCH ?= ""
-RDEPENDS_packagegroup-builder-extended_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
-RDEPENDS_packagegroup-builder-extended_ARCH_x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+RDEPENDS:packagegroup-builder-extended_ARCH ?= ""
+RDEPENDS:packagegroup-builder-extended_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+RDEPENDS:packagegroup-builder-extended_ARCH:x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 
-RDEPENDS_packagegroup-builder-extended = "\
+RDEPENDS:packagegroup-builder-extended = "\
     bash-completion \
     bzip2 \
     chrpath \
@@ -186,14 +186,14 @@ RDEPENDS_packagegroup-builder-extended = "\
     ${RDEPENDS_packagegroup-builder-extended_ARCH} \
     "
 
-RDEPENDS_packagegroup-builder-networking = "\
+RDEPENDS:packagegroup-builder-networking = "\
     bind \
     bind-utils \
     mutt \
     msmtp \
     "
 
-RDEPENDS_packagegroup-builder-graphics = "\
+RDEPENDS:packagegroup-builder-graphics = "\
     libgl \
     libgl-dev \
     libglu \

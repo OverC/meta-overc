@@ -7,9 +7,9 @@ PR = "r0"
 
 inherit packagegroup
 
-RPROVIDES_${PN} += "xfce-desktop"
+RPROVIDES:${PN} += "xfce-desktop"
 
-RDEPENDS_${PN} = " \
+RDEPENDS:${PN} = " \
     packagegroup-xfce \
 "
 
@@ -18,7 +18,7 @@ RDEPENDS_${PN} = " \
 #IMAGE_FEATURES didn't contain it, so reset the default.target to graphical.target
 #after this packagegroup is installed for headless system.
 
-pkg_postinst_${PN}() {
+pkg_postinst:${PN}() {
 #!/bin/sh -e
 ln -sf ${systemd_unitdir}/system/graphical.target /etc/systemd/system/default.target
 }

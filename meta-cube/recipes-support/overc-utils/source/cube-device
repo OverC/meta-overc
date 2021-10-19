@@ -61,8 +61,8 @@ add)
 del|delete|remove)
 	is_container_running $container
 	if [ $? -eq 0 ]; then
-		block_device_remove_partitions $container $device
-		block_device_remove $container $device
+		block_device:remove_partitions $container $device
+		block_device:remove $container $device
 	fi
 	item=$device@$container
 	sed -i 's#'$item'#EXCLUSIVE#;/EXCLUSIVE/d' $DEVICECONF

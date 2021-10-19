@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 IMAGE_FEATURES += "package-management doc-pkgs x11-base"
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 require recipes-core/packagegroups/overc-common-pkgdefs.inc
 
@@ -21,7 +21,7 @@ PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 
 CUBE_DESKTOP_EXTRA_INSTALL ?= ""
 
-RDEPENDS_packagegroup-dom0_remove = "linux-firmware"
+RDEPENDS:packagegroup-dom0:remove = "linux-firmware"
 
 IMAGE_INSTALL += "packagegroup-core-boot \
                         packagegroup-util-linux \
@@ -39,7 +39,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
                         ${CUBE_DESKTOP_EXTRA_INSTALL} \
                        "
 
-XSERVER_append = "xserver-xorg \
+XSERVER:append = "xserver-xorg \
                   xserver-xorg-extension-dri \
                   xserver-xorg-extension-dri2 \
                   xserver-xorg-extension-glx \
@@ -69,4 +69,4 @@ inherit core-image
 inherit builder-base
 
 # Override the cube configuration of networkd
-ROOTFS_POSTPROCESS_COMMAND_remove = "systemd_openvswitch_network;"
+ROOTFS_POSTPROCESS_COMMAND:remove = "systemd_openvswitch_network;"

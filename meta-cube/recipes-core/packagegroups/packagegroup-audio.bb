@@ -10,7 +10,7 @@ PACKAGES = "\
     packagegroup-audio \
     "
 
-RDEPENDS_${PN} = "\
+RDEPENDS:${PN} = "\
     alsa-utils \
     pulseaudio \
     pulseaudio-server \

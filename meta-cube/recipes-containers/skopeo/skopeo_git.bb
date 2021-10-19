@@ -13,7 +13,7 @@ DEPENDS = "\
 
 inherit go
 
-RDEPENDS_${PN} = "gpgme \
+RDEPENDS:${PN} = "gpgme \
                   lvm2 \
                   libgpg-error \
                   libassuan \
@@ -71,6 +71,6 @@ do_install() {
 	install ${S}/src/import/default-policy.json ${D}/${sysconfdir}/containers/policy.json
 }
 
-INSANE_SKIP_${PN} += "ldflags"
+INSANE_SKIP:${PN} += "ldflags"
 
 deltask compile_ptest_base

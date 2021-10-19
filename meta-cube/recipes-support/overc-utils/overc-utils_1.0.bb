@@ -2,7 +2,7 @@ SUMMARY = "OverC support utilities"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${WORKDIR}/source/COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}:"
 
 SRC_URI = " \
     file://source/cube-cmd \
@@ -65,12 +65,12 @@ do_install() {
 
 PACKAGES =+ "overc-device-utils"
 
-FILES_${PN} += "/opt/${BPN} ${datadir}/bash-completion \
+FILES:${PN} += "/opt/${BPN} ${datadir}/bash-completion \
                ${bindir} ${sbindir} ${localstatedir}/lib/cube-cmd-server/"
 
-FILES_overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
+FILES:overc-device-utils += "${sbindir}/cube-device ${sysconfdir}/udev ${sysconfdir}/cube-device"
 
-RDEPENDS_${PN} += "bash dtach nanomsg udev systemd-extra-utils jq overc-installer udocker \
+RDEPENDS:${PN} += "bash dtach nanomsg udev systemd-extra-utils jq overc-installer udocker \
                    sed which grep util-linux-nsenter util-linux-column util-linux-setsid \
                    util-linux-script \
 "

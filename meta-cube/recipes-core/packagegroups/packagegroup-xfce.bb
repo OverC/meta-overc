@@ -8,13 +8,13 @@ PR = "r0"
 inherit packagegroup
 
 # mandatory
-RDEPENDS_${PN} = " \
+RDEPENDS:${PN} = " \
     packagegroup-xfce-base \
     lxdm \
 "
 
 # nice to have
-RRECOMMENDS_${PN} = " \
+RRECOMMENDS:${PN} = " \
     xfwm4-theme-daloa \
     xfwm4-theme-kokodi \
     xfwm4-theme-moheli \

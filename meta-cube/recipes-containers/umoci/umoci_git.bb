@@ -3,7 +3,7 @@ SUMMARY = "umoci modifies Open Container images"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://COPYING;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
-RDEPENDS_${PN} = "skopeo \
+RDEPENDS:${PN} = "skopeo \
                  "
 
 SRCREV_umoci = "6e68a6a2ae3e12ad78110ab9e68aa56f8281498f"
@@ -43,4 +43,4 @@ do_install() {
 	install ${S}/umoci ${D}/${sbindir}
 }
 
-INSANE_SKIP_${PN} += "ldflags already-stripped"
+INSANE_SKIP:${PN} += "ldflags already-stripped"

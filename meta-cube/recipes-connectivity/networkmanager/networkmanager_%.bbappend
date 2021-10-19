@@ -2,7 +2,7 @@
 # will not run properly.  The NetworkManager should ignore br-int if
 # it exists
 
-do_install_append() {
+do_install:append() {
 	cat<<EOF>${D}/etc/NetworkManager/NetworkManager.conf
 [main]
 plugins=keyfile

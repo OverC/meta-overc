@@ -8,7 +8,7 @@ PR = "r1"
 inherit packagegroup
 
 # mandatory
-RDEPENDS_${PN} = " \
+RDEPENDS:${PN} = " \
     packagegroup-xfce \
 "
 

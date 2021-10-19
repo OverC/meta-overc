@@ -9,7 +9,7 @@ the systemd and sysvinit init systems."
 
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
-RDEPENDS_${PN} = "bash coreutils overc-system-agent"
+RDEPENDS:${PN} = "bash coreutils overc-system-agent"
 
 SRC_URI += " \
 	file://cubeupdated \
@@ -24,15 +24,15 @@ S = "${WORKDIR}"
 
 inherit autotools update-rc.d systemd
 
-FILES_${PN} += " \
+FILES:${PN} += " \
 	${sysconfdir}/cube-update/* \
 	${sysconfdir}/init.d/* \
 	${systemd_unitdir}/system/* \
 	${bindir}/* \
 	"
 
-SYSTEMD_SERVICE_${PN} = "cube-update.timer"
-CONFFILES_${PN} = "${sysconfdir}/cube-update/config.default"
+SYSTEMD_SERVICE:${PN} = "cube-update.timer"
+CONFFILES:${PN} = "${sysconfdir}/cube-update/config.default"
 SYSTEMD_AUTO_ENABLE = "${@bb.utils.contains('PULSAR_UNATTENDED_UPGRADE','true','enable','disable', d)}"
 
 INITSCRIPT_NAME = "cubeupdated"

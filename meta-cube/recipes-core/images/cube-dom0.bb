@@ -22,7 +22,7 @@ NO_RECOMMENDATIONS = "1"
 
 PV = "0.6"
 
-FEATURE_PACKAGES_package-management_append = " cube-update"
+FEATURE_PACKAGES_package-management:append = " cube-update"
 
 DOM0_MAIN_PKGS = " packagegroup-core-boot \
                    packagegroup-dom0 \
@@ -43,7 +43,7 @@ IMAGE_INSTALL += "${DOM0_MAIN_PKGS} \
 IMAGE_FEATURES += "package-management doc-pkgs"
 
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 TARGETNAME ?= "cube-dom0"
 

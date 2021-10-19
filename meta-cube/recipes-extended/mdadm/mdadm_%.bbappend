@@ -3,7 +3,7 @@
 # stuff for something otherwise so simple.
 #
 
-do_install_append() {
+do_install:append() {
 	cat <<EOF > ${S}/mdadm.conf.sample
 # mdadm.conf
 #

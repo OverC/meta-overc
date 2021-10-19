@@ -26,7 +26,7 @@ PACKAGES = "\
      packagegroup-dom0-only \
     "
 
-RDEPENDS_packagegroup-dom0-debug = "\
+RDEPENDS:packagegroup-dom0-debug = "\
      packagegroup-dom0-doc \
      packagegroup-dom0-fs \
      packagegroup-dom0-extended \
@@ -37,7 +37,7 @@ RDEPENDS_packagegroup-dom0-debug = "\
      packagegroup-dom0-only \
     "
 
-RDEPENDS_packagegroup-dom0 = "\
+RDEPENDS:packagegroup-dom0 = "\
      packagegroup-dom0-fs \
      packagegroup-dom0-extended \
      packagegroup-dom0-networking \
@@ -45,33 +45,33 @@ RDEPENDS_packagegroup-dom0 = "\
      packagegroup-dom0-only \
     "
 
-RDEPENDS_packagegroup-dom0-fs = " \
+RDEPENDS:packagegroup-dom0-fs = " \
      ${OVERC_DOM0_DISK} \
      ${OVERC_DOM0_FS} \
     "
 
-RDEPENDS_packagegroup-dom0-doc = " \
+RDEPENDS:packagegroup-dom0-doc = " \
      ${OVERC_COMMON_DOC} \
     "
 
-RDEPENDS_packagegroup-dom0-perl = " \
+RDEPENDS:packagegroup-dom0-perl = " \
      ${OVERC_COMMON_PERL} \
     "
 
-RDEPENDS_packagegroup-dom0-python = " \
+RDEPENDS:packagegroup-dom0-python = " \
      ${OVERC_COMMON_PYTHON} \
     "
 
-RDEPENDS_packagegroup-dom0-extended = "\
+RDEPENDS:packagegroup-dom0-extended = "\
      ${OVERC_DOM0_EXTENDED} \
     "
 
-RDEPENDS_packagegroup-dom0-networking = "\
+RDEPENDS:packagegroup-dom0-networking = "\
      ${OVERC_DOM0_NETWORKING} \
      ${OVERC_DOM0_EXTRA_NETWORKING} \
     "
 
-RDEPENDS_packagegroup-dom0-tools = "\
+RDEPENDS:packagegroup-dom0-tools = "\
      killall \
      lsof \
      setserial \
@@ -86,6 +86,6 @@ RDEPENDS_packagegroup-dom0-tools = "\
      container-shutdown-notifier \
     "
 
-RDEPENDS_packagegroup-dom0-only = "\
+RDEPENDS:packagegroup-dom0-only = "\
      linux-firmware \
     "

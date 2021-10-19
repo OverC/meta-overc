@@ -10,7 +10,7 @@ PACKAGES = "\
     packagegroup-networkmanager \
     "
 
-RDEPENDS_${PN} = "\
+RDEPENDS:${PN} = "\
     networkmanager \
     network-manager-applet \
     gnome-keyring \

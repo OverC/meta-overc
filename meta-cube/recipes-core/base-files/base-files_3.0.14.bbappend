@@ -4,7 +4,7 @@
 # better left to the init sequence (versus fstab).
 CGROUPS_FSTAB ?= "0"
 
-do_install_append () {
+do_install:append () {
 	if [ "${CGROUPS_FSTAB}" = "1" ]; then
 		echo "cgroup		   /sys/fs/cgroup	cgroup	   defaults		 0  0" >> ${D}${sysconfdir}/fstab
 	fi
@@ -14,8 +14,8 @@ do_install_append () {
 #
 # move from var/volatile/log removed and var/log added.
 #
-dirs755_remove = "${localstatedir}/volatile/log"
-dirs755_append = " ${localstatedir}/log"
+dirs755:remove = "${localstatedir}/volatile/log"
+dirs755:append = " ${localstatedir}/log"
 
 #volatiles = "log tmp"
 volatiles = "tmp"

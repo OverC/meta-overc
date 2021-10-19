@@ -149,7 +149,7 @@ cat << EOF
 
 EOF
 }
-usage_remove()
+usage:remove()
 {
     usage_del
 }

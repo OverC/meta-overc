@@ -4,7 +4,7 @@ DESCRIPTION = "A tool for the initial dom0 setup"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
 
-RDEPENDS_${PN} = "overc-utils util-linux bash"
+RDEPENDS:${PN} = "overc-utils util-linux bash"
 
 SRC_URI = "file://dom0-containers \
            file://dom0-ctl-core.service \
@@ -17,8 +17,8 @@ SRC_FILES_LIST="dom0-containers \
 
 inherit systemd
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "dom0-ctl-core.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_SERVICE:${PN} = "dom0-ctl-core.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 do_install() {
     install -d ${D}/${sbindir}
@@ -36,7 +36,7 @@ do_install() {
     install -m 0770 ${WORKDIR}/firmware-sync ${D}/${sysconfdir}/dom0.d/
 }
 
-FILES_${PN} += "${sbin} \
+FILES:${PN} += "${sbin} \
                 ${systemd_unitdir}/system \
                 ${sysconfdir} \
 "

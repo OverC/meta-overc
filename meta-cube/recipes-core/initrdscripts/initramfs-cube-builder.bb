@@ -5,7 +5,7 @@ SRC_URI = "file://init-server.sh"
 
 PR = "r9"
 
-RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
+RDEPENDS:${PN} = "parted e2fsprogs-mke2fs"
 
 do_configure() {
 }
@@ -25,6 +25,6 @@ do_install() {
 #inherit allarch
 INHIBIT_DEFAULT_DEPS = "1"
 
-FILES_${PN} = " /init /dev"
+FILES:${PN} = " /init /dev"
 
 COMPATIBLE_HOST = "(arm|aarch64|i.86|x86_64|powerpc).*-linux"

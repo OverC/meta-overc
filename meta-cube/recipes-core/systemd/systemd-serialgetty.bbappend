@@ -10,7 +10,7 @@ python () {
     d.setVar('CONFFILES', conffiles)
 }
 
-do_install_append() {
+do_install:append() {
 	# for the case with no serial console include
 	# stub for serial-getty for runtime configuration
 	if [ -z "${SERIAL_CONSOLES}" ] ; then

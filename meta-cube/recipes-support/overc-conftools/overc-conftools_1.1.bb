@@ -15,7 +15,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 inherit systemd
 
-FILESEXTRAPATHS_prepend := "${THISDIR}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}:"
 
 SRC_URI = " \
     file://source/COPYING \
@@ -59,19 +59,19 @@ do_install() {
     install -m755 ${WORKDIR}/source/c3-ipcfg ${D}${sbindir}
 }
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     bash \
     "
 
 PACKAGES =+ "${PN}-systemd"
-RDEPENDS_${PN}-systemd += "${PN}"
+RDEPENDS:${PN}-systemd += "${PN}"
 
 SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE_${PN} = "overc-conftools.service"
+SYSTEMD_SERVICE:${PN} = "overc-conftools.service"
 
-FILES_${PN} +=  " \
+FILES:${PN} +=  " \
     ${base_libdir}/systemd \
     ${sbindir} \
 "
-FILES_${PN} += "${libexecdir}/oci/hooks.d/"
-FILES_${PN} += "${libexecdir}/cube/hooks.d/"
+FILES:${PN} += "${libexecdir}/oci/hooks.d/"
+FILES:${PN} += "${libexecdir}/cube/hooks.d/"

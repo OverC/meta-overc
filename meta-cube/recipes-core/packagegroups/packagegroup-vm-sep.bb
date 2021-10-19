@@ -13,7 +13,7 @@ PACKAGES = "\
 # runv is currently broken: march 2021 (due to hyperstart)
 # packagegroup-runv 
 
-RDEPENDS_${PN} = " \
+RDEPENDS:${PN} = " \
     libvirt \
     qemu \
     qemu-x86_64 \
@@ -22,6 +22,6 @@ RDEPENDS_${PN} = " \
 # hyperstart is currently broken: march 2021
 # hyperstart
 
-RDEPENDS_packagegroup-runv = " \
+RDEPENDS:packagegroup-runv = " \
     runv \
 "

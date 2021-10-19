@@ -39,7 +39,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 IMAGE_FEATURES += "package-management"
 
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 TARGETNAME ?= "cube-essential"
 

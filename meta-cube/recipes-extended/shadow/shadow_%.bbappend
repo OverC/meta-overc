@@ -5,7 +5,7 @@
 # they may not be 100% portable to yocto.
 #
 
-do_install_append() {
+do_install:append() {
 	ln ${D}${sbindir}/useradd ${D}${sbindir}/adduser
 	ln ${D}${sbindir}/userdel ${D}${sbindir}/deluser
 

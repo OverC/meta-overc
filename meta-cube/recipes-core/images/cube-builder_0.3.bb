@@ -25,7 +25,7 @@ IMAGE_INSTALL += "packagegroup-core-boot \
 IMAGE_FEATURES += "package-management doc-pkgs"
 
 IMAGE_FSTYPES ?= "tar.bz2"
-IMAGE_FSTYPES_remove = "live"
+IMAGE_FSTYPES:remove = "live"
 
 INITRD = "True"
 INITRAMFS_IMAGE = "cube-builder-initramfs"

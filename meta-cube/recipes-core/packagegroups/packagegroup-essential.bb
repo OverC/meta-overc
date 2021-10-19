@@ -23,21 +23,21 @@ PACKAGES = "\
      packagegroup-essential-only \
     "
 
-RDEPENDS_packagegroup-essential = "\
+RDEPENDS:packagegroup-essential = "\
      packagegroup-essential-disk \
      packagegroup-essential-extended \
      packagegroup-essential-networking \
      packagegroup-essential-only \
     "
 
-RDEPENDS_packagegroup-essential-disk = " \
+RDEPENDS:packagegroup-essential-disk = " \
      btrfs-tools \
      e2fsprogs-tune2fs \
      dosfstools \
      mdadm \
     "
 
-RDEPENDS_packagegroup-essential-extended = "\
+RDEPENDS:packagegroup-essential-extended = "\
      cpio \
      dmidecode \
      dtach \
@@ -65,7 +65,7 @@ RDEPENDS_packagegroup-essential-extended = "\
      ${OVERC_COMMON_EXTENDED_ARCH} \
     "
 
-RDEPENDS_packagegroup-essential-networking = "\
+RDEPENDS:packagegroup-essential-networking = "\
      ifupdown \
      iproute2 \
      iputils \
@@ -76,7 +76,7 @@ RDEPENDS_packagegroup-essential-networking = "\
      dhcp-client \
     "
 
-RDEPENDS_packagegroup-essential-only = "\
+RDEPENDS:packagegroup-essential-only = "\
      linux-firmware-cube-shared \
      watchdog \
     "

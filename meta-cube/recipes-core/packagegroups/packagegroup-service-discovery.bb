@@ -9,13 +9,13 @@ PACKAGES = "\
     packagegroup-service-discovery-and-configuration \
 "
 
-RDEPENDS_packagegroup-service-discovery = "\
+RDEPENDS:packagegroup-service-discovery = "\
     etcd  \
     skopeo \
     umoci \
 "
 
-RDEPENDS_packagegroup-service-discovery-and-configuration = "\
+RDEPENDS:packagegroup-service-discovery-and-configuration = "\
     consul \
 "
 

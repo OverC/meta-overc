@@ -26,7 +26,7 @@ SRC_URI = "git://github.com/ghedo/pflask.git; \
 SRCREV="38a7de2d6353d62ce325a5b1f0075adf76fe982c"
 
 DEPENDS = "libcap"
-RDEPENDS_${PN} = "bash"
+RDEPENDS:${PN} = "bash"
 
 inherit pkgconfig
 
@@ -45,7 +45,7 @@ EXTRA_OEMAKE = "\
 "
 
 # we copy our build parts into the upstream project
-do_configure_prepend () {
+do_configure:prepend () {
         cp ${WORKDIR}/Makefile ${S}
         cp ${WORKDIR}/pflask.mk ${S}
 }
