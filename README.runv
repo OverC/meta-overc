@@ -4,7 +4,7 @@ Enablement:
 runv support is availble in the yocto ecosystem layers, and can be enabled
 in OverC by adding a distro feature:
 
-  DISTRO_FEATURES_append = " vm-sep"
+  DISTRO_FEATURES:append = " vm-sep"
 
 Rebuild, deploy and essential + dom0 are now ready for vm-separation container
 managers.

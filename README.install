@@ -42,7 +42,7 @@ Modify local.conf with following settings:
 
  # build the genericx86 machine, ussing the common-pc-64 branch
  MACHINE="genericx86-64"
- KMACHINE_genericx86-64 ?= "common-pc-64"
+ KMACHINE:genericx86-64 ?= "common-pc-64"
 
  # IMPORTANT: remove 'image-mklibs image-prelink' from the default
  #            user classes. They break lxc-autostart.

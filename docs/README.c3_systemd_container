@@ -22,7 +22,7 @@ which are intended to be defined in local.conf:
 * C3_SYSTEMD_CONTAINER_ENABLE_SERVICES - optional - a space separated
   list of systemd services to enable. This is performed during
   do_rootfs(). This may not always be needed but some recipes default
-  disabled (via 'SYSTEMD_AUTO_ENABLE_${PN} = "disable"') such as
+  disabled (via 'SYSTEMD_AUTO_ENABLE:${PN} = "disable"') such as
   apache2. You can use other methods to overwrite this default, this
   variable just makes it easy.
 
@@ -31,7 +31,7 @@ which are intended to be defined in local.conf:
   minimal set of services that shouldn't be run in a container. Like
   C3_SYSTEMD_CONTAINER_ENABLE_SERVICES this is performed during
   do_rootfs(). If you want to overwrite the minimal list you can
-  assign 'SERVICES_TO_DISABLE_pn-c3-systemd-container' in local.conf.
+  assign 'SERVICES_TO_DISABLE:pn-c3-systemd-container' in local.conf.
 
 So for example you might define the following in your local.conf to
 build a systemd system container for apache2:

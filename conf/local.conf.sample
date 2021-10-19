@@ -52,7 +52,7 @@ PARALLEL_MAKE ?= "-j 16"
 #MACHINE ?= "genericx86"
 MACHINE ?= "genericx86-64"
 # linux-yocto-dev won't get a sensible .config w/o the below
-KMACHINE_genericx86-64 ?= "common-pc-64"
+KMACHINE:genericx86-64 ?= "common-pc-64"
 #MACHINE ?= "mpc8315e-rdb"
 #MACHINE ?= "edgerouter"
 # To use the i7 optimized compile settings, you need meta-intel
@@ -150,7 +150,7 @@ PACKAGE_CLASSES ?= "package_rpm"
 IMAGE_FSTYPES += "tar.bz2"
 NOISO = "1"
 IMAGE_FSTYPES += "ext3"
-IMAGE_FSTYPES_remove = "wic wic.bmap"
+IMAGE_FSTYPES:remove = "wic wic.bmap"
 
 #IMAGE_FEATURES += "splash ssh-server-openssh hwcodecs package-management"
 IMAGE_FEATURES += "ssh-server-openssh package-management"
@@ -261,7 +261,7 @@ BB_DISKMON_DIRS = "\
 # By default qemu will build with a builtin VNC server where graphical output can be
 # seen. The two lines below enable the SDL backend too. This assumes there is a
 # libsdl library available on your build system.
-PACKAGECONFIG_pn-qemu-native = "sdl"
+PACKAGECONFIG:pn-qemu-native = "sdl"
 ASSUME_PROVIDED += "libsdl2-native"
 
 

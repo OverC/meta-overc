@@ -27,21 +27,21 @@ UPSTREAM_CHECK_REGEX = "(?P<pver>\d+\.\d+\.(\d+?))/"
 inherit autotools-brokensep systemd useradd update-rc.d
 
 USERADD_PACKAGES = "${PN}-server"
-USERADD_PARAM_${PN}-server = "--system --no-create-home --home-dir /var/run/${BPN} --shell /bin/false --user-group ${BPN}"
+USERADD_PARAM:${PN}-server = "--system --no-create-home --home-dir /var/run/${BPN} --shell /bin/false --user-group ${BPN}"
 
 SYSTEMD_PACKAGES = "${PN}-server ${PN}-relay ${PN}-client"
-SYSTEMD_SERVICE_${PN}-server = "dhcpd.service dhcpd6.service"
-SYSTEMD_AUTO_ENABLE_${PN}-server = "disable"
+SYSTEMD_SERVICE:${PN}-server = "dhcpd.service dhcpd6.service"
+SYSTEMD_AUTO_ENABLE:${PN}-server = "disable"
 
-SYSTEMD_SERVICE_${PN}-relay = "dhcrelay.service"
-SYSTEMD_AUTO_ENABLE_${PN}-relay = "disable"
+SYSTEMD_SERVICE:${PN}-relay = "dhcrelay.service"
+SYSTEMD_AUTO_ENABLE:${PN}-relay = "disable"
 
-SYSTEMD_SERVICE_${PN}-client = "dhclient.service"
-SYSTEMD_AUTO_ENABLE_${PN}-client = "disable"
+SYSTEMD_SERVICE:${PN}-client = "dhclient.service"
+SYSTEMD_AUTO_ENABLE:${PN}-client = "disable"
 
 INITSCRIPT_PACKAGES = "dhcp-server"
-INITSCRIPT_NAME_dhcp-server = "dhcp-server"
-INITSCRIPT_PARAMS_dhcp-server = "defaults"
+INITSCRIPT_NAME:dhcp-server = "dhcp-server"
+INITSCRIPT_PARAMS:dhcp-server = "defaults"
 
 CFLAGS += "-D_GNU_SOURCE"
 EXTRA_OECONF = "--with-srv-lease-file=${localstatedir}/lib/dhcp/dhcpd.leases \
@@ -55,11 +55,11 @@ EXTRA_OECONF = "--with-srv-lease-file=${localstatedir}/lib/dhcp/dhcpd.leases \
                "
 
 #Enable shared libs per dhcp README
-do_configure_prepend () {
+do_configure:prepend () {
 	cp configure.ac+lt configure.ac
 }
 
-do_install_append () {
+do_install:append () {
 	install -d ${D}${sysconfdir}/init.d
 	install -d ${D}${sysconfdir}/default
 	install -d ${D}${sysconfdir}/dhcp
@@ -99,38 +99,38 @@ do_install_append () {
 
 PACKAGES += "dhcp-libs dhcp-server dhcp-server-config dhcp-client dhcp-relay dhcp-omshell"
 
-PACKAGES_remove = "${PN}"
-RDEPENDS_${PN}-client += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'iproute2', '', d)}"
-RDEPENDS_${PN}-dev = ""
-RDEPENDS_${PN}-staticdev = ""
-FILES_${PN}-libs = "${libdir}/libdhcpctl.so.0* ${libdir}/libomapi.so.0* ${libdir}/libdhcp.so.0*"
+PACKAGES:remove = "${PN}"
+RDEPENDS:${PN}-client += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'iproute2', '', d)}"
+RDEPENDS:${PN}-dev = ""
+RDEPENDS:${PN}-staticdev = ""
+FILES:${PN}-libs = "${libdir}/libdhcpctl.so.0* ${libdir}/libomapi.so.0* ${libdir}/libdhcp.so.0*"
 
-FILES_${PN}-server = "${sbindir}/dhcpd ${sysconfdir}/init.d/dhcp-server"
-RRECOMMENDS_${PN}-server = "dhcp-server-config"
+FILES:${PN}-server = "${sbindir}/dhcpd ${sysconfdir}/init.d/dhcp-server"
+RRECOMMENDS:${PN}-server = "dhcp-server-config"
 
-FILES_${PN}-server-config = "${sysconfdir}/default/dhcp-server ${sysconfdir}/dhcp/dhcpd.conf"
+FILES:${PN}-server-config = "${sysconfdir}/default/dhcp-server ${sysconfdir}/dhcp/dhcpd.conf"
 
-FILES_${PN}-relay = "${sbindir}/dhcrelay ${sysconfdir}/init.d/dhcp-relay ${sysconfdir}/default/dhcp-relay"
+FILES:${PN}-relay = "${sbindir}/dhcrelay ${sysconfdir}/init.d/dhcp-relay ${sysconfdir}/default/dhcp-relay"
 
-FILES_${PN}-client = "${base_sbindir}/dhclient \
+FILES:${PN}-client = "${base_sbindir}/dhclient \
                       ${base_sbindir}/dhclient-script \
                       ${sysconfdir}/dhcp/dhclient.conf \
                       ${base_sbindir}/dhclient-systemd-wrapper \
                      "
 
-FILES_${PN}-omshell = "${bindir}/omshell"
+FILES:${PN}-omshell = "${bindir}/omshell"
 
-pkg_postinst_dhcp-server() {
+pkg_postinst:dhcp-server() {
     mkdir -p $D/${localstatedir}/lib/dhcp
     touch $D/${localstatedir}/lib/dhcp/dhcpd.leases
     touch $D/${localstatedir}/lib/dhcp/dhcpd6.leases
 }
 
-pkg_postinst_dhcp-client() {
+pkg_postinst:dhcp-client() {
     mkdir -p $D/${localstatedir}/lib/dhcp
 }
 
-pkg_postrm_dhcp-server() {
+pkg_postrm:dhcp-server() {
     rm -f $D/${localstatedir}/lib/dhcp/dhcpd.leases
     rm -f $D/${localstatedir}/lib/dhcp/dhcpd6.leases
 
@@ -139,7 +139,7 @@ pkg_postrm_dhcp-server() {
     fi
 }
 
-pkg_postrm_dhcp-client() {
+pkg_postrm:dhcp-client() {
     rm -f $D/${localstatedir}/lib/dhcp/dhclient.leases
     rm -f $D/${localstatedir}/lib/dhcp/dhclient6.leases
 

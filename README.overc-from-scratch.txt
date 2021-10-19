@@ -58,20 +58,20 @@ cat << EOF >>  conf/local.conf
 
 # set the machine
 MACHINE = "genericx86-64"
-KMACHINE_genericx86-64 = "common-pc-64"
+KMACHINE:genericx86-64 = "common-pc-64"
 
 # disto: replace the poky distro with:
 DISTRO = "overc"
 
 # build and kernel options
-IMAGE_FSTYPES_append = " tar.bz2"
+IMAGE_FSTYPES:append = " tar.bz2"
 NOISO = "1"
-IMAGE_FSTYPES_remove = "hddimg wic wic.bmap"
+IMAGE_FSTYPES:remove = "hddimg wic wic.bmap"
 OVERC_ESSENTIAL_MODE = "read-write"
 PREFERRED_PROVIDER_virtual/kernel = "linux-yocto"
 
 # if you are building and booting on an non-efi machine (i.e. like qemu)
-MACHINE_FEATURES_remove = "efi"
+MACHINE_FEATURES:remove = "efi"
 EOF
 --cut--
 
