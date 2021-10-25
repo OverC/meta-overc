@@ -103,9 +103,9 @@ RDEPENDS:packagegroup-builder-debug = " \
     "
 
 
-RDEPENDS:packagegroup-builder-extended_ARCH ?= ""
-RDEPENDS:packagegroup-builder-extended_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
-RDEPENDS:packagegroup-builder-extended_ARCH:x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+packagegroup-builder-extended_ARCH ?= ""
+packagegroup-builder-extended_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+packagegroup-builder-extended_ARCH:x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 
 RDEPENDS:packagegroup-builder-extended = "\
     bash-completion \
@@ -183,7 +183,7 @@ RDEPENDS:packagegroup-builder-extended = "\
     zlib \
     xterm \
     xz \
-    ${RDEPENDS_packagegroup-builder-extended_ARCH} \
+    ${packagegroup-builder-extended_ARCH} \
     "
 
 RDEPENDS:packagegroup-builder-networking = "\

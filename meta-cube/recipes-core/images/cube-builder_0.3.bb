@@ -9,7 +9,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 CUBE_BUILDER_EXTRA_INSTALL ?= ""
 
-PACKAGE_EXCLUDE = "busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog"
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox busybox-dev busybox-udhcpc busybox-dbg busybox-ptest busybox-udhcpd busybox-hwclock busybox-syslog', '', d )}"
+
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

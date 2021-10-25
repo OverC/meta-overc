@@ -18,7 +18,7 @@ OVERC_DOM0_DISK = " \
     "
 
 OVERC_COMMON_EXTENDED_ARCH ?= ""
-OVERC_COMMON_EXTENDED_ARCH_i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
+OVERC_COMMON_EXTENDED_ARCH:i586 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 OVERC_COMMON_EXTENDED_ARCH:x86-64 += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'grub-efi', 'grub', d)}"
 
 OVERC_COMMON_EXTENDED = " \

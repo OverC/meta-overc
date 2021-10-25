@@ -19,7 +19,8 @@ IMAGE_FSTYPES:append = " container"
 
 IMAGE_CONTAINER_NO_DUMMY = "1"
 
-PACKAGE_EXCLUDE = "busybox*"
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox* , '', d )}"
+
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

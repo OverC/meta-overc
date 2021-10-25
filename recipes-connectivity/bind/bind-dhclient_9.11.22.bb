@@ -7,7 +7,10 @@ LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=bf39058a7f64b2a934ce14dc9ec1dd45"
 
 DEPENDS = "openssl libcap zlib"
 
-SRC_URI = "https://ftp.isc.org/isc/bind9/${PV}/${BPN}-${PV}.tar.gz \
+PACKAGE_FETCH_NAME = "bind"
+S = "${WORKDIR}/${PACKAGE_FETCH_NAME}-${PV}"
+
+SRC_URI = "https://ftp.isc.org/isc/bind9/${PV}/${PACKAGE_FETCH_NAME}-${PV}.tar.gz \
            file://conf.patch \
            file://named.service \
            file://bind9 \
@@ -30,7 +33,9 @@ UPSTREAM_CHECK_REGEX = "(?P<pver>9.(11|16|20|24|28)(\.\d+)+(-P\d+)*)/"
 # don't report it here since dhcpd is already recent enough.
 CVE_CHECK_WHITELIST += "CVE-2019-6470"
 
-inherit autotools update-rc.d systemd useradd pkgconfig multilib_script multilib_header
+inherit autotools
+#inherit update-rc.d systemd
+inherit useradd pkgconfig multilib_script multilib_header
 
 MULTILIB_SCRIPTS = "${PN}:${bindir}/bind9-config ${PN}:${bindir}/isc-config.sh"
 
@@ -60,10 +65,10 @@ USERADD_PACKAGES = "${PN}"
 USERADD_PARAM:${PN} = "--system --home ${localstatedir}/cache/bind --no-create-home \
                        --user-group bind"
 
-INITSCRIPT_NAME = "bind"
-INITSCRIPT_PARAMS = "defaults"
+# INITSCRIPT_NAME = "bind"
+# INITSCRIPT_PARAMS = "defaults"
 
-SYSTEMD_SERVICE:${PN} = "named.service"
+# SYSTEMD_SERVICE:${PN} = "named.service"
 
 do_install:prepend() {
 	# clean host path in isc-config.sh before the hardlink created
@@ -76,39 +81,42 @@ do_install:append() {
 
 	rmdir "${D}${localstatedir}/run"
 	rmdir --ignore-fail-on-non-empty "${D}${localstatedir}"
-	install -d -o bind "${D}${localstatedir}/cache/bind"
-	install -d "${D}${sysconfdir}/bind"
-	install -d "${D}${sysconfdir}/init.d"
-	install -m 644 ${S}/conf/* "${D}${sysconfdir}/bind/"
-	install -m 755 "${S}/init.d" "${D}${sysconfdir}/init.d/bind"
-        if ${@bb.utils.contains('PACKAGECONFIG', 'python3', 'true', 'false', d)}; then
-		sed -i -e '1s,#!.*python3,#! /usr/bin/python3,' \
-		${D}${sbindir}/dnssec-coverage \
-		${D}${sbindir}/dnssec-checkds \
-		${D}${sbindir}/dnssec-keymgr
-	fi
 
-	# Install systemd related files
-	install -d ${D}${sbindir}
-	install -m 755 ${WORKDIR}/generate-rndc-key.sh ${D}${sbindir}
-	install -d ${D}${systemd_unitdir}/system
-	install -m 0644 ${WORKDIR}/named.service ${D}${systemd_unitdir}/system
-	sed -i -e 's,@BASE_BINDIR@,${base_bindir},g' \
-	       -e 's,@SBINDIR@,${sbindir},g' \
-	       ${D}${systemd_unitdir}/system/named.service
+        # install -d -o bind "${D}${localstatedir}/cache/bind"
+	# install -d "${D}${sysconfdir}/bind"
+	# install -d "${D}${sysconfdir}/init.d"
+	# install -m 644 ${S}/conf/* "${D}${sysconfdir}/bind/"
+	# install -m 755 "${S}/init.d" "${D}${sysconfdir}/init.d/bind"
+        # if ${@bb.utils.contains('PACKAGECONFIG', 'python3', 'true', 'false', d)}; then
+	# 	sed -i -e '1s,#!.*python3,#! /usr/bin/python3,' \
+	# 	${D}${sbindir}/dnssec-coverage \
+	# 	${D}${sbindir}/dnssec-checkds \
+	# 	${D}${sbindir}/dnssec-keymgr
+	# fi
 
-	install -d ${D}${sysconfdir}/default
-	install -m 0644 ${WORKDIR}/bind9 ${D}${sysconfdir}/default
+	# # Install systemd related files
+	# install -d ${D}${sbindir}
+	# install -m 755 ${WORKDIR}/generate-rndc-key.sh ${D}${sbindir}
+	# install -d ${D}${systemd_unitdir}/system
+	# install -m 0644 ${WORKDIR}/named.service ${D}${systemd_unitdir}/system
+	# sed -i -e 's,@BASE_BINDIR@,${base_bindir},g' \
+	#        -e 's,@SBINDIR@,${sbindir},g' \
+	#        ${D}${systemd_unitdir}/system/named.service
 
-	if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
-		install -d ${D}${sysconfdir}/tmpfiles.d
-		echo "d /run/named 0755 bind bind - -" > ${D}${sysconfdir}/tmpfiles.d/bind.conf
-	fi
+	# install -d ${D}${sysconfdir}/default
+	# install -m 0644 ${WORKDIR}/bind9 ${D}${sysconfdir}/default
 
-    oe_multilib_header isc/platform.h
+	# if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+	# 	install -d ${D}${sysconfdir}/tmpfiles.d
+	# 	echo "d /run/named 0755 bind bind - -" > ${D}${sysconfdir}/tmpfiles.d/bind.conf
+	# fi
+
+	rm -rf "${D}${datadir}"
+
+	oe_multilib_header isc/platform.h
 }
 
-CONFFILES:${PN} = " \
+CONFFILES_${PN} = " \
 	${sysconfdir}/bind/named.conf \
 	${sysconfdir}/bind/named.conf.local \
 	${sysconfdir}/bind/named.conf.options \
@@ -119,7 +127,7 @@ CONFFILES:${PN} = " \
 	${sysconfdir}/bind/db.root \
 	"
 
-ALTERNATIVE:${PN}-utils = "nslookup"
+ALTERNATIVE_${PN}-utils = "nslookup"
 ALTERNATIVE_LINK_NAME[nslookup] = "${bindir}/nslookup"
 ALTERNATIVE_PRIORITY = "100"
 

@@ -12,7 +12,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 USE_DEPMOD = "1"
 CUBE_ESSENTIAL_EXTRA_INSTALL ?= "kernel-modules"
 
-PACKAGE_EXCLUDE = "busybox*"
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox* ', '', d )}"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

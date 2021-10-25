@@ -1,0 +1,29 @@
+From 327f5101810f02d9de32af0048325c40aca1d320 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 20 Oct 2021 22:33:30 -0400
+Subject: [PATCH] build: enforce -shared -fPIC
+
+Without enforcing these flags, we get link and relocation
+errors.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ rules.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rules.mk b/rules.mk
+index 82b57f9..5aad27c 100644
+--- a/rules.mk
++++ b/rules.mk
+@@ -3,7 +3,7 @@ include $(TOPDIR)/version.mk
+ LIB_NAME := libnanoio
+ 
+ LDFLAGS +=
+-CFLAGS += -DNANOIO_VERSION=\"$(NANOIO_VERSION)\"
++CFLAGS += -DNANOIO_VERSION=\"$(NANOIO_VERSION)\" -shared -fPIC
+ 
+ .DEFAULT_GOAL := all
+ .PHONE: all clean install
+-- 
+2.19.1
+

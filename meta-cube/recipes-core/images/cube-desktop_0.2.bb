@@ -15,7 +15,7 @@ IMAGE_FSTYPES:remove = "live"
 
 require recipes-core/packagegroups/overc-common-pkgdefs.inc
 
-PACKAGE_EXCLUDE = "busybox*"
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox', '', d )}"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

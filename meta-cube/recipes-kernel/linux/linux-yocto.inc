@@ -10,9 +10,11 @@ SRC_URI += "file://xt-checksum.scc \
             file://docker.scc \
             file://criu.scc \
             file://virt.scc \
-            file://uncontain.scc \
             file://k8s.scc \
             "
+# this is not only config, but a patch ...
+SRC_URI:append = "${@bb.utils.contains('DISTRO', 'overc', 'file://uncontain.scc', '', d )}"
+
 KERNEL_FEATURES:append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES:append = " features/nfsd/nfsd-enable.scc"
 KERNEL_FEATURES:append = " features/tmpfs/tmpfs-posix-acl.scc"

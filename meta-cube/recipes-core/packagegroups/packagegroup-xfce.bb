@@ -32,13 +32,11 @@ RRECOMMENDS:${PN} = " \
     xfce4-places-plugin \
     xfce4-systemload-plugin \
     xfce4-time-out-plugin \
-    xfce4-embed-plugin \
     xfce4-weather-plugin \
     xfce4-fsguard-plugin \
     xfce4-battery-plugin \
     xfce4-mount-plugin \
     xfce4-closebutton-plugin \
-    xfce4-equake-plugin \
     xfce4-notes-plugin \
     \
     thunar-media-tags-plugin \

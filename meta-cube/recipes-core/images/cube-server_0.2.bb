@@ -16,7 +16,7 @@ IMAGE_FEATURES += "package-management doc-pkgs"
 IMAGE_FSTYPES ?= "tar.bz2"
 IMAGE_FSTYPES:remove = "live"
 
-PACKAGE_EXCLUDE = "busybox*"
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox', '', d )}"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

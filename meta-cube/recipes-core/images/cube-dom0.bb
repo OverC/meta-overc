@@ -13,7 +13,7 @@ CUBE_DOM0_EXTRA_INSTALL ?= " "
 #OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-runv','',d)}"
 OVERC_VMSEP_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','vm-sep','packagegroup-vm-sep','',d)}"
 
-PACKAGE_EXCLUDE = "busybox* "
+PACKAGE_EXCLUDE = "${@bb.utils.contains('DISTRO', 'overc', 'busybox* ', '', d )}"
 # Exclude documention packages, which can be installed later
 PACKAGE_EXCLUDE_COMPLEMENTARY = "ruby|ruby-shadow|puppet|hiera|facter"
 

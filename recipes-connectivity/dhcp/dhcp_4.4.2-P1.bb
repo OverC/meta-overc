@@ -12,8 +12,8 @@ SRC_URI += "file://0001-define-macro-_PATH_DHCPD_CONF-and-_PATH_DHCLIENT_CON.pat
             file://0001-workaround-busybox-limitation-in-linux-dhclient-script.patch \
 "
 
-SRC_URI[md5sum] = "2afdaf8498dc1edaf3012efdd589b3e1"
-SRC_URI[sha256sum] = "1a7ccd64a16e5e68f7b5e0f527fd07240a2892ea53fe245620f4f5f607004521"
+SRC_URI[md5sum] = "3089a1ebd20a802ec0870ae337d43907"
+SRC_URI[sha256sum] = "b05e04337539545a8faa0d6ac518defc61a07e5aec66a857f455e7f218c85a1a"
 
 LDFLAGS:append = " -pthread"
 
