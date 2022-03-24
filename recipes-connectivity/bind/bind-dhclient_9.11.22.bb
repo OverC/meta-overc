@@ -31,7 +31,7 @@ UPSTREAM_CHECK_REGEX = "(?P<pver>9.(11|16|20|24|28)(\.\d+)+(-P\d+)*)/"
 
 # BIND >= 9.11.2 need dhcpd >= 4.4.0,
 # don't report it here since dhcpd is already recent enough.
-CVE_CHECK_WHITELIST += "CVE-2019-6470"
+CVE_CHECK_IGNORE += "CVE-2019-6470"
 
 inherit autotools
 #inherit update-rc.d systemd
