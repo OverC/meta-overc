@@ -10,7 +10,7 @@ LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=3c03275605209651d6b99457f0b2778e"
 
 SRC_URI = " \
-    git://github.com/OverC/nanoio.git \
+    git://github.com/OverC/nanoio.git;branch=master;protocol=https \
     file://0001-build-enforce-shared-fPIC.patch \
 "
 SRCREV = "d9273c30d6bf1a210e142666be67145f4002f20d"

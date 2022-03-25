@@ -12,7 +12,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=587b3fd7fd291e418ff4d2b8f3904755"
 
 SRC_URI = " \
-	   git://github.com/nanomsg/nanomsg.git \
+	   git://github.com/nanomsg/nanomsg.git;branch=master;protocol=https \
            file://0001-nanocat-add-stdin-processing.patch \
            file://0001-nanocat-add-EOF-transmission-for-faster-exit.patch \
            file://0001-nanocat-improve-raw-unbuffered-mode.patch \

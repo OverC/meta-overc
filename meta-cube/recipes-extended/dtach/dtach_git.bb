@@ -11,7 +11,7 @@ SECTION = "console/utils"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=94d55d512a9ba36caa9b7df079bae19f"
 
-SRC_URI = "git://github.com/crigler/dtach.git \
+SRC_URI = "git://github.com/crigler/dtach.git;branch=master;protocol=https \
 	file://Add-additional-functions-to-dtach.patch \
 	file://Add-quit-on-detach-and-squash-r-options.patch \
 	file://Add-ability-to-run-a-client-with-from-a-non-interact.patch \

@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 SRC_URI = " \
     file://${BPN}-${PV} \
 "
-inherit distutils3 systemd
+inherit setuptools3 systemd
 
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE:${PN} = "factory-reset.service"

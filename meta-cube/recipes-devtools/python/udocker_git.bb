@@ -11,7 +11,7 @@ DESCRIPTION = "A basic user tool to execute simple docker containers in user spa
 SECTION = "containers"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
-SRC_URI = "git://github.com/indigo-dc/udocker.git \
+SRC_URI = "git://github.com/indigo-dc/udocker.git;branch=master;protocol=https \
            file://0001-commands-prevent-autoinstall-by-default.patch"
 SRCREV = "94fcec123257d47c4629dadd04add4247cd74f8c"
 

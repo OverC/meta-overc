@@ -3,7 +3,7 @@ DESCRIPTION = "Wiggle is a program for applying patches that patch cannot apply 
 SECTION = "console/utils"
 PR = "r1"
 
-SRC_URI = "git://github.com/neilbrown/wiggle.git"
+SRC_URI = "git://github.com/neilbrown/wiggle.git;branch=master;protocol=https"
 SRCREV = "eac35c077388a3dcbbe4ca033c6a43ec6a4fe059"
 
 S = "${WORKDIR}/git"

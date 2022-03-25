@@ -6,7 +6,7 @@ SRCREV ?= "4dfffc0829e839633fa672632ad2befacc327f4b"
 PV = "1.0+git${SRCPV}"
 
 SRC_URI = " \
-    git://github.com/OverC/overc-installer.git;branch=master \
+    git://github.com/OverC/overc-installer.git;branch=master;protocol=https \
     file://git/COPYING \
 "
 

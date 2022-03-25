@@ -5,7 +5,7 @@ HOMEPAGE = "https://ghedo.github.io/pflask/"
 LICENSE = "BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://COPYING;md5=c2cd5f772e6f9b401d92014b0d1ebccd"
 
-SRC_URI = "git://github.com/ghedo/pflask.git; \
+SRC_URI = "git://github.com/ghedo/pflask.git;;branch=master;protocol=https \
            file://Makefile \
            file://pflask.mk \
            file://0001-pflask-add-pivot_root-support.patch \
