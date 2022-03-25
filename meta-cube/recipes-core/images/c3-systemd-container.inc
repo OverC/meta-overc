@@ -11,7 +11,7 @@ IMAGE_FSTYPES:remove = "live"
 
 TARGETNAME ?= "c3-systemd-container"
 
-IMAGE_INSTALL:append += "systemd"
+IMAGE_INSTALL:append = "systemd"
 
 IMAGE_FEATURES = ""
 

@@ -1,4 +1,4 @@
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 DESCRIPTION = "Wiggle is a program for applying patches that patch cannot apply because of conflicting changes."
 SECTION = "console/utils"
 PR = "r1"

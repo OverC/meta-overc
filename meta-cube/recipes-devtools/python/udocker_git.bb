@@ -1,4 +1,4 @@
-LICENSE = "Apache-2"
+LICENSE = "Apache-2.0"
 HOMEPAGE = "https://github.com/indigo-dc/udocker"
 SUMMARY = "A basic user tool to execute simple docker containers in batch or interactive systems without root privileges"
 DESCRIPTION = "A basic user tool to execute simple docker containers in user space \

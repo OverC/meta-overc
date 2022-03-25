@@ -1,6 +1,6 @@
 SUMMARY = "Wrap gnu screen into a multi session getty"
 HOMEPAGE = "https://github.com/WindRiver-OpenSourceLabs/meta-overc"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
 SRC_URI = "file://COPYING \

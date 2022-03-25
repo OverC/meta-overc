@@ -23,7 +23,7 @@ KERNEL_FEATURES:append = " cfg/systemd.scc"
 KERNEL_FEATURES:append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES:append = " cfg/fs/ext2.scc"
 
-KERNEL_MODULE_AUTOLOAD:append += "nf_conntrack_ipv6 openvswitch"
+KERNEL_MODULE_AUTOLOAD:append = "nf_conntrack_ipv6 openvswitch"
 
 # kubernetes stuff. maybe hide in a distro variable ?
 KERNEL_MODULE_AUTOLOAD:append = "ip_vs_rr ip_vs_wrr ip_vs_sh"

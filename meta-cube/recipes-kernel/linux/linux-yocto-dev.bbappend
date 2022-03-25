@@ -28,9 +28,9 @@ KERNEL_FEATURES:append = " features/kvm/qemu-kvm-enable.scc"
 KERNEL_FEATURES:append = " features/tmpfs/tmpfs-posix-acl.scc"
 KERNEL_FEATURES:append = " features/cgroups/cgroups.scc"
 
-KERNEL_MODULE_AUTOLOAD:append += "nf_conntrack_ipv6 openvswitch"
+KERNEL_MODULE_AUTOLOAD:append = "nf_conntrack_ipv6 openvswitch"
 
-KERNEL_FEATURES:append += "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
+KERNEL_FEATURES:append = "${@bb.utils.contains('DISTRO_FEATURES', 'aufs', ' features/aufs/aufs-enable.scc', '', d)}"
 KERNEL_FEATURES:append = " cfg/systemd.scc"
 KERNEL_FEATURES:append = " cfg/fs/ext3.scc"
 KERNEL_FEATURES:append = " cfg/fs/ext2.scc"

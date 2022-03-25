@@ -1,5 +1,5 @@
 # Extend PACKAGECONFIG to include good stuff beyond qemu.inc
-PACKAGECONFIG:append:x86-64:class-target += "linux-aio virtfs libcap-ng vhost"
+PACKAGECONFIG:append:x86-64:class-target = "linux-aio virtfs libcap-ng vhost"
 PACKAGECONFIG:append = " linux-aio virtfs libcap-ng vhost"
 
 QEMU_TARGETS:class-target = "arm aarch64 i386 x86_64"

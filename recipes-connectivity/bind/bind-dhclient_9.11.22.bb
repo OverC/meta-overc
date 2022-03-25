@@ -2,7 +2,7 @@ SUMMARY = "ISC Internet Domain Name Server"
 HOMEPAGE = "http://www.isc.org/sw/bind/"
 SECTION = "console/network"
 
-LICENSE = "ISC & BSD"
+LICENSE = "ISC & MPL-2.0"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=bf39058a7f64b2a934ce14dc9ec1dd45"
 
 DEPENDS = "openssl libcap zlib"

@@ -1,6 +1,6 @@
 SUMMARY = "Service to allow randomizing the MAC address of an interface"
 HOMEPAGE = "https://github.com/WindRiver-OpenSourceLabs/meta-overc"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL2;md5=751419260aa954499f7abaabaa882bbe"
 
 PKG_NAME = "github.com/miekg/dns"

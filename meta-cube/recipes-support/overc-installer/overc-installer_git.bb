@@ -1,5 +1,5 @@
 SUMMARY = "OverC installer script"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
 
 SRCREV ?= "4dfffc0829e839633fa672632ad2befacc327f4b"

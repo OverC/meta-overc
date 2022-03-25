@@ -1,5 +1,5 @@
 DESCRIPTION = "Tools for making and managing initramfs images"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 
 SRC_URI = "http://http.debian.net/debian/pool/main/i/initramfs-tools/initramfs-tools_0.120.tar.xz"
 

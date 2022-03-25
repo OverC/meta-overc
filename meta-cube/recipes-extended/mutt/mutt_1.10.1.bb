@@ -7,7 +7,7 @@ bindings, keyboard macros, mail threading, regular expression \
 searches, and a powerful pattern matching language for selecting \
 groups of messages."
 
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 
 DEPENDS = "ncurses gnutls gpgme mime-support"
 RDEPENDS:${PN} = "perl"
